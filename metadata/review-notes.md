@@ -19,7 +19,14 @@ This is release 2.0, a full rewrite of the app that shipped as 1.3. What changed
 
 Required. Villain Arc gates its entire interface behind an FCT account: a clean install shows the onboarding carousel and then the sign-in screen, and there is no app behind it until a session exists. Sign in with Apple, or email.
 
-Reviewer credentials: [FILL IN BEFORE SUBMITTING — email + password for a seeded FCT review account.]
+Reviewer credentials:
+
+- Email: `villain-arc+appreview@fct-technologies.com`
+- Password: `VillainArc-Review-2026`
+
+This is a dedicated review account, not a shared internal one. Sign-in is email + password on the sign-in screen; Sign in with Apple is not needed.
+
+The account is seeded with training history — three completed "Push Pull Legs" sessions across three weeks (bench press, squat, pull-ups, with a progression across sessions) and the plan behind them. They sync down after sign-in, so Home, Workouts, the exercise histories, and the Profile tab's muscle distribution and streak all have real data in them.
 
 ## Required Permissions
 
@@ -34,7 +41,7 @@ No advertising identifiers, tracking permissions, or App Tracking Transparency p
 
 ## How To Reach The Main Surfaces
 
-1. Sign in: launch a clean install, page through the intro carousel, then sign in with the reviewer credentials above. Onboarding asks for name, Apple Health, Location, birthday, gender, height, fitness level, and training goal.
+1. Sign in: launch a clean install, page through the intro carousel, then sign in with the reviewer credentials above. Onboarding then collects the profile — name, Apple Health, Location, birthday, gender, height, fitness level, and training goal. Answers already stored on the account sync down at sign-in and their steps are skipped, so the flow resumes at the first question the account has no answer for.
 2. AI plan generation: Home -> expanded plus -> Create Plan -> Generate with AI.
 3. Plan templates: Create Plan -> Templates -> pick one -> Build Full Program.
 4. AI exercise replacement: any plan -> tap an exercise -> Replace -> AI Suggestions.

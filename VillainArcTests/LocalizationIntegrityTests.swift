@@ -24,6 +24,43 @@ struct LocalizationIntegrityTests {
     @Test func watchCatalogIsFullyLocalized() throws {
         try LocalizationCatalog.assertIntegrity(at: repoRoot().appending(path: "VillainArcWatchApp/Localizable.xcstrings"))
     }
+
+    /// `AppIntentVocabulary.plist` is a plain per-locale resource, not a catalog: nothing in the
+    /// build, the drift check, or the catalog integrity above has an opinion about it, so a locale
+    /// that never got one ships with no Siri examples for the system workout domain and says so
+    /// nowhere. Every shipping locale carries the same three intents the SiriKit extension handles.
+    @Test func siriVocabularyCoversEveryShippingLocale() throws {
+        let root = repoRoot()
+        let intents = ["INStartWorkoutIntent", "INCancelWorkoutIntent", "INEndWorkoutIntent"]
+        var issues: [String] = []
+
+        for locale in LocalizationCatalog.shippingLocales {
+            let path = root.appending(path: "VillainArc/\(locale).lproj/AppIntentVocabulary.plist")
+            guard let data = try? Data(contentsOf: path) else {
+                issues.append("\(locale): no AppIntentVocabulary.plist")
+                continue
+            }
+            guard let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+                  let phrases = plist["IntentPhrases"] as? [[String: Any]] else {
+                issues.append("\(locale): AppIntentVocabulary.plist has no IntentPhrases array")
+                continue
+            }
+            for intent in intents {
+                guard let entry = phrases.first(where: { $0["IntentName"] as? String == intent }) else {
+                    issues.append("\(locale): missing \(intent)")
+                    continue
+                }
+                let examples = entry["IntentExamples"] as? [String] ?? []
+                if examples.isEmpty { issues.append("\(locale): \(intent) has no examples") }
+                // The app name is what Siri matches the phrase against, so it is never translated.
+                for example in examples where !example.contains("Villain Arc") {
+                    issues.append("\(locale): \(intent) example does not name the app: \(example)")
+                }
+            }
+        }
+
+        #expect(issues.isEmpty, "\(issues.count) Siri vocabulary issue(s):\n\(issues.sorted().joined(separator: "\n"))")
+    }
 }
 
 /// Walks up from this test file to the repo root (the directory holding the Xcode project) —

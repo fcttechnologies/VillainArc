@@ -410,6 +410,8 @@ enum AccessibilityIdentifiers {
 
     static func workoutSplitInactiveRow(_ split: WorkoutSplit) -> String { "workoutSplitInactiveRow-\(split.title)" }
 
+    static func workoutSplitInactiveRowOpenButton(_ split: WorkoutSplit) -> String { "workoutSplitInactiveRowOpenButton-\(split.title)" }
+
     // MARK: - WorkoutSplitCreationView
     static let workoutSplitCreationView = "workoutSplitCreationView"
 

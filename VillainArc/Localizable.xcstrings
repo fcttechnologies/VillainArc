@@ -39,7 +39,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld modifications nécessitent votre attention"
+            "value" : "%lld modifications nécessitent ton attention"
           }
         },
         "it" : {
@@ -168,7 +168,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible de joindre votre compte pour restaurer vos données. Vérifiez votre connexion et réessayez."
+            "value" : "Impossible de joindre ton compte pour restaurer tes données. Vérifie ta connexion et réessaie."
           }
         },
         "it" : {
@@ -232,7 +232,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Récupération de votre profil sur cet appareil..."
+            "value" : "Récupération de ton profil sur cet appareil..."
           }
         },
         "it" : {
@@ -557,7 +557,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nécessite votre attention"
+            "value" : "Nécessite ton attention"
           }
         },
         "it" : {
@@ -751,7 +751,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Restauration de votre compte"
+            "value" : "Restauration de ton compte"
           }
         },
         "it" : {
@@ -816,7 +816,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reconnectez-vous pour synchroniser"
+            "value" : "Reconnecte-toi pour synchroniser"
           }
         },
         "it" : {
@@ -1271,7 +1271,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Charge, répétitions et repos, avec votre dernière séance juste à côté."
+            "value" : "Charge, répétitions et repos, avec ta dernière séance juste à côté."
           }
         },
         "it" : {
@@ -1336,7 +1336,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre prochaine charge et vos répétitions, calculées à partir de votre historique. (Pro)"
+            "value" : "Ta prochaine charge et tes répétitions, calculées à partir de ton historique. (Pro)"
           }
         },
         "it" : {
@@ -1366,7 +1366,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Следующий вес и повторения — рассчитаны по вашей истории. (Pro)"
+            "value" : "Следующий вес и повторения — рассчитаны по твоей истории. (Pro)"
           }
         },
         "zh-Hans" : {
@@ -2924,7 +2924,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L'entraînement %1$@ est en pause car vous êtes %2$@."
+            "value" : "L'entraînement %1$@ est en pause car tu es %2$@."
           }
         },
         "it" : {
@@ -3236,7 +3236,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ a été ajouté à votre plan actif."
+            "value" : "%@ a été ajouté à ton plan actif."
           }
         },
         "it" : {
@@ -3296,7 +3296,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ a été ajouté à votre séance active."
+            "value" : "%@ a été ajouté à ta séance active."
           }
         },
         "it" : {
@@ -3961,7 +3961,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@, vous brûlez %2$@ d'énergie par jour que l'an dernier."
+            "value" : "%1$@, tu brûles %2$@ d'énergie par jour que l'an dernier."
           }
         },
         "it" : {
@@ -3991,7 +3991,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы сжигаете %2$@ энергии в день, что и в прошлом году."
+            "value" : "%1$@ ты сжигаешь %2$@ энергии в день, что и в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4025,7 +4025,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@, vous brûlez %2$@ d'énergie par jour que l'an dernier."
+            "value" : "%1$@, tu brûles %2$@ d'énergie par jour que l'an dernier."
           }
         },
         "it" : {
@@ -4055,7 +4055,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы сжигаете %2$@ энергии в день, чем в прошлом году."
+            "value" : "%1$@ ты сжигаешь %2$@ энергии в день, чем в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4089,7 +4089,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, vous brûlez environ la même quantité d'énergie par jour que l'an dernier."
+            "value" : "%@, tu brûles environ la même quantité d'énergie par jour que l'an dernier."
           }
         },
         "it" : {
@@ -4119,7 +4119,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ вы сжигаете примерно столько же энергии в день, что и в прошлом году."
+            "value" : "%@ ты сжигаешь примерно столько же энергии в день, что и в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4153,7 +4153,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, vous brûlez moins d'énergie par jour que l'an dernier."
+            "value" : "%@, tu brûles moins d'énergie par jour que l'an dernier."
           }
         },
         "it" : {
@@ -4183,7 +4183,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ вы сжигаете меньше энергии в день, чем в прошлом году."
+            "value" : "%@ ты сжигаешь меньше энергии в день, чем в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4217,7 +4217,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, vous brûlez plus d'énergie par jour que l'an dernier."
+            "value" : "%@, tu brûles plus d'énergie par jour que l'an dernier."
           }
         },
         "it" : {
@@ -4247,7 +4247,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ вы сжигаете больше энергии в день, чем в прошлом году."
+            "value" : "%@ ты сжигаешь больше энергии в день, чем в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4281,7 +4281,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@, vous dormez %2$@ chaque nuit que l'an dernier."
+            "value" : "%1$@, tu dors %2$@ chaque nuit que l'an dernier."
           }
         },
         "it" : {
@@ -4311,7 +4311,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы спите %2$@ за ночь, что и в прошлом году."
+            "value" : "%1$@ ты спишь %2$@ за ночь, что и в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4345,7 +4345,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@, vous dormez %2$@ chaque nuit que l'an dernier."
+            "value" : "%1$@, tu dors %2$@ chaque nuit que l'an dernier."
           }
         },
         "it" : {
@@ -4375,7 +4375,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы спите %2$@ за ночь, чем в прошлом году."
+            "value" : "%1$@ ты спишь %2$@ за ночь, чем в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4409,7 +4409,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, vous dormez environ autant chaque nuit que l'an dernier."
+            "value" : "%@, tu dors environ autant chaque nuit que l'an dernier."
           }
         },
         "it" : {
@@ -4439,7 +4439,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ вы спите примерно столько же за ночь, что и в прошлом году."
+            "value" : "%@ ты спишь примерно столько же за ночь, что и в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4473,7 +4473,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, vous dormez moins chaque nuit que l'an dernier."
+            "value" : "%@, tu dors moins chaque nuit que l'an dernier."
           }
         },
         "it" : {
@@ -4503,7 +4503,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ вы спите меньше за ночь, чем в прошлом году."
+            "value" : "%@ ты спишь меньше за ночь, чем в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4537,7 +4537,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, vous dormez plus chaque nuit que l'an dernier."
+            "value" : "%@, tu dors plus chaque nuit que l'an dernier."
           }
         },
         "it" : {
@@ -4567,7 +4567,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ вы спите больше за ночь, чем в прошлом году."
+            "value" : "%@ ты спишь больше за ночь, чем в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4601,7 +4601,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@, vous faites %2$@ de pas par jour que l'an dernier."
+            "value" : "%1$@, tu fais %2$@ de pas par jour que l'an dernier."
           }
         },
         "it" : {
@@ -4631,7 +4631,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы проходите %2$@ шагов в день, что и в прошлом году."
+            "value" : "%1$@ ты проходишь %2$@ шагов в день, что и в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4665,7 +4665,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@, vous faites %2$@ de pas par jour que l'an dernier."
+            "value" : "%1$@, tu fais %2$@ de pas par jour que l'an dernier."
           }
         },
         "it" : {
@@ -4695,7 +4695,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы проходите %2$@ шагов в день, чем в прошлом году."
+            "value" : "%1$@ ты проходишь %2$@ шагов в день, чем в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4729,7 +4729,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, vous faites environ le même nombre de pas par jour que l'an dernier."
+            "value" : "%@, tu fais environ le même nombre de pas par jour que l'an dernier."
           }
         },
         "it" : {
@@ -4759,7 +4759,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ вы проходите примерно столько же шагов в день, что и в прошлом году."
+            "value" : "%@ ты проходишь примерно столько же шагов в день, что и в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4793,7 +4793,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, vous faites moins de pas par jour que l'an dernier."
+            "value" : "%@, tu fais moins de pas par jour que l'an dernier."
           }
         },
         "it" : {
@@ -4823,7 +4823,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ вы проходите меньше шагов в день, чем в прошлом году."
+            "value" : "%@ ты проходишь меньше шагов в день, чем в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -4857,7 +4857,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@, vous faites plus de pas par jour que l'an dernier."
+            "value" : "%@, tu fais plus de pas par jour que l'an dernier."
           }
         },
         "it" : {
@@ -4887,7 +4887,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ вы проходите больше шагов в день, чем в прошлом году."
+            "value" : "%@ ты проходишь больше шагов в день, чем в прошлом году."
           }
         },
         "zh-Hans" : {
@@ -9521,7 +9521,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Acceptez ou refusez ces modifications avant de commencer votre séance."
+            "value" : "Accepte ou refuse ces modifications avant de commencer ta séance."
           }
         },
         "it" : {
@@ -10399,7 +10399,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajoutez une condition lorsqu'une maladie, une blessure, un voyage, une récupération ou une pause change votre façon de vous entraîner."
+            "value" : "Ajoute une condition lorsqu'une maladie, une blessure, un voyage, une récupération ou une pause change ta façon de t'entraîner."
           }
         },
         "it" : {
@@ -10586,7 +10586,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajoutez des jours à votre split pour commencer."
+            "value" : "Ajoute des jours à ton split pour commencer."
           }
         },
         "it" : {
@@ -11772,7 +11772,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ ajouté à votre modèle."
+            "value" : "%@ ajouté à ton modèle."
           }
         },
         "it" : {
@@ -11836,7 +11836,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ ajouté à votre séance."
+            "value" : "%@ ajouté à ta séance."
           }
         },
         "it" : {
@@ -11900,7 +11900,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld exercices ajoutés à votre programme d'entraînement."
+            "value" : "%lld exercices ajoutés à ton programme d'entraînement."
           }
         },
         "it" : {
@@ -11964,7 +11964,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld exercices ajoutés à votre séance."
+            "value" : "%lld exercices ajoutés à ta séance."
           }
         },
         "it" : {
@@ -12028,7 +12028,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exercice ajouté à votre programme d'entraînement."
+            "value" : "Exercice ajouté à ton programme d'entraînement."
           }
         },
         "it" : {
@@ -12092,7 +12092,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exercice ajouté à votre séance."
+            "value" : "Exercice ajouté à ta séance."
           }
         },
         "it" : {
@@ -12660,7 +12660,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajoute cet exercice à votre sélection."
+            "value" : "Ajoute cet exercice à ta sélection."
           }
         },
         "it" : {
@@ -13038,7 +13038,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Après avoir choisi un RPE, l'app peut marquer la série comme terminée pour vous. Si « Démarrer le minuteur de repos automatiquement » est activé, elle lance aussi le minuteur. « Utiliser le RPE cible à la fin » remplit automatiquement le RPE cible lorsque vous marquez une série comme terminée sans la noter."
+            "value" : "Après avoir choisi un RPE, l'app peut marquer la série comme terminée pour toi. Si « Démarrer le minuteur de repos automatiquement » est activé, elle lance aussi le minuteur. « Utiliser le RPE cible à la fin » remplit automatiquement le RPE cible lorsque tu marques une série comme terminée sans la noter."
           }
         },
         "it" : {
@@ -13096,7 +13096,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Après avoir choisi un RPE, l'app peut marquer la série comme terminée pour vous. Si « Démarrer le minuteur de repos automatiquement » est activé, elle lance aussi le minuteur. « Utiliser le RPE cible à la fin » remplit automatiquement le RPE cible lorsque vous marquez une série comme terminée sans la noter."
+            "value" : "Après avoir choisi un RPE, l'app peut marquer la série comme terminée pour toi. Si « Démarrer le minuteur de repos automatiquement » est activé, elle lance aussi le minuteur. « Utiliser le RPE cible à la fin » remplit automatiquement le RPE cible lorsque tu marques une série comme terminée sans la noter."
           }
         },
         "it" : {
@@ -14328,7 +14328,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Une séance active a été lancée depuis l'un de ces programmes d'entraînement. Si vous les supprimez, cette séance en cours deviendra une séance autonome et les objectifs copiés du programme seront effacés."
+            "value" : "Une séance active a été lancée depuis l'un de ces programmes d'entraînement. Si tu les supprimes, cette séance en cours deviendra une séance autonome et les objectifs copiés du programme seront effacés."
           }
         },
         "it" : {
@@ -14386,7 +14386,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Une séance active a été lancée depuis ce programme d'entraînement. Si vous le supprimez, cette séance en cours deviendra une séance autonome et les objectifs copiés du programme seront effacés."
+            "value" : "Une séance active a été lancée depuis ce programme d'entraînement. Si tu le supprimes, cette séance en cours deviendra une séance autonome et les objectifs copiés du programme seront effacés."
           }
         },
         "it" : {
@@ -14625,7 +14625,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les réponses sont générées entièrement sur cet appareil, uniquement à partir de vos entraînements, plans et splits. Ces données d'entraînement sont conservées dans votre compte FCT privé afin d'atteindre vos autres appareils."
+            "value" : "Les réponses sont générées entièrement sur cet appareil, uniquement à partir de tes entraînements, plans et splits. Ces données d'entraînement sont conservées dans ton compte FCT privé afin d'atteindre tes autres appareils."
           }
         },
         "it" : {
@@ -14655,7 +14655,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ответы формируются полностью на этом устройстве и только по вашим тренировкам, планам и сплитам. Эти тренировочные данные хранятся в вашей приватной учётной записи FCT и попадают на другие ваши устройства."
+            "value" : "Ответы формируются полностью на этом устройстве и только по твоим тренировкам, планам и сплитам. Эти тренировочные данные хранятся в твоей приватной учётной записи FCT и попадают на другие твои устройства."
           }
         },
         "zh-Hans" : {
@@ -15301,7 +15301,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous vraiment annuler ce programme d'entraînement ?"
+            "value" : "Veux-tu vraiment annuler ce programme d'entraînement ?"
           }
         },
         "it" : {
@@ -15365,7 +15365,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous vraiment supprimer toutes les entrées de poids créées par l'app ?"
+            "value" : "Veux-tu vraiment supprimer toutes les entrées de poids créées par l'app ?"
           }
         },
         "it" : {
@@ -15429,7 +15429,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous vraiment supprimer toutes les séances précédentes ?"
+            "value" : "Veux-tu vraiment supprimer toutes les séances précédentes ?"
           }
         },
         "it" : {
@@ -15493,7 +15493,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous vraiment supprimer tous les programmes d'entraînement ?"
+            "value" : "Veux-tu vraiment supprimer tous les programmes d'entraînement ?"
           }
         },
         "it" : {
@@ -15557,7 +15557,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous vraiment supprimer ce split ?"
+            "value" : "Veux-tu vraiment supprimer ce split ?"
           }
         },
         "it" : {
@@ -15621,7 +15621,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous vraiment supprimer ce programme d'entraînement ?"
+            "value" : "Veux-tu vraiment supprimer ce programme d'entraînement ?"
           }
         },
         "it" : {
@@ -15685,7 +15685,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous vraiment supprimer cette séance ?"
+            "value" : "Veux-tu vraiment supprimer cette séance ?"
           }
         },
         "it" : {
@@ -15743,7 +15743,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous vraiment annuler vos modifications de ce programme d'entraînement ?"
+            "value" : "Veux-tu vraiment annuler tes modifications de ce programme d'entraînement ?"
           }
         },
         "it" : {
@@ -19192,7 +19192,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Собираем ваши корреляции"
+            "value" : "Собираем твои корреляции"
           }
         },
         "zh-Hans" : {
@@ -21439,7 +21439,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vérifiez votre compte iCloud"
+            "value" : "Vérifie ton compte iCloud"
           }
         },
         "it" : {
@@ -21809,7 +21809,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez si l'app suit l'apparence de votre appareil ou utilise toujours le mode clair ou sombre."
+            "value" : "Choisis si l'app suit l'apparence de ton appareil ou utilise toujours le mode clair ou sombre."
           }
         },
         "it" : {
@@ -21869,7 +21869,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez si vous recevez une notification lorsque vous atteignez votre objectif d'hydratation, ou aussi des notifications de coaching lorsque vous le dépassez."
+            "value" : "Choisis si tu reçois une notification lorsque tu atteins ton objectif d'hydratation, ou aussi des notifications de coaching lorsque tu le dépasses."
           }
         },
         "it" : {
@@ -21927,7 +21927,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez si vous recevez des notifications uniquement lorsque vous atteignez votre objectif de sommeil, ou aussi des récapitulatifs de coaching hebdomadaires de vos moyennes de sommeil."
+            "value" : "Choisis si tu reçois des notifications uniquement lorsque tu atteins ton objectif de sommeil, ou aussi des récapitulatifs de coaching hebdomadaires de tes moyennes de sommeil."
           }
         },
         "it" : {
@@ -21985,7 +21985,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez si vous recevez des notifications uniquement lorsque vous atteignez votre objectif de pas, ou aussi des notifications de coaching pour l'objectif doublé, triplé et les nouveaux records."
+            "value" : "Choisis si tu reçois des notifications uniquement lorsque tu atteins ton objectif de pas, ou aussi des notifications de coaching pour l'objectif doublé, triplé et les nouveaux records."
           }
         },
         "it" : {
@@ -23159,7 +23159,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminez une séance avec cet exercice pour voir votre historique."
+            "value" : "Termine une séance avec cet exercice pour voir ton historique."
           }
         },
         "it" : {
@@ -23283,7 +23283,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminez une course ou une marche en extérieur pour créer votre carte d'itinéraire."
+            "value" : "Termine une course ou une marche en extérieur pour créer ta carte d'itinéraire."
           }
         },
         "it" : {
@@ -23535,7 +23535,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminez des exercices dans vos séances pour suivre votre progression ici."
+            "value" : "Termine des exercices dans tes séances pour suivre ta progression ici."
           }
         },
         "it" : {
@@ -24367,7 +24367,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Termine la prochaine série incomplète de votre séance d'entraînement."
+            "value" : "Termine la prochaine série incomplète de ta séance d'entraînement."
           }
         },
         "it" : {
@@ -24615,7 +24615,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connectez Apple Santé pour capturer la fréquence cardiaque en direct, l'énergie et les séances Santé lorsque votre appareil le permet."
+            "value" : "Connecte Apple Santé pour capturer la fréquence cardiaque en direct, l'énergie et les séances Santé lorsque ton appareil le permet."
           }
         },
         "it" : {
@@ -25128,7 +25128,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Détermine si Villain Arc génère des suggestions pour cet exercice. Lorsque les suggestions sont activées, vous pouvez aussi personnaliser le pas de progression utilisé pour les changements de charge."
+            "value" : "Détermine si Villain Arc génère des suggestions pour cet exercice. Lorsque les suggestions sont activées, tu peux aussi personnaliser le pas de progression utilisé pour les changements de charge."
           }
         },
         "it" : {
@@ -25631,7 +25631,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible de déterminer votre jour d'entraînement."
+            "value" : "Impossible de déterminer ton jour d'entraînement."
           }
         },
         "it" : {
@@ -25661,7 +25661,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Не удалось определить ваш тренировочный день."
+            "value" : "Не удалось определить твой тренировочный день."
           }
         },
         "zh-Hans" : {
@@ -25879,7 +25879,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Créez un split pour planifier vos jours d'entraînement."
+            "value" : "Crée un split pour planifier tes jours d'entraînement."
           }
         },
         "it" : {
@@ -26007,7 +26007,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Créez un split d'entraînement pour planifier votre routine."
+            "value" : "Crée un split d'entraînement pour planifier ta routine."
           }
         },
         "it" : {
@@ -26749,7 +26749,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld plans créés et split %2$@ ajouté. Votre split actif reste inchangé."
+            "value" : "%1$lld plans créés et split %2$@ ajouté. Ton split actif reste inchangé."
           }
         },
         "it" : {
@@ -27441,7 +27441,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crée un objectif de poids ou affiche votre historique d'objectifs."
+            "value" : "Crée un objectif de poids ou affiche ton historique d'objectifs."
           }
         },
         "it" : {
@@ -27617,7 +27617,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crée ou remplace votre objectif de sommeil actuel."
+            "value" : "Crée ou remplace ton objectif de sommeil actuel."
           }
         },
         "it" : {
@@ -27681,7 +27681,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crée ou remplace votre objectif de pas actuel."
+            "value" : "Crée ou remplace ton objectif de pas actuel."
           }
         },
         "it" : {
@@ -27739,7 +27739,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crée ou remplace votre objectif de poids actuel."
+            "value" : "Crée ou remplace ton objectif de poids actuel."
           }
         },
         "it" : {
@@ -29001,7 +29001,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Названия дней, упражнения, подходы и повторения можно оставить в вашем формате. Импорт идёт на устройстве."
+            "value" : "Названия дней, упражнения, подходы и повторения можно оставить в твоём формате. Импорт идёт на устройстве."
           }
         },
         "zh-Hans" : {
@@ -32443,7 +32443,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Supprimer votre seul intervalle annulera cette séance de cardio."
+            "value" : "Supprimer ton seul intervalle annulera cette séance de cardio."
           }
         },
         "it" : {
@@ -32565,7 +32565,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Décrivez ce que vous voulez et Apple Intelligence rédige le plan sur l'appareil."
+            "value" : "Décris ce que tu veux et Apple Intelligence rédige le plan sur l'appareil."
           }
         },
         "it" : {
@@ -35051,7 +35051,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Activez les notifications dans les réglages système pour modifier ceci. Vous pouvez toujours voir des notifications dans l'app pendant que vous l'utilisez."
+            "value" : "Active les notifications dans les réglages système pour modifier ceci. Tu peux toujours voir des notifications dans l'app pendant que tu l'utilises."
           }
         },
         "it" : {
@@ -35627,7 +35627,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre statut %@ est terminé. Vous reprenez l'entraînement normal."
+            "value" : "Ton statut %@ est terminé. Tu reprends l'entraînement normal."
           }
         },
         "it" : {
@@ -35657,7 +35657,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Статус «%@» завершён. Вы снова тренируетесь как обычно."
+            "value" : "Статус «%@» завершён. Ты снова тренируешься как обычно."
           }
         },
         "zh-Hans" : {
@@ -35815,7 +35815,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Met fin à votre condition d'entraînement actuelle et vous fait reprendre l'entraînement normal."
+            "value" : "Met fin à ta condition d'entraînement actuelle et te fait reprendre l'entraînement normal."
           }
         },
         "it" : {
@@ -36007,7 +36007,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Énergie. Mettez à jour les autorisations Apple Santé pour que vos statistiques de santé apparaissent ici."
+            "value" : "Énergie. Mets à jour les autorisations Apple Santé pour que tes statistiques de santé apparaissent ici."
           }
         },
         "it" : {
@@ -36071,7 +36071,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Profitez de votre jour de repos !"
+            "value" : "Profite de ton jour de repos !"
           }
         },
         "it" : {
@@ -37567,7 +37567,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Explorez votre progression"
+            "value" : "Explore ta progression"
           }
         },
         "it" : {
@@ -37750,7 +37750,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le partage familial est activé. Un seul abonnement couvre votre famille."
+            "value" : "Le partage familial est activé. Un seul abonnement couvre ta famille."
           }
         },
         "it" : {
@@ -38002,7 +38002,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous ne vous sentez pas bien et l'entraînement devra peut-être être interrompu"
+            "value" : "Tu ne te sens pas bien et l'entraînement devra peut-être être interrompu"
           }
         },
         "it" : {
@@ -38252,7 +38252,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remplit le RPE cible lorsque vous marquez une série comme terminée sans la noter."
+            "value" : "Remplit le RPE cible lorsque tu marques une série comme terminée sans la noter."
           }
         },
         "it" : {
@@ -39259,7 +39259,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminez cet objectif maintenant. Il sera enregistré comme un ajustement terminé prématurément si vous n'avez pas réellement atteint la cible."
+            "value" : "Termine cet objectif maintenant. Il sera enregistré comme un ajustement terminé prématurément si tu n'as pas réellement atteint la cible."
           }
         },
         "it" : {
@@ -39381,7 +39381,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminez votre plan actif avant de commencer le cardio."
+            "value" : "Termine ton plan actif avant de commencer le cardio."
           }
         },
         "it" : {
@@ -39439,7 +39439,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Terminez votre séance active avant de commencer le cardio."
+            "value" : "Termine ta séance active avant de commencer le cardio."
           }
         },
         "it" : {
@@ -40212,7 +40212,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "По вашим оценкам тренировок"
+            "value" : "По твоим оценкам тренировок"
           }
         },
         "zh-Hans" : {
@@ -40797,7 +40797,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La génération s'exécute entièrement sur cet appareil avec Apple Intelligence. Le plan produit est conservé dans votre compte FCT privé afin d'atteindre vos autres appareils."
+            "value" : "La génération s'exécute entièrement sur cet appareil avec Apple Intelligence. Le plan produit est conservé dans ton compte FCT privé afin d'atteindre tes autres appareils."
           }
         },
         "it" : {
@@ -40827,7 +40827,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Генерация выполняется полностью на этом устройстве средствами Apple Intelligence. Созданный план хранится в вашей приватной учётной записи FCT и попадает на другие ваши устройства."
+            "value" : "Генерация выполняется полностью на этом устройстве средствами Apple Intelligence. Созданный план хранится в твоей приватной учётной записи FCT и попадает на другие твои устройства."
           }
         },
         "zh-Hans" : {
@@ -41973,7 +41973,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Préparez-vous"
+            "value" : "Prépare-toi"
           }
         },
         "it" : {
@@ -43960,7 +43960,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effort intense, à la limite de vos capacités."
+            "value" : "Effort intense, à la limite de tes capacités."
           }
         },
         "it" : {
@@ -45451,7 +45451,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comment vous sentez-vous ?"
+            "value" : "Comment te sens-tu ?"
           }
         },
         "it" : {
@@ -45510,7 +45510,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comment avez-vous ressenti cette séance ?"
+            "value" : "Comment as-tu ressenti cette séance ?"
           }
         },
         "it" : {
@@ -45568,7 +45568,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comment aimez-vous vous entraîner ?"
+            "value" : "Comment aimes-tu t'entraîner ?"
           }
         },
         "it" : {
@@ -45598,7 +45598,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Как вам нравится тренироваться?"
+            "value" : "Как тебе нравится тренироваться?"
           }
         },
         "zh-Hans" : {
@@ -45690,7 +45690,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comment voulez-vous le planifier ?"
+            "value" : "Comment veux-tu le planifier ?"
           }
         },
         "it" : {
@@ -46004,7 +46004,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Combien de sommeil devriez-vous viser chaque nuit ?"
+            "value" : "Combien de sommeil devrais-tu viser chaque nuit ?"
           }
         },
         "it" : {
@@ -46217,7 +46217,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Как сон и усилие соотносятся с ощущениями от тренировки — по вашим оценкам в итогах."
+            "value" : "Как сон и усилие соотносятся с ощущениями от тренировки — по твоим оценкам в итогах."
           }
         },
         "zh-Hans" : {
@@ -46247,7 +46247,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comment le sommeil et le RPE façonnent la qualité de votre séance."
+            "value" : "Comment le sommeil et le RPE façonnent la qualité de ta séance."
           }
         },
         "it" : {
@@ -46277,7 +46277,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Как сон и RPE влияют на качество ваших тренировок."
+            "value" : "Как сон и RPE влияют на качество твоих тренировок."
           }
         },
         "zh-Hans" : {
@@ -47301,7 +47301,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lors de votre dernière séance, vous avez fait %@."
+            "value" : "Lors de ta dernière séance, tu as fait %@."
           }
         },
         "it" : {
@@ -47917,7 +47917,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Uniquement la structure du planning — choisissez ceci si vous configurez les plans vous-même."
+            "value" : "Uniquement la structure du planning — choisis ceci si tu configures les plans toi-même."
           }
         },
         "it" : {
@@ -48234,7 +48234,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Continuez à noter vos séances"
+            "value" : "Continue à noter tes séances"
           }
         },
         "it" : {
@@ -49319,7 +49319,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La nuit dernière, vous avez dormi %@."
+            "value" : "La nuit dernière, tu as dormi %@."
           }
         },
         "it" : {
@@ -49349,7 +49349,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Прошлой ночью вы спали %@."
+            "value" : "Прошлой ночью у тебя было %@ сна."
           }
         },
         "zh-Hans" : {
@@ -51146,7 +51146,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Effort léger, vous pourriez en faire bien plus."
+            "value" : "Effort léger, tu pourrais en faire bien plus."
           }
         },
         "it" : {
@@ -51756,7 +51756,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L'accès à la localisation est nécessaire pour enregistrer votre itinéraire et calculer la distance."
+            "value" : "L'accès à la localisation est nécessaire pour enregistrer ton itinéraire et calculer la distance."
           }
         },
         "it" : {
@@ -52180,7 +52180,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistrez ou synchronisez au moins 3 nuits de sommeil pour voir vos habitudes horaires."
+            "value" : "Enregistre ou synchronise au moins 3 nuits de sommeil pour voir tes habitudes horaires."
           }
         },
         "it" : {
@@ -52556,7 +52556,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ enregistré. Vous avez aussi atteint votre objectif %2$@."
+            "value" : "%1$@ enregistré. Tu as aussi atteint ton objectif %2$@."
           }
         },
         "it" : {
@@ -53118,7 +53118,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Appuyez longuement sur le bouton cardio pour choisir votre type de cardio favori par défaut."
+            "value" : "Appuie longuement sur le bouton cardio pour choisir ton type de cardio favori par défaut."
           }
         },
         "it" : {
@@ -53266,7 +53266,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Просматриваем ваши данные..."
+            "value" : "Просматриваем твои данные..."
           }
         },
         "zh-Hans" : {
@@ -54978,7 +54978,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gérez les préférences de notification de vos objectifs de santé."
+            "value" : "Gère les préférences de notification de tes objectifs de santé."
           }
         },
         "it" : {
@@ -55162,7 +55162,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gérez votre abonnement dans l'App Store."
+            "value" : "Gère ton abonnement dans l'App Store."
           }
         },
         "it" : {
@@ -55226,7 +55226,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gérer une blessure qui peut affecter votre façon de vous entraîner"
+            "value" : "Gérer une blessure qui peut affecter ta façon de t'entraîner"
           }
         },
         "it" : {
@@ -65571,7 +65571,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pas encore assez de données dans cette plage — continuez à enregistrer pour voir votre tendance."
+            "value" : "Pas encore assez de données dans cette plage — continue à enregistrer pour voir ta tendance."
           }
         },
         "it" : {
@@ -66818,7 +66818,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le %1$@, vous avez brûlé %2$@ au total, dont %3$@ actives."
+            "value" : "Le %1$@, tu as brûlé %2$@ au total, dont %3$@ actives."
           }
         },
         "it" : {
@@ -66848,7 +66848,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы сожгли %2$@ всего, из них %3$@ активных."
+            "value" : "%1$@ у тебя сожжено %2$@ всего, из них %3$@ активных."
           }
         },
         "zh-Hans" : {
@@ -66882,7 +66882,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le %1$@, vous avez parcouru %2$@."
+            "value" : "Le %1$@, tu as parcouru %2$@."
           }
         },
         "it" : {
@@ -66912,7 +66912,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы преодолели %2$@."
+            "value" : "%1$@ у тебя преодолено %2$@."
           }
         },
         "zh-Hans" : {
@@ -66976,7 +66976,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы выпили %2$@ воды и достигли цели %3$@."
+            "value" : "%1$@ у тебя выпито %2$@ воды и достигнута цель %3$@."
           }
         },
         "zh-Hans" : {
@@ -67042,7 +67042,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы выпили %2$@ воды при цели %3$@."
+            "value" : "%1$@ у тебя выпито %2$@ воды при цели %3$@."
           }
         },
         "zh-Hans" : {
@@ -67108,7 +67108,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы выпили %2$@ воды."
+            "value" : "%1$@ у тебя выпито %2$@ воды."
           }
         },
         "zh-Hans" : {
@@ -67142,7 +67142,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le %1$@, vous avez dormi %2$@."
+            "value" : "Le %1$@, tu as dormi %2$@."
           }
         },
         "it" : {
@@ -67172,7 +67172,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы спали %2$@."
+            "value" : "%1$@ у тебя было %2$@ сна."
           }
         },
         "zh-Hans" : {
@@ -67206,7 +67206,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le %1$@, vous avez fait %2$@ pas."
+            "value" : "Le %1$@, tu as fait %2$@ pas."
           }
         },
         "it" : {
@@ -67236,7 +67236,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$@ вы прошли %2$@ шагов."
+            "value" : "%1$@ у тебя пройдено %2$@ шагов."
           }
         },
         "zh-Hans" : {
@@ -67270,7 +67270,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le %1$@, votre dernier poids était de %2$@."
+            "value" : "Le %1$@, ton dernier poids était de %2$@."
           }
         },
         "it" : {
@@ -67646,7 +67646,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L'IA sur l'appareil classe les remplacements adaptés à votre objectif."
+            "value" : "L'IA sur l'appareil classe les remplacements adaptés à ton objectif."
           }
         },
         "it" : {
@@ -67676,7 +67676,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI на устройстве подбирает замены под вашу цель."
+            "value" : "AI на устройстве подбирает замены под твою цель."
           }
         },
         "zh-Hans" : {
@@ -67832,7 +67832,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L'un de ces programmes d'entraînement est en cours de modification. Si vous les supprimez, l'éditeur se fermera et sa copie de travail sera abandonnée."
+            "value" : "L'un de ces programmes d'entraînement est en cours de modification. Si tu les supprimes, l'éditeur se fermera et sa copie de travail sera abandonnée."
           }
         },
         "it" : {
@@ -70159,7 +70159,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre tout l'historique de cardio filtré sur vos séances de cardio."
+            "value" : "Ouvre tout l'historique de cardio filtré sur tes séances de cardio."
           }
         },
         "it" : {
@@ -70247,7 +70247,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Открывает редактор, чтобы сравнить ваши заметки с планом и синхронизировать их."
+            "value" : "Открывает редактор, чтобы сравнить твои заметки с планом и синхронизировать их."
           }
         },
         "zh-Hans" : {
@@ -70779,7 +70779,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre le contexte d'avant-séance pour votre séance active."
+            "value" : "Ouvre le contexte d'avant-séance pour ta séance active."
           }
         },
         "it" : {
@@ -70971,7 +70971,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre les réglages de votre séance active."
+            "value" : "Ouvre les réglages de ta séance active."
           }
         },
         "it" : {
@@ -71035,7 +71035,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre les Réglages pour que vous puissiez modifier les autorisations Apple Santé."
+            "value" : "Ouvre les Réglages pour que tu puisses modifier les autorisations Apple Santé."
           }
         },
         "it" : {
@@ -71099,7 +71099,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre les Réglages pour que vous puissiez vérifier l'accès à Apple Santé."
+            "value" : "Ouvre les Réglages pour que tu puisses vérifier l'accès à Apple Santé."
           }
         },
         "it" : {
@@ -71275,7 +71275,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre l'onglet Cardio avec vos séances et itinéraires récents."
+            "value" : "Ouvre l'onglet Cardio avec tes séances et itinéraires récents."
           }
         },
         "it" : {
@@ -71333,7 +71333,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre la corrélation entre votre sommeil, votre RPE et la qualité de la séance."
+            "value" : "Ouvre la corrélation entre ton sommeil, ton RPE et la qualité de la séance."
           }
         },
         "it" : {
@@ -71461,7 +71461,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre le minuteur de repos de votre séance active."
+            "value" : "Ouvre le minuteur de repos de ta séance active."
           }
         },
         "it" : {
@@ -71653,7 +71653,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre le programme d'entraînement du jour de votre split actif."
+            "value" : "Ouvre le programme d'entraînement du jour de ton split actif."
           }
         },
         "it" : {
@@ -71771,7 +71771,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre les vues de tendances de vos statistiques de santé clés."
+            "value" : "Ouvre les vues de tendances de tes statistiques de santé clés."
           }
         },
         "it" : {
@@ -72135,7 +72135,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre le flux de votre programme d'entraînement actif."
+            "value" : "Ouvre le flux de ton programme d'entraînement actif."
           }
         },
         "it" : {
@@ -72199,7 +72199,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre split d'entraînement actif."
+            "value" : "Ouvre ton split d'entraînement actif."
           }
         },
         "it" : {
@@ -72229,7 +72229,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Открывает ваш активный сплит."
+            "value" : "Открывает твой активный сплит."
           }
         },
         "zh-Hans" : {
@@ -72263,7 +72263,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre séance active."
+            "value" : "Ouvre ta séance active."
           }
         },
         "it" : {
@@ -72293,7 +72293,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Открывает вашу активную тренировку."
+            "value" : "Открывает твою активную тренировку."
           }
         },
         "zh-Hans" : {
@@ -72327,7 +72327,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre historique de calories brûlées."
+            "value" : "Ouvre ton historique de calories brûlées."
           }
         },
         "it" : {
@@ -72391,7 +72391,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre liste complète d'entrées de poids."
+            "value" : "Ouvre ta liste complète d'entrées de poids."
           }
         },
         "it" : {
@@ -72455,7 +72455,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre liste d'exercices."
+            "value" : "Ouvre ta liste d'exercices."
           }
         },
         "it" : {
@@ -72749,7 +72749,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre séance de cardio en cours."
+            "value" : "Ouvre ta séance de cardio en cours."
           }
         },
         "it" : {
@@ -72807,7 +72807,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre profil."
+            "value" : "Ouvre ton profil."
           }
         },
         "it" : {
@@ -72837,7 +72837,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Открывает ваш профиль."
+            "value" : "Открывает твой профиль."
           }
         },
         "zh-Hans" : {
@@ -72983,7 +72983,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre historique d'objectifs de sommeil."
+            "value" : "Ouvre ton historique d'objectifs de sommeil."
           }
         },
         "it" : {
@@ -73047,7 +73047,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre historique de sommeil."
+            "value" : "Ouvre ton historique de sommeil."
           }
         },
         "it" : {
@@ -73105,7 +73105,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre vos habitudes d'horaire de sommeil et le score de régularité."
+            "value" : "Ouvre tes habitudes d'horaire de sommeil et le score de régularité."
           }
         },
         "it" : {
@@ -73169,7 +73169,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre historique de pas et de distance."
+            "value" : "Ouvre ton historique de pas et de distance."
           }
         },
         "it" : {
@@ -73233,7 +73233,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre historique d'objectifs de pas."
+            "value" : "Ouvre ton historique d'objectifs de pas."
           }
         },
         "it" : {
@@ -73297,7 +73297,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre historique de conditions d'entraînement."
+            "value" : "Ouvre ton historique de conditions d'entraînement."
           }
         },
         "it" : {
@@ -73421,7 +73421,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre historique d'objectifs de poids."
+            "value" : "Ouvre ton historique d'objectifs de poids."
           }
         },
         "it" : {
@@ -73485,7 +73485,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre historique de poids."
+            "value" : "Ouvre ton historique de poids."
           }
         },
         "it" : {
@@ -73549,7 +73549,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre historique de séances."
+            "value" : "Ouvre ton historique de séances."
           }
         },
         "it" : {
@@ -73613,7 +73613,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre votre liste de programmes d'entraînement."
+            "value" : "Ouvre ta liste de programmes d'entraînement."
           }
         },
         "it" : {
@@ -73677,7 +73677,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvre vos splits d'entraînement."
+            "value" : "Ouvre tes splits d'entraînement."
           }
         },
         "it" : {
@@ -73707,7 +73707,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Открывает ваши сплиты."
+            "value" : "Открывает твои сплиты."
           }
         },
         "zh-Hans" : {
@@ -75703,7 +75703,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez une plage de répétitions adaptée à votre objectif : la force se situe généralement autour de 1–3 reps, l'hypertrophie souvent 8–12 reps, l'endurance souvent 12–20+ reps."
+            "value" : "Choisis une plage de répétitions adaptée à ton objectif : la force se situe généralement autour de 1–3 reps, l'hypertrophie souvent 8–12 reps, l'endurance souvent 12–20+ reps."
           }
         },
         "it" : {
@@ -75767,7 +75767,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez un objectif de répétitions adapté à votre but : la force utilise souvent un objectif bas comme 3 reps, l'hypertrophie souvent autour de 10 reps, l'endurance généralement 15+ reps."
+            "value" : "Choisis un objectif de répétitions adapté à ton but : la force utilise souvent un objectif bas comme 3 reps, l'hypertrophie souvent autour de 10 reps, l'endurance généralement 15+ reps."
           }
         },
         "it" : {
@@ -75825,7 +75825,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez le niveau qui correspond le mieux à votre expérience. Villain Arc l'utilise pour définir les valeurs par défaut du plan et la progressivité des suggestions."
+            "value" : "Choisis le niveau qui correspond le mieux à ton expérience. Villain Arc l'utilise pour définir les valeurs par défaut du plan et la progressivité des suggestions."
           }
         },
         "it" : {
@@ -75855,7 +75855,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Выберите уровень, который лучше всего отражает ваш опыт. Villain Arc учитывает его в настройках планов и в том, насколько быстро растут рекомендации."
+            "value" : "Выбери уровень, который лучше всего отражает твой опыт. Villain Arc учитывает его в настройках планов и в том, насколько быстро растут рекомендации."
           }
         },
         "zh-Hans" : {
@@ -77170,7 +77170,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Préparation de votre catalogue d'exercices..."
+            "value" : "Préparation de ton catalogue d'exercices..."
           }
         },
         "it" : {
@@ -78016,7 +78016,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "« Demander le contexte d'avant-séance » demande comment vous vous sentez avant le début de l'enregistrement. « Demander l'effort après la séance » demande votre note d'effort global à la fin d'une séance. Désactivez l'un ou l'autre pour saisir ces détails manuellement uniquement au besoin."
+            "value" : "« Demander le contexte d'avant-séance » demande comment tu te sens avant le début de l'enregistrement. « Demander l'effort après la séance » demande ta note d'effort global à la fin d'une séance. Désactive l'un ou l'autre pour saisir ces détails manuellement uniquement au besoin."
           }
         },
         "it" : {
@@ -78144,7 +78144,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Demande le contexte d'avant-séance lorsque vous ouvrez une nouvelle séance."
+            "value" : "Demande le contexte d'avant-séance lorsque tu ouvres une nouvelle séance."
           }
         },
         "it" : {
@@ -79896,7 +79896,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistre cette note pour chaque suggestion acceptée que vous avez utilisée dans cette séance."
+            "value" : "Enregistre cette note pour chaque suggestion acceptée que tu as utilisée dans cette séance."
           }
         },
         "it" : {
@@ -80762,7 +80762,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Retire cet exercice de votre sélection."
+            "value" : "Retire cet exercice de ta sélection."
           }
         },
         "it" : {
@@ -81074,7 +81074,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rouvre votre plan actuel."
+            "value" : "Rouvre ton plan actuel."
           }
         },
         "it" : {
@@ -81104,7 +81104,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Снова открывает ваш текущий план."
+            "value" : "Снова открывает твой текущий план."
           }
         },
         "zh-Hans" : {
@@ -81138,7 +81138,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rouvre votre séance actuelle."
+            "value" : "Rouvre ta séance actuelle."
           }
         },
         "it" : {
@@ -81168,7 +81168,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Снова открывает вашу текущую тренировку."
+            "value" : "Снова открывает твою текущую тренировку."
           }
         },
         "zh-Hans" : {
@@ -82208,7 +82208,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remplace votre split actif actuel. Vous pourrez modifier chaque jour plus tard."
+            "value" : "Remplace ton split actif actuel. Tu pourras modifier chaque jour plus tard."
           }
         },
         "it" : {
@@ -83078,7 +83078,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les jours de repos sont parfaits pour vous détendre et recharger vos batteries."
+            "value" : "Les jours de repos sont parfaits pour te détendre et recharger tes batteries."
           }
         },
         "it" : {
@@ -84097,7 +84097,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Redémarre l'activité en direct de la séance si vous l'avez fermée."
+            "value" : "Redémarre l'activité en direct de la séance si tu l'as fermée."
           }
         },
         "it" : {
@@ -84127,7 +84127,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Перезапускает Live Activity тренировки, если вы её закрыли."
+            "value" : "Перезапускает Live Activity тренировки, если она была закрыта."
           }
         },
         "zh-Hans" : {
@@ -84406,7 +84406,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Restauration de vos séances, plans, profil et historique de santé depuis iCloud..."
+            "value" : "Restauration de tes séances, plans, profil et historique de santé depuis iCloud..."
           }
         },
         "it" : {
@@ -87473,7 +87473,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistre votre niveau de forme sélectionné et passe à l'étape suivante du profil."
+            "value" : "Enregistre ton niveau de forme sélectionné et passe à l'étape suivante du profil."
           }
         },
         "it" : {
@@ -87537,7 +87537,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistre votre genre sélectionné et passe à l'étape suivante du profil."
+            "value" : "Enregistre ton genre sélectionné et passe à l'étape suivante du profil."
           }
         },
         "it" : {
@@ -87595,7 +87595,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistre votre objectif d'entraînement sélectionné et entre dans l'app."
+            "value" : "Enregistre ton objectif d'entraînement sélectionné et entre dans l'app."
           }
         },
         "it" : {
@@ -87723,7 +87723,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistrement de votre profil et fin de la configuration..."
+            "value" : "Enregistrement de ton profil et fin de la configuration..."
           }
         },
         "it" : {
@@ -89362,7 +89362,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Signalez un problème ou demandez une fonctionnalité. Les diagnostics anonymes, liés à un identifiant d'installation aléatoire et jamais à votre compte, sont toujours actifs ; le rapport de plantage ci-dessus n'est envoyé que si vous touchez Envoyer."
+            "value" : "Signale un problème ou demande une fonctionnalité. Les diagnostics anonymes, liés à un identifiant d'installation aléatoire et jamais à ton compte, sont toujours actifs ; le rapport de plantage ci-dessus n'est envoyé que si tu touches Envoyer."
           }
         },
         "it" : {
@@ -89392,7 +89392,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сообщайте о проблемах или предлагайте функции. Анонимная диагностика привязана к случайному идентификатору установки, а не к вашей учётной записи, и работает всегда; отчёт о сбое отсюда отправляется, только когда вы нажимаете «Отправить»."
+            "value" : "Сообщай о проблемах или предлагай функции. Анонимная диагностика привязана к случайному идентификатору установки, а не к твоей учётной записи, и работает всегда; отчёт о сбое отсюда отправляется, только когда ты нажимаешь «Отправить»."
           }
         },
         "zh-Hans" : {
@@ -90931,7 +90931,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Définissez l'un de vos splits comme actif."
+            "value" : "Définis l'un de tes splits comme actif."
           }
         },
         "it" : {
@@ -90991,7 +90991,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Définissez votre cardio préféré"
+            "value" : "Définis ton cardio préféré"
           }
         },
         "it" : {
@@ -91242,7 +91242,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Définit votre humeur avant la séance."
+            "value" : "Définit ton humeur avant la séance."
           }
         },
         "it" : {
@@ -93836,7 +93836,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche une activité en direct sur l'écran verrouillé pendant votre séance."
+            "value" : "Affiche une activité en direct sur l'écran verrouillé pendant ta séance."
           }
         },
         "it" : {
@@ -94092,7 +94092,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche tous vos programmes d'entraînement."
+            "value" : "Affiche tous tes programmes d'entraînement."
           }
         },
         "it" : {
@@ -94122,7 +94122,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Показывает все ваши планы тренировок."
+            "value" : "Показывает все твои планы тренировок."
           }
         },
         "zh-Hans" : {
@@ -94342,7 +94342,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche les détails de votre programme d'entraînement le plus récent."
+            "value" : "Affiche les détails de ton programme d'entraînement le plus récent."
           }
         },
         "it" : {
@@ -94406,7 +94406,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche les détails de votre séance la plus récente."
+            "value" : "Affiche les détails de ta séance la plus récente."
           }
         },
         "it" : {
@@ -94844,7 +94844,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche les options pour prendre, sélectionner ou supprimer votre photo de profil."
+            "value" : "Affiche les options pour prendre, sélectionner ou supprimer ta photo de profil."
           }
         },
         "it" : {
@@ -96171,7 +96171,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche votre split d'entraînement actif."
+            "value" : "Affiche ton split d'entraînement actif."
           }
         },
         "it" : {
@@ -96201,7 +96201,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Показывает ваш активный сплит."
+            "value" : "Показывает твой активный сплит."
           }
         },
         "zh-Hans" : {
@@ -96235,7 +96235,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche vos statistiques de séance Apple Santé actuelles."
+            "value" : "Affiche tes statistiques de séance Apple Santé actuelles."
           }
         },
         "it" : {
@@ -96299,7 +96299,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche votre dernier résumé de sommeil synchronisé."
+            "value" : "Affiche ton dernier résumé de sommeil synchronisé."
           }
         },
         "it" : {
@@ -96363,7 +96363,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche votre dernière séance terminée."
+            "value" : "Affiche ta dernière séance terminée."
           }
         },
         "it" : {
@@ -96427,7 +96427,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche votre programme d'entraînement le plus récent."
+            "value" : "Affiche ton programme d'entraînement le plus récent."
           }
         },
         "it" : {
@@ -96491,7 +96491,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche votre séance la plus récente."
+            "value" : "Affiche ta séance la plus récente."
           }
         },
         "it" : {
@@ -96555,7 +96555,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche votre programme d'entraînement utilisé le plus récemment."
+            "value" : "Affiche ton programme d'entraînement utilisé le plus récemment."
           }
         },
         "it" : {
@@ -96613,7 +96613,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche votre profil."
+            "value" : "Affiche ton profil."
           }
         },
         "it" : {
@@ -96643,7 +96643,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Показывает ваш профиль."
+            "value" : "Показывает твой профиль."
           }
         },
         "zh-Hans" : {
@@ -96677,7 +96677,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche votre historique de séances."
+            "value" : "Affiche ton historique de séances."
           }
         },
         "it" : {
@@ -96741,7 +96741,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Affiche les réglages de votre split d'entraînement."
+            "value" : "Affiche les réglages de ton split d'entraînement."
           }
         },
         "it" : {
@@ -98229,7 +98229,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sommeil. Mettez à jour les autorisations Apple Santé pour que vos résumés de sommeil apparaissent ici."
+            "value" : "Sommeil. Mets à jour les autorisations Apple Santé pour que tes résumés de sommeil apparaissent ici."
           }
         },
         "it" : {
@@ -98471,7 +98471,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Des substitutions plus intelligentes raisonnées à partir de votre contexte d'entraînement."
+            "value" : "Des substitutions plus intelligentes raisonnées à partir de ton contexte d'entraînement."
           }
         },
         "it" : {
@@ -98501,7 +98501,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Умные замены с учётом вашего тренировочного контекста."
+            "value" : "Умные замены с учётом твоего тренировочного контекста."
           }
         },
         "zh-Hans" : {
@@ -101720,7 +101720,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Démarre la séance du jour de votre split actif."
+            "value" : "Démarre la séance du jour de ton split actif."
           }
         },
         "it" : {
@@ -102420,7 +102420,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pas. Mettez à jour les autorisations Apple Santé pour que vos statistiques de santé apparaissent ici."
+            "value" : "Pas. Mets à jour les autorisations Apple Santé pour que tes statistiques de santé apparaissent ici."
           }
         },
         "it" : {
@@ -103784,7 +103784,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Résume vos statistiques de santé pour un jour spécifique."
+            "value" : "Résume tes statistiques de santé pour un jour spécifique."
           }
         },
         "it" : {
@@ -103848,7 +103848,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Résume vos statistiques de santé pour aujourd'hui."
+            "value" : "Résume tes statistiques de santé pour aujourd'hui."
           }
         },
         "it" : {
@@ -104596,7 +104596,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Synchronisation de vos données"
+            "value" : "Synchronisation de tes données"
           }
         },
         "it" : {
@@ -104626,7 +104626,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Синхронизируем ваши данные"
+            "value" : "Синхронизируем твои данные"
           }
         },
         "zh-Hans" : {
@@ -104960,7 +104960,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Touchez OK pour enregistrer votre séance. Les suggestions que vous n'avez ni acceptées ni rejetées sont reportées pour que vous les examiniez plus tard."
+            "value" : "Touche OK pour enregistrer ta séance. Les suggestions que tu n'as ni acceptées ni rejetées sont reportées pour que tu les examines plus tard."
           }
         },
         "it" : {
@@ -104990,7 +104990,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Нажмите «Готово», чтобы сохранить тренировку. Рекомендации, которые вы не приняли и не отклонили, будут отложены до следующего раза."
+            "value" : "Нажми «Готово», чтобы сохранить тренировку. Рекомендации, которые не приняты и не отклонены, будут отложены до следующего раза."
           }
         },
         "zh-Hans" : {
@@ -105212,7 +105212,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Touchez le bouton %@ pour démarrer votre première séance."
+            "value" : "Touche le bouton %@ pour démarrer ta première séance."
           }
         },
         "it" : {
@@ -105464,7 +105464,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Touchez pour voir votre historique d'objectifs."
+            "value" : "Touche pour voir ton historique d'objectifs."
           }
         },
         "it" : {
@@ -106542,7 +106542,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique une statistique santé pour un jour spécifique."
+            "value" : "T'indique une statistique santé pour un jour spécifique."
           }
         },
         "it" : {
@@ -106606,7 +106606,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique une statistique santé pour aujourd'hui."
+            "value" : "T'indique une statistique santé pour aujourd'hui."
           }
         },
         "it" : {
@@ -106670,7 +106670,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous renseigne sur votre dernière séance d'entraînement."
+            "value" : "Te renseigne sur ta dernière séance d'entraînement."
           }
         },
         "it" : {
@@ -106700,7 +106700,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Рассказывает о вашей последней тренировке."
+            "value" : "Рассказывает о твоей последней тренировке."
           }
         },
         "zh-Hans" : {
@@ -106794,7 +106794,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique la distance parcourue à pied ou en course aujourd'hui."
+            "value" : "T'indique la distance parcourue à pied ou en course aujourd'hui."
           }
         },
         "it" : {
@@ -106824,7 +106824,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сообщает, сколько вы прошли или пробежали сегодня."
+            "value" : "Сообщает, сколько у тебя пройдено или пробежано сегодня."
           }
         },
         "zh-Hans" : {
@@ -106858,7 +106858,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique combien de calories vous avez brûlées aujourd'hui."
+            "value" : "T'indique combien de calories tu as brûlées aujourd'hui."
           }
         },
         "it" : {
@@ -106888,7 +106888,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сообщает, сколько калорий вы сожгли сегодня."
+            "value" : "Сообщает, сколько калорий у тебя сожжено сегодня."
           }
         },
         "zh-Hans" : {
@@ -106948,7 +106948,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сообщает, сколько воды вы выпили сегодня."
+            "value" : "Сообщает, сколько воды у тебя выпито сегодня."
           }
         },
         "zh-Hans" : {
@@ -106982,7 +106982,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique combien vous avez dormi aujourd'hui."
+            "value" : "T'indique combien tu as dormi aujourd'hui."
           }
         },
         "it" : {
@@ -107012,7 +107012,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сообщает, сколько вы спали."
+            "value" : "Сообщает, сколько сна у тебя было."
           }
         },
         "zh-Hans" : {
@@ -107164,7 +107164,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique où en est aujourd'hui votre objectif de pas actuel."
+            "value" : "T'indique où en est aujourd'hui ton objectif de pas actuel."
           }
         },
         "it" : {
@@ -107228,7 +107228,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique où en est votre objectif de poids actuel."
+            "value" : "T'indique où en est ton objectif de poids actuel."
           }
         },
         "it" : {
@@ -107468,7 +107468,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique ce que vous travaillez un jour spécifique."
+            "value" : "T'indique ce que tu travailles un jour spécifique."
           }
         },
         "it" : {
@@ -107498,7 +107498,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сообщает, что вы тренируете в выбранный день."
+            "value" : "Сообщает, что ты тренируешь в выбранный день."
           }
         },
         "zh-Hans" : {
@@ -107532,7 +107532,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique vos calories actives brûlées aujourd'hui."
+            "value" : "T'indique tes calories actives brûlées aujourd'hui."
           }
         },
         "it" : {
@@ -107596,7 +107596,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique votre condition d'entraînement actuelle."
+            "value" : "T'indique ta condition d'entraînement actuelle."
           }
         },
         "it" : {
@@ -107626,7 +107626,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сообщает ваш текущий статус тренировок."
+            "value" : "Сообщает твой текущий статус тренировок."
           }
         },
         "zh-Hans" : {
@@ -107718,7 +107718,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique votre dernier poids enregistré pour aujourd'hui."
+            "value" : "T'indique ton dernier poids enregistré pour aujourd'hui."
           }
         },
         "it" : {
@@ -107782,7 +107782,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique votre dernier poids enregistré."
+            "value" : "T'indique ton dernier poids enregistré."
           }
         },
         "it" : {
@@ -107906,7 +107906,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique vos calories au repos brûlées aujourd'hui."
+            "value" : "T'indique tes calories au repos brûlées aujourd'hui."
           }
         },
         "it" : {
@@ -108028,7 +108028,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous indique votre nombre de pas pour aujourd'hui."
+            "value" : "T'indique ton nombre de pas pour aujourd'hui."
           }
         },
         "it" : {
@@ -108146,7 +108146,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les modèles sont un point de départ. Vous pouvez modifier, ajouter ou supprimer des exercices après en avoir choisi un."
+            "value" : "Les modèles sont un point de départ. Tu peux modifier, ajouter ou supprimer des exercices après en avoir choisi un."
           }
         },
         "it" : {
@@ -109057,7 +109057,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ceci évalue les suggestions que vous avez utilisées dans cette séance."
+            "value" : "Ceci évalue les suggestions que tu as utilisées dans cette séance."
           }
         },
         "it" : {
@@ -109245,7 +109245,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cette suggestion se base sur les fois précédentes où vous avez enregistré cet exercice ou sur votre objectif de répétitions habituel."
+            "value" : "Cette suggestion se base sur les fois précédentes où tu as enregistré cet exercice ou sur ton objectif de répétitions habituel."
           }
         },
         "it" : {
@@ -109275,7 +109275,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Рекомендация построена на прошлых записях этого упражнения или на вашей обычной цели по повторениям."
+            "value" : "Рекомендация построена на прошлых записях этого упражнения или на твоей обычной цели по повторениям."
           }
         },
         "zh-Hans" : {
@@ -110129,7 +110129,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aujourd'hui, c'est jour de repos ! Profitez de votre récupération."
+            "value" : "Aujourd'hui, c'est jour de repos ! Profite de ta récupération."
           }
         },
         "it" : {
@@ -110193,7 +110193,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aujourd'hui, c'est votre jour de repos"
+            "value" : "Aujourd'hui, c'est ton jour de repos"
           }
         },
         "it" : {
@@ -110223,7 +110223,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня ваш день отдыха"
+            "value" : "Сегодня твой день отдыха"
           }
         },
         "zh-Hans" : {
@@ -110257,7 +110257,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aujourd'hui, vous avez brûlé %@ actives."
+            "value" : "Aujourd'hui, tu as brûlé %@ actives."
           }
         },
         "it" : {
@@ -110287,7 +110287,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня вы сожгли %@ активных."
+            "value" : "Сегодня у тебя сожжено %@ активных."
           }
         },
         "zh-Hans" : {
@@ -110321,7 +110321,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aujourd'hui, vous avez brûlé %@ au repos."
+            "value" : "Aujourd'hui, tu as brûlé %@ au repos."
           }
         },
         "it" : {
@@ -110351,7 +110351,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня вы сожгли %@ в покое."
+            "value" : "Сегодня у тебя сожжено %@ в покое."
           }
         },
         "zh-Hans" : {
@@ -110417,7 +110417,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня вы выпили %1$@ воды и достигли цели %2$@."
+            "value" : "Сегодня у тебя выпито %1$@ воды и достигнута цель %2$@."
           }
         },
         "zh-Hans" : {
@@ -110483,7 +110483,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня вы выпили %1$@ воды при цели %2$@."
+            "value" : "Сегодня у тебя выпито %1$@ воды при цели %2$@."
           }
         },
         "zh-Hans" : {
@@ -110543,7 +110543,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня вы выпили %@ воды."
+            "value" : "Сегодня у тебя выпито %@ воды."
           }
         },
         "zh-Hans" : {
@@ -110641,7 +110641,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aujourd'hui, vous avez brûlé %1$@ au total, dont %2$@ actives."
+            "value" : "Aujourd'hui, tu as brûlé %1$@ au total, dont %2$@ actives."
           }
         },
         "it" : {
@@ -110671,7 +110671,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня вы сожгли %1$@ всего, из них %2$@ активных."
+            "value" : "Сегодня у тебя сожжено %1$@ всего, из них %2$@ активных."
           }
         },
         "zh-Hans" : {
@@ -110705,7 +110705,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aujourd'hui, vous avez parcouru %@."
+            "value" : "Aujourd'hui, tu as parcouru %@."
           }
         },
         "it" : {
@@ -110735,7 +110735,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня вы преодолели %@."
+            "value" : "Сегодня у тебя преодолено %@."
           }
         },
         "zh-Hans" : {
@@ -110769,7 +110769,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aujourd'hui, vous avez fait %@ pas."
+            "value" : "Aujourd'hui, tu as fait %@ pas."
           }
         },
         "it" : {
@@ -110799,7 +110799,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня вы прошли %@ шагов."
+            "value" : "Сегодня у тебя пройдено %@ шагов."
           }
         },
         "zh-Hans" : {
@@ -111779,7 +111779,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Indique si vous avez pris une boisson avant la séance."
+            "value" : "Indique si tu as pris une boisson avant la séance."
           }
         },
         "it" : {
@@ -112463,7 +112463,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Entraînez tout votre corps à chaque séance"
+            "value" : "Entraîne tout ton corps à chaque séance"
           }
         },
         "it" : {
@@ -112843,7 +112843,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L'entraînement est actuellement en pause en raison de votre condition active."
+            "value" : "L'entraînement est actuellement en pause en raison de ta condition active."
           }
         },
         "it" : {
@@ -114392,7 +114392,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible de se connecter à iCloud pour le moment. Veuillez vérifier votre connexion Internet et réessayer."
+            "value" : "Impossible de se connecter à iCloud pour le moment. Vérifie ta connexion Internet et réessaie."
           }
         },
         "it" : {
@@ -115888,7 +115888,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mettez à jour les autorisations Apple Santé pour que vos statistiques de santé apparaissent ici."
+            "value" : "Mets à jour les autorisations Apple Santé pour que tes statistiques de santé apparaissent ici."
           }
         },
         "it" : {
@@ -116204,7 +116204,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Met à jour votre condition d'entraînement actuelle."
+            "value" : "Met à jour ta condition d'entraînement actuelle."
           }
         },
         "it" : {
@@ -116234,7 +116234,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Обновляет ваш текущий статус тренировок."
+            "value" : "Обновляет твой текущий статус тренировок."
           }
         },
         "zh-Hans" : {
@@ -116268,7 +116268,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Met à jour votre énergie d'avant-séance."
+            "value" : "Met à jour ton énergie d'avant-séance."
           }
         },
         "it" : {
@@ -117948,7 +117948,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Villain Arc peut exporter vos séances terminées vers Apple Santé et lire d'autres statistiques de séance pour améliorer les suggestions et enrichir l'app dans son ensemble."
+            "value" : "Villain Arc peut exporter tes séances terminées vers Apple Santé et lire d'autres statistiques de séance pour améliorer les suggestions et enrichir l'app dans son ensemble."
           }
         },
         "it" : {
@@ -118006,7 +118006,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Villain Arc peut l'utiliser pour adapter les valeurs par défaut du plan, les suggestions et le coaching futur à votre façon de vous entraîner."
+            "value" : "Villain Arc peut l'utiliser pour adapter les valeurs par défaut du plan, les suggestions et le coaching futur à ta façon de t'entraîner."
           }
         },
         "it" : {
@@ -118036,7 +118036,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Villain Arc использует это, чтобы подстроить настройки планов, рекомендации и будущие подсказки под ваш стиль тренировок."
+            "value" : "Villain Arc использует это, чтобы подстроить настройки планов, рекомендации и будущие подсказки под твой стиль тренировок."
           }
         },
         "zh-Hans" : {
@@ -118070,7 +118070,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Villain Arc n'a pas pu accéder à votre compte iCloud. Assurez-vous d'être connecté à iCloud et que l'accès à CloudKit n'est pas restreint."
+            "value" : "Villain Arc n'a pas pu accéder à ton compte iCloud. Assure-toi d'être connecté à iCloud et que l'accès à CloudKit n'est pas restreint."
           }
         },
         "it" : {
@@ -118100,7 +118100,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Villain Arc не смог получить доступ к вашей учётной записи iCloud. Убедитесь, что вы вошли в iCloud и доступ к CloudKit не ограничен."
+            "value" : "Villain Arc не смог получить доступ к твоей учётной записи iCloud. Убедись, что вход в iCloud выполнен и доступ к CloudKit не ограничен."
           }
         },
         "zh-Hans" : {
@@ -118134,7 +118134,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Villain Arc a besoin d'autorisations Apple Santé supplémentaires pour activer les fonctionnalités ajoutées depuis votre dernière mise à jour et prendre en charge les futures fonctionnalités Santé."
+            "value" : "Villain Arc a besoin d'autorisations Apple Santé supplémentaires pour activer les fonctionnalités ajoutées depuis ta dernière mise à jour et prendre en charge les futures fonctionnalités Santé."
           }
         },
         "it" : {
@@ -118198,7 +118198,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Villain Arc a besoin du Wi-Fi pour la configuration initiale afin de synchroniser vos données de séance."
+            "value" : "Villain Arc a besoin du Wi-Fi pour la configuration initiale afin de synchroniser tes données de séance."
           }
         },
         "it" : {
@@ -118378,7 +118378,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Villain Arc utilise votre localisation pour enregistrer des itinéraires GPS de courses, marches et randonnées en extérieur. Votre localisation n'est utilisée que pendant une séance de cardio active."
+            "value" : "Villain Arc utilise ta localisation pour enregistrer des itinéraires GPS de courses, marches et randonnées en extérieur. Ta localisation n'est utilisée que pendant une séance de cardio active."
           }
         },
         "it" : {
@@ -118812,7 +118812,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous démarrer un minuteur de repos pour %@ reflétant le nouveau temps de repos de la série ?"
+            "value" : "Veux-tu démarrer un minuteur de repos pour %@ reflétant le nouveau temps de repos de la série ?"
           }
         },
         "it" : {
@@ -118876,7 +118876,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Voulez-vous mettre à jour le minuteur de repos pour refléter le nouveau temps de repos de la série ?"
+            "value" : "Veux-tu mettre à jour le minuteur de repos pour refléter le nouveau temps de repos de la série ?"
           }
         },
         "it" : {
@@ -119060,7 +119060,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les entrées d'eau apparaîtront ici après que vous les aurez ajoutées ou synchronisées."
+            "value" : "Les entrées d'eau apparaîtront ici après que tu les auras ajoutées ou synchronisées."
           }
         },
         "it" : {
@@ -120899,7 +120899,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel type de plan voulez-vous ?"
+            "value" : "Quel type de plan veux-tu ?"
           }
         },
         "it" : {
@@ -120929,7 +120929,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Какой план вам нужен?"
+            "value" : "Какой план тебе нужен?"
           }
         },
         "zh-Hans" : {
@@ -121087,7 +121087,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel doit être votre objectif de pas ?"
+            "value" : "Quel doit être ton objectif de pas ?"
           }
         },
         "it" : {
@@ -121209,7 +121209,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel type de split voulez-vous créer ?"
+            "value" : "Quel type de split veux-tu créer ?"
           }
         },
         "it" : {
@@ -121273,7 +121273,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel poids souhaitez-vous enregistrer ?"
+            "value" : "Quel poids souhaites-tu enregistrer ?"
           }
         },
         "it" : {
@@ -121391,7 +121391,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel est votre niveau de forme ?"
+            "value" : "Quel est ton niveau de forme ?"
           }
         },
         "it" : {
@@ -121421,7 +121421,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Какой у вас уровень подготовки?"
+            "value" : "Какой у тебя уровень подготовки?"
           }
         },
         "zh-Hans" : {
@@ -121455,7 +121455,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel est votre genre ?"
+            "value" : "Quel est ton genre ?"
           }
         },
         "it" : {
@@ -121485,7 +121485,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ваш пол?"
+            "value" : "Твой пол?"
           }
         },
         "zh-Hans" : {
@@ -121519,7 +121519,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quelle est votre taille ?"
+            "value" : "Quelle est ta taille ?"
           }
         },
         "it" : {
@@ -121549,7 +121549,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ваш рост?"
+            "value" : "Твой рост?"
           }
         },
         "zh-Hans" : {
@@ -121583,7 +121583,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comment vous appelez-vous ?"
+            "value" : "Comment t'appelles-tu ?"
           }
         },
         "it" : {
@@ -121613,7 +121613,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Как вас зовут?"
+            "value" : "Как тебя зовут?"
           }
         },
         "zh-Hans" : {
@@ -121641,7 +121641,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lorsque « Remplir automatiquement les objectifs du plan » est activé, les séances lancées depuis un plan préremplissent chaque série avec le poids, les répétitions et le repos prescrits. « Afficher les précédents par défaut » détermine si la colonne de référence commence sur la performance précédente plutôt que sur l'objectif du plan ; « Source précédente » choisit soit votre dernière séance correspondante, soit la dernière séance terminée du même plan."
+            "value" : "Lorsque « Remplir automatiquement les objectifs du plan » est activé, les séances lancées depuis un plan préremplissent chaque série avec le poids, les répétitions et le repos prescrits. « Afficher les précédents par défaut » détermine si la colonne de référence commence sur la performance précédente plutôt que sur l'objectif du plan ; « Source précédente » choisit soit ta dernière séance correspondante, soit la dernière séance terminée du même plan."
           }
         },
         "it" : {
@@ -121883,7 +121883,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lorsque vous avez un plan, affichez par défaut votre dernière performance dans la colonne de référence plutôt que l'objectif du plan. Touchez l'en-tête de la colonne pendant une séance pour changer."
+            "value" : "Lorsque tu as un plan, affiche par défaut ta dernière performance dans la colonne de référence plutôt que l'objectif du plan. Touche l'en-tête de la colonne pendant une séance pour changer."
           }
         },
         "it" : {
@@ -121947,7 +121947,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quelle est votre date d'anniversaire ?"
+            "value" : "Quelle est ta date d'anniversaire ?"
           }
         },
         "it" : {
@@ -121977,7 +121977,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Когда вы родились?"
+            "value" : "Когда у тебя день рождения?"
           }
         },
         "zh-Hans" : {
@@ -122012,7 +122012,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quelle séance de cardio souhaitez-vous ouvrir ?"
+            "value" : "Quelle séance de cardio souhaites-tu ouvrir ?"
           }
         },
         "it" : {
@@ -122076,7 +122076,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel historique d'exercice souhaitez-vous ouvrir ?"
+            "value" : "Quel historique d'exercice souhaites-tu ouvrir ?"
           }
         },
         "it" : {
@@ -122204,7 +122204,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel exercice souhaitez-vous ouvrir ?"
+            "value" : "Quel exercice souhaites-tu ouvrir ?"
           }
         },
         "it" : {
@@ -122268,7 +122268,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel exercice souhaitez-vous mettre à jour ?"
+            "value" : "Quel exercice souhaites-tu mettre à jour ?"
           }
         },
         "it" : {
@@ -122460,7 +122460,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel programme d'entraînement souhaitez-vous supprimer ?"
+            "value" : "Quel programme d'entraînement souhaites-tu supprimer ?"
           }
         },
         "it" : {
@@ -122524,7 +122524,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel programme d'entraînement souhaitez-vous modifier ?"
+            "value" : "Quel programme d'entraînement souhaites-tu modifier ?"
           }
         },
         "it" : {
@@ -122588,7 +122588,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel programme d'entraînement souhaitez-vous ouvrir ?"
+            "value" : "Quel programme d'entraînement souhaites-tu ouvrir ?"
           }
         },
         "it" : {
@@ -122652,7 +122652,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel programme d'entraînement souhaitez-vous mettre à jour ?"
+            "value" : "Quel programme d'entraînement souhaites-tu mettre à jour ?"
           }
         },
         "it" : {
@@ -122716,7 +122716,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quel programme d'entraînement souhaitez-vous utiliser ?"
+            "value" : "Quel programme d'entraînement souhaites-tu utiliser ?"
           }
         },
         "it" : {
@@ -122780,7 +122780,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quelle séance souhaitez-vous supprimer ?"
+            "value" : "Quelle séance souhaites-tu supprimer ?"
           }
         },
         "it" : {
@@ -122844,7 +122844,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quelle séance souhaitez-vous ouvrir ?"
+            "value" : "Quelle séance souhaites-tu ouvrir ?"
           }
         },
         "it" : {
@@ -122908,7 +122908,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quelle séance souhaitez-vous enregistrer comme plan ?"
+            "value" : "Quelle séance souhaites-tu enregistrer comme plan ?"
           }
         },
         "it" : {
@@ -125442,7 +125442,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Clôturez cet objectif de maintien et enregistrez sa plage dans votre historique."
+            "value" : "Clôture cet objectif de maintien et enregistre sa plage dans ton historique."
           }
         },
         "it" : {
@@ -126056,7 +126056,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez déjà une séance de cardio active."
+            "value" : "Tu as déjà une séance de cardio active."
           }
         },
         "it" : {
@@ -126086,7 +126086,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас уже есть активное кардио."
+            "value" : "У тебя уже есть активное кардио."
           }
         },
         "zh-Hans" : {
@@ -126120,7 +126120,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous travaillez actuellement sur un programme d'entraînement. Terminez-le d'abord."
+            "value" : "Tu travailles actuellement sur un programme d'entraînement. Termine-le d'abord."
           }
         },
         "it" : {
@@ -126150,7 +126150,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сейчас вы работаете над планом тренировки. Сначала завершите его."
+            "value" : "Сейчас ты работаешь над планом тренировки. Сначала заверши его."
           }
         },
         "zh-Hans" : {
@@ -126184,7 +126184,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous êtes en pleine séance, terminez-la d'abord."
+            "value" : "Tu es en pleine séance, termine-la d'abord."
           }
         },
         "it" : {
@@ -126248,7 +126248,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous ciblez : %@."
+            "value" : "Tu cibles : %@."
           }
         },
         "it" : {
@@ -126278,7 +126278,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы прорабатываете: %@."
+            "value" : "Ты прорабатываешь: %@."
           }
         },
         "zh-Hans" : {
@@ -126312,7 +126312,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous brûlez %1$@ %2$@ le %3$@."
+            "value" : "Tu brûles %1$@ %2$@ le %3$@."
           }
         },
         "it" : {
@@ -126342,7 +126342,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы сжигаете %1$@ %2$@ (%3$@)."
+            "value" : "Ты сжигаешь %1$@ %2$@ (%3$@)."
           }
         },
         "zh-Hans" : {
@@ -126376,7 +126376,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "C'est le %1$@ que vous brûlez le plus de calories. %2$@ %3$@."
+            "value" : "C'est le %1$@ que tu brûles le plus de calories. %2$@ %3$@."
           }
         },
         "it" : {
@@ -126406,7 +126406,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Больше всего калорий вы сжигаете (%1$@). %2$@ %3$@."
+            "value" : "Больше всего калорий ты сжигаешь (%1$@). %2$@ %3$@."
           }
         },
         "zh-Hans" : {
@@ -126440,7 +126440,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "vous avez brûlé %@ au total"
+            "value" : "tu as brûlé %@ au total"
           }
         },
         "it" : {
@@ -126470,7 +126470,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "вы сожгли %@ всего"
+            "value" : "у тебя сожжено %@ всего"
           }
         },
         "zh-Hans" : {
@@ -126504,7 +126504,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "vous avez parcouru %@"
+            "value" : "tu as parcouru %@"
           }
         },
         "it" : {
@@ -126534,7 +126534,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "вы преодолели %@"
+            "value" : "у тебя преодолено %@"
           }
         },
         "zh-Hans" : {
@@ -126626,7 +126626,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore de programme d'entraînement terminé."
+            "value" : "Tu n'as pas encore de programme d'entraînement terminé."
           }
         },
         "it" : {
@@ -126656,7 +126656,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас пока нет завершённых планов тренировок."
+            "value" : "У тебя пока нет завершённых планов тренировок."
           }
         },
         "zh-Hans" : {
@@ -126690,7 +126690,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas d'entrée de poids pour %@."
+            "value" : "Tu n'as pas d'entrée de poids pour %@."
           }
         },
         "it" : {
@@ -126754,7 +126754,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas d'entrée de poids pour aujourd'hui."
+            "value" : "Tu n'as pas d'entrée de poids pour aujourd'hui."
           }
         },
         "it" : {
@@ -126818,7 +126818,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aucun programme d'entraînement ne vous est attribué pour aujourd'hui."
+            "value" : "Aucun programme d'entraînement ne t'est attribué pour aujourd'hui."
           }
         },
         "it" : {
@@ -126882,7 +126882,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas de données de calories actives pour aujourd'hui."
+            "value" : "Tu n'as pas de données de calories actives pour aujourd'hui."
           }
         },
         "it" : {
@@ -126940,7 +126940,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas de séance de cardio active."
+            "value" : "Tu n'as pas de séance de cardio active."
           }
         },
         "it" : {
@@ -126970,7 +126970,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас нет активного кардио."
+            "value" : "У тебя нет активного кардио."
           }
         },
         "zh-Hans" : {
@@ -127030,7 +127030,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас нет активной цели по воде."
+            "value" : "У тебя нет активной цели по воде."
           }
         },
         "zh-Hans" : {
@@ -127088,7 +127088,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас нет активной цели по сну."
+            "value" : "У тебя нет активной цели по сну."
           }
         },
         "zh-Hans" : {
@@ -127122,7 +127122,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas d'objectif de pas actif."
+            "value" : "Tu n'as pas d'objectif de pas actif."
           }
         },
         "it" : {
@@ -127152,7 +127152,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас нет активной цели по шагам."
+            "value" : "У тебя нет активной цели по шагам."
           }
         },
         "zh-Hans" : {
@@ -127186,7 +127186,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas d'objectif de poids actif."
+            "value" : "Tu n'as pas d'objectif de poids actif."
           }
         },
         "it" : {
@@ -127216,7 +127216,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас нет активной цели по весу."
+            "value" : "У тебя нет активной цели по весу."
           }
         },
         "zh-Hans" : {
@@ -127250,7 +127250,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas de split d'entraînement actif."
+            "value" : "Tu n'as pas de split d'entraînement actif."
           }
         },
         "it" : {
@@ -127280,7 +127280,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас нет активного сплита."
+            "value" : "У тебя нет активного сплита."
           }
         },
         "zh-Hans" : {
@@ -127314,7 +127314,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore d'entrées de poids."
+            "value" : "Tu n'as pas encore d'entrées de poids."
           }
         },
         "it" : {
@@ -127344,7 +127344,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас пока нет записей веса."
+            "value" : "У тебя пока нет записей веса."
           }
         },
         "zh-Hans" : {
@@ -127378,7 +127378,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore de programmes d'entraînement."
+            "value" : "Tu n'as pas encore de programmes d'entraînement."
           }
         },
         "it" : {
@@ -127408,7 +127408,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас пока нет планов тренировок."
+            "value" : "У тебя пока нет планов тренировок."
           }
         },
         "zh-Hans" : {
@@ -127442,7 +127442,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore de splits d'entraînement."
+            "value" : "Tu n'as pas encore de splits d'entraînement."
           }
         },
         "it" : {
@@ -127472,7 +127472,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас пока нет сплитов."
+            "value" : "У тебя пока нет сплитов."
           }
         },
         "zh-Hans" : {
@@ -127506,7 +127506,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas de données de calories brûlées pour %@."
+            "value" : "Tu n'as pas de données de calories brûlées pour %@."
           }
         },
         "it" : {
@@ -127570,7 +127570,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore de données de calories brûlées pour aujourd'hui."
+            "value" : "Tu n'as pas encore de données de calories brûlées pour aujourd'hui."
           }
         },
         "it" : {
@@ -127634,7 +127634,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas de données de distance pour %@."
+            "value" : "Tu n'as pas de données de distance pour %@."
           }
         },
         "it" : {
@@ -127698,7 +127698,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore de données de distance pour aujourd'hui."
+            "value" : "Tu n'as pas encore de données de distance pour aujourd'hui."
           }
         },
         "it" : {
@@ -127762,7 +127762,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore de données de santé pour %@."
+            "value" : "Tu n'as pas encore de données de santé pour %@."
           }
         },
         "it" : {
@@ -127826,7 +127826,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore de données de santé pour aujourd'hui."
+            "value" : "Tu n'as pas encore de données de santé pour aujourd'hui."
           }
         },
         "it" : {
@@ -128124,7 +128124,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas de données de calories au repos pour aujourd'hui."
+            "value" : "Tu n'as pas de données de calories au repos pour aujourd'hui."
           }
         },
         "it" : {
@@ -128188,7 +128188,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas de données de sommeil pour %@."
+            "value" : "Tu n'as pas de données de sommeil pour %@."
           }
         },
         "it" : {
@@ -128252,7 +128252,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore de données de sommeil de la nuit dernière."
+            "value" : "Tu n'as pas encore de données de sommeil de la nuit dernière."
           }
         },
         "it" : {
@@ -128316,7 +128316,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas de données de pas pour %@."
+            "value" : "Tu n'as pas de données de pas pour %@."
           }
         },
         "it" : {
@@ -128380,7 +128380,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore de données de pas pour aujourd'hui."
+            "value" : "Tu n'as pas encore de données de pas pour aujourd'hui."
           }
         },
         "it" : {
@@ -128562,7 +128562,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez %1$@ et %2$@ sans données."
+            "value" : "Tu as %1$@ et %2$@ sans données."
           }
         },
         "it" : {
@@ -128592,7 +128592,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас %1$@ и %2$@ без данных."
+            "value" : "У тебя %1$@ и %2$@ без данных."
           }
         },
         "zh-Hans" : {
@@ -128626,7 +128626,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez %@ avec des données, mais elle n'est pas marquée comme terminée."
+            "value" : "Tu as %@ avec des données, mais elle n'est pas marquée comme terminée."
           }
         },
         "it" : {
@@ -128656,7 +128656,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас %@ с данными, но без отметки о выполнении."
+            "value" : "У тебя %@ с данными, но без отметки о выполнении."
           }
         },
         "zh-Hans" : {
@@ -128690,7 +128690,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez %@.\nEnregistrez-les ou supprimez-les avant de terminer."
+            "value" : "Tu as %@.\nEnregistre-les ou supprime-les avant de terminer."
           }
         },
         "it" : {
@@ -128720,7 +128720,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас %@.\nЗапишите их или удалите перед завершением."
+            "value" : "У тебя %@.\nЗапиши их или удали перед завершением."
           }
         },
         "zh-Hans" : {
@@ -128754,7 +128754,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez %lld séries vides.\nEnregistrez-les ou supprimez-les avant de terminer."
+            "value" : "Tu as %lld séries vides.\nEnregistre-les ou supprime-les avant de terminer."
           }
         },
         "it" : {
@@ -128818,7 +128818,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez %lld séries avec des données, mais elles ne sont pas marquées comme terminées."
+            "value" : "Tu as %lld séries avec des données, mais elles ne sont pas marquées comme terminées."
           }
         },
         "it" : {
@@ -128882,7 +128882,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez 1 série vide.\nEnregistrez-la ou supprimez-la avant de terminer."
+            "value" : "Tu as 1 série vide.\nEnregistre-la ou supprime-la avant de terminer."
           }
         },
         "it" : {
@@ -128912,7 +128912,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас 1 пустой подход.\nЗапишите его или удалите перед завершением."
+            "value" : "У тебя 1 пустой подход.\nЗапиши его или удали перед завершением."
           }
         },
         "zh-Hans" : {
@@ -128946,7 +128946,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez 1 série avec des données, mais elle n'est pas marquée comme terminée."
+            "value" : "Tu as 1 série avec des données, mais elle n'est pas marquée comme terminée."
           }
         },
         "it" : {
@@ -128976,7 +128976,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас 1 подход с данными, но без отметки о выполнении."
+            "value" : "У тебя 1 подход с данными, но без отметки о выполнении."
           }
         },
         "zh-Hans" : {
@@ -129010,7 +129010,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas terminé de séance."
+            "value" : "Tu n'as pas terminé de séance."
           }
         },
         "it" : {
@@ -129040,7 +129040,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "У вас нет завершённых тренировок."
+            "value" : "У тебя нет завершённых тренировок."
           }
         },
         "zh-Hans" : {
@@ -129074,7 +129074,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous n'avez pas encore terminé d'exercice avec un historique enregistré."
+            "value" : "Tu n'as pas encore terminé d'exercice avec un historique enregistré."
           }
         },
         "it" : {
@@ -129104,7 +129104,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы пока не выполнили ни одного упражнения с отслеживаемой историей."
+            "value" : "У тебя пока не выполнено ни одного упражнения с отслеживаемой историей."
           }
         },
         "zh-Hans" : {
@@ -129162,7 +129162,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сегодня вы ещё не записывали воду."
+            "value" : "Сегодня у тебя ещё нет записей воды."
           }
         },
         "zh-Hans" : {
@@ -129196,7 +129196,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez fait %1$@ pas et atteint votre objectif de %2$@ pas."
+            "value" : "Tu as fait %1$@ pas et atteint ton objectif de %2$@ pas."
           }
         },
         "it" : {
@@ -129226,7 +129226,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы прошли %1$@ шагов и перекрыли цель в %2$@ шагов."
+            "value" : "У тебя пройдено %1$@ шагов и перекрыта цель в %2$@ шагов."
           }
         },
         "zh-Hans" : {
@@ -129292,7 +129292,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Прошлой ночью вы достигли цели по сну: %1$@ при цели %2$@."
+            "value" : "Прошлой ночью цель по сну достигнута: %1$@ при цели %2$@."
           }
         },
         "zh-Hans" : {
@@ -129326,7 +129326,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez enregistré %1$@ et atteint votre objectif de %2$@."
+            "value" : "Tu as enregistré %1$@ et atteint ton objectif de %2$@."
           }
         },
         "it" : {
@@ -129356,7 +129356,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы записали %1$@ и перекрыли цель %2$@."
+            "value" : "Записано %1$@, и цель %2$@ перекрыта."
           }
         },
         "zh-Hans" : {
@@ -129390,7 +129390,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez enregistré %1$@ et dépassé votre objectif de %2$@."
+            "value" : "Tu as enregistré %1$@ et dépassé ton objectif de %2$@."
           }
         },
         "it" : {
@@ -129420,7 +129420,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы записали %1$@ и превысили цель %2$@."
+            "value" : "Записано %1$@, и цель %2$@ превышена."
           }
         },
         "zh-Hans" : {
@@ -129454,7 +129454,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez enregistré %@ et clôturé cet objectif."
+            "value" : "Tu as enregistré %@ et clôturé cet objectif."
           }
         },
         "it" : {
@@ -129484,7 +129484,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы записали %@ и завершили эту цель."
+            "value" : "Записано %@, и эта цель завершена."
           }
         },
         "zh-Hans" : {
@@ -129518,7 +129518,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous devez lancer et terminer la configuration de l'app avant de pouvoir utiliser cette fonctionnalité."
+            "value" : "Tu dois lancer et terminer la configuration de l'app avant de pouvoir utiliser cette fonctionnalité."
           }
         },
         "it" : {
@@ -129577,7 +129577,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous êtes venu alors que vous vous sentiez %@."
+            "value" : "Tu es venu alors que tu te sentais %@."
           }
         },
         "it" : {
@@ -129607,7 +129607,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы всё равно пришли на тренировку. Состояние: %@."
+            "value" : "У тебя всё равно получилось прийти на тренировку. Состояние: %@."
           }
         },
         "zh-Hans" : {
@@ -129641,7 +129641,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous dormez %1$@ le %2$@."
+            "value" : "Tu dors %1$@ le %2$@."
           }
         },
         "it" : {
@@ -129671,7 +129671,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы спите %1$@ (%2$@)."
+            "value" : "Ты спишь %1$@ (%2$@)."
           }
         },
         "zh-Hans" : {
@@ -129705,7 +129705,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "C'est le %1$@ que vous dormez le plus. %2$@."
+            "value" : "C'est le %1$@ que tu dors le plus. %2$@."
           }
         },
         "it" : {
@@ -129735,7 +129735,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Больше всего вы спите (%1$@). %2$@."
+            "value" : "Больше всего ты спишь (%1$@). %2$@."
           }
         },
         "zh-Hans" : {
@@ -129769,7 +129769,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez dormi %@."
+            "value" : "Tu as dormi %@."
           }
         },
         "it" : {
@@ -129799,7 +129799,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы спали %@."
+            "value" : "У тебя было %@ сна."
           }
         },
         "zh-Hans" : {
@@ -129857,7 +129857,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В короткие тренировки вы вмещаете больше объёма — эффективно."
+            "value" : "В короткие тренировки ты вмещаешь больше объёма — эффективно."
           }
         },
         "zh-Hans" : {
@@ -129891,7 +129891,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "vous avez fait %@ pas"
+            "value" : "tu as fait %@ pas"
           }
         },
         "it" : {
@@ -129921,7 +129921,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "вы прошли %@ шагов"
+            "value" : "у тебя пройдено %@ шагов"
           }
         },
         "zh-Hans" : {
@@ -129979,7 +129979,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "После хорошего сна вы тренируетесь с большим объёмом."
+            "value" : "После хорошего сна ты тренируешься с большим объёмом."
           }
         },
         "zh-Hans" : {
@@ -130013,7 +130013,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous faites %1$@ pas le %2$@."
+            "value" : "Tu fais %1$@ pas le %2$@."
           }
         },
         "it" : {
@@ -130043,7 +130043,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы проходите %1$@ шагов (%2$@)."
+            "value" : "Ты проходишь %1$@ шагов (%2$@)."
           }
         },
         "zh-Hans" : {
@@ -130077,7 +130077,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "C'est le %1$@ que vous marchez le plus. %2$@ pas."
+            "value" : "C'est le %1$@ que tu marches le plus. %2$@ pas."
           }
         },
         "it" : {
@@ -130107,7 +130107,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Больше всего вы ходите (%1$@). %2$@ шагов."
+            "value" : "Больше всего ты ходишь (%1$@). %2$@ шагов."
           }
         },
         "zh-Hans" : {
@@ -130141,7 +130141,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous vous entraînez déjà normalement."
+            "value" : "Tu t'entraînes déjà normalement."
           }
         },
         "it" : {
@@ -130171,7 +130171,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы уже тренируетесь как обычно."
+            "value" : "Ты уже тренируешься как обычно."
           }
         },
         "zh-Hans" : {
@@ -130205,7 +130205,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous êtes déjà en séance. Reprenez-la d'abord ou annulez-la."
+            "value" : "Tu es déjà en séance. Reprends-la d'abord ou annule-la."
           }
         },
         "it" : {
@@ -130269,7 +130269,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous brûlez %@ d'énergie ce mois-ci que le mois dernier."
+            "value" : "Tu brûles %@ d'énergie ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130299,7 +130299,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы сжигаете %@ энергии, что и в прошлом."
+            "value" : "В этом месяце ты сжигаешь %@ энергии, что и в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130333,7 +130333,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous brûlez %@ d'énergie ce mois-ci que le mois dernier."
+            "value" : "Tu brûles %@ d'énergie ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130363,7 +130363,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы сжигаете %@ энергии, чем в прошлом."
+            "value" : "В этом месяце ты сжигаешь %@ энергии, чем в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130397,7 +130397,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous brûlez environ la même quantité d'énergie ce mois-ci que le mois dernier."
+            "value" : "Tu brûles environ la même quantité d'énergie ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130427,7 +130427,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы сжигаете примерно столько же энергии, что и в прошлом."
+            "value" : "В этом месяце ты сжигаешь примерно столько же энергии, что и в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130461,7 +130461,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous brûlez moins d'énergie ce mois-ci que le mois dernier."
+            "value" : "Tu brûles moins d'énergie ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130491,7 +130491,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы сжигаете меньше энергии, чем в прошлом."
+            "value" : "В этом месяце ты сжигаешь меньше энергии, чем в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130525,7 +130525,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous brûlez plus d'énergie ce mois-ci que le mois dernier."
+            "value" : "Tu brûles plus d'énergie ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130555,7 +130555,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы сжигаете больше энергии, чем в прошлом."
+            "value" : "В этом месяце ты сжигаешь больше энергии, чем в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130583,7 +130583,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous modifiez actuellement ce programme d'entraînement. Si vous le supprimez, l'éditeur se fermera et la copie de travail sera abandonnée."
+            "value" : "Tu modifies actuellement ce programme d'entraînement. Si tu le supprimes, l'éditeur se fermera et la copie de travail sera abandonnée."
           }
         },
         "it" : {
@@ -130613,7 +130613,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сейчас вы редактируете этот план тренировки. Удаление закроет редактор и отбросит рабочую копию."
+            "value" : "Сейчас ты редактируешь этот план тренировки. Удаление закроет редактор и отбросит рабочую копию."
           }
         },
         "zh-Hans" : {
@@ -130647,7 +130647,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous dormez %@ ce mois-ci que le mois dernier."
+            "value" : "Tu dors %@ ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130677,7 +130677,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы спите %@, что и в прошлом."
+            "value" : "В этом месяце ты спишь %@, что и в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130711,7 +130711,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous dormez %@ ce mois-ci que le mois dernier."
+            "value" : "Tu dors %@ ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130741,7 +130741,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы спите %@, чем в прошлом."
+            "value" : "В этом месяце ты спишь %@, чем в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130775,7 +130775,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous dormez environ autant ce mois-ci que le mois dernier."
+            "value" : "Tu dors environ autant ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130805,7 +130805,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы спите примерно столько же, что и в прошлом."
+            "value" : "В этом месяце ты спишь примерно столько же, что и в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130839,7 +130839,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous dormez moins ce mois-ci que le mois dernier."
+            "value" : "Tu dors moins ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130869,7 +130869,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы спите меньше, чем в прошлом."
+            "value" : "В этом месяце ты спишь меньше, чем в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130903,7 +130903,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous dormez plus ce mois-ci que le mois dernier."
+            "value" : "Tu dors plus ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -130933,7 +130933,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы спите больше, чем в прошлом."
+            "value" : "В этом месяце ты спишь больше, чем в прошлом."
           }
         },
         "zh-Hans" : {
@@ -130967,7 +130967,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous vous entraînez normalement."
+            "value" : "Tu t'entraînes normalement."
           }
         },
         "it" : {
@@ -130997,7 +130997,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вы тренируетесь как обычно."
+            "value" : "Ты тренируешься как обычно."
           }
         },
         "zh-Hans" : {
@@ -131031,7 +131031,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous marchez %@ ce mois-ci que le mois dernier."
+            "value" : "Tu marches %@ ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -131061,7 +131061,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы ходите %@, что и в прошлом."
+            "value" : "В этом месяце ты ходишь %@, что и в прошлом."
           }
         },
         "zh-Hans" : {
@@ -131095,7 +131095,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous marchez %@ ce mois-ci que le mois dernier."
+            "value" : "Tu marches %@ ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -131125,7 +131125,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы ходите %@, чем в прошлом."
+            "value" : "В этом месяце ты ходишь %@, чем в прошлом."
           }
         },
         "zh-Hans" : {
@@ -131159,7 +131159,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous marchez environ autant ce mois-ci que le mois dernier."
+            "value" : "Tu marches environ autant ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -131189,7 +131189,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы ходите примерно столько же, что и в прошлом."
+            "value" : "В этом месяце ты ходишь примерно столько же, что и в прошлом."
           }
         },
         "zh-Hans" : {
@@ -131223,7 +131223,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous marchez moins ce mois-ci que le mois dernier."
+            "value" : "Tu marches moins ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -131253,7 +131253,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы ходите меньше, чем в прошлом."
+            "value" : "В этом месяце ты ходишь меньше, чем в прошлом."
           }
         },
         "zh-Hans" : {
@@ -131287,7 +131287,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous marchez plus ce mois-ci que le mois dernier."
+            "value" : "Tu marches plus ce mois-ci que le mois dernier."
           }
         },
         "it" : {
@@ -131317,7 +131317,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В этом месяце вы ходите больше, чем в прошлом."
+            "value" : "В этом месяце ты ходишь больше, чем в прошлом."
           }
         },
         "zh-Hans" : {
@@ -131351,7 +131351,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez déjà atteint votre objectif de pas aujourd'hui avec %1$@ pas pour un objectif de %2$@."
+            "value" : "Tu as déjà atteint ton objectif de pas aujourd'hui avec %1$@ pas pour un objectif de %2$@."
           }
         },
         "it" : {
@@ -131415,7 +131415,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "vous avez brûlé %@ au total"
+            "value" : "tu as brûlé %@ au total"
           }
         },
         "it" : {
@@ -131445,7 +131445,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "вы сожгли %@ всего"
+            "value" : "у тебя сожжено %@ всего"
           }
         },
         "zh-Hans" : {
@@ -131479,7 +131479,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "vous avez parcouru %@"
+            "value" : "tu as parcouru %@"
           }
         },
         "it" : {
@@ -131509,7 +131509,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "вы преодолели %@"
+            "value" : "у тебя преодолено %@"
           }
         },
         "zh-Hans" : {
@@ -131607,7 +131607,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "vous avez fait %@ pas"
+            "value" : "tu as fait %@ pas"
           }
         },
         "it" : {
@@ -131637,7 +131637,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "вы прошли %@ шагов"
+            "value" : "у тебя пройдено %@ шагов"
           }
         },
         "zh-Hans" : {
@@ -131671,7 +131671,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La cible de votre objectif %1$@ est maintenant %2$@."
+            "value" : "La cible de ton objectif %1$@ est maintenant %2$@."
           }
         },
         "it" : {
@@ -131735,7 +131735,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre %1$@ a %2$@ d'environ %3$lld%% sur la plage sélectionnée."
+            "value" : "Ton %1$@ a %2$@ d'environ %3$lld%% sur la plage sélectionnée."
           }
         },
         "it" : {
@@ -131801,7 +131801,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre heure moyenne de coucher le %1$@ est %2$@."
+            "value" : "Ton heure moyenne de coucher le %1$@ est %2$@."
           }
         },
         "it" : {
@@ -131867,7 +131867,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre heure moyenne de réveil le %1$@ est %2$@."
+            "value" : "Ton heure moyenne de réveil le %1$@ est %2$@."
           }
         },
         "it" : {
@@ -131931,7 +131931,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre heure de coucher s'est décalée %1$@ de %2$lld min au cours de la dernière semaine."
+            "value" : "Ton heure de coucher s'est décalée %1$@ de %2$lld min au cours de la dernière semaine."
           }
         },
         "it" : {
@@ -131989,7 +131989,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre heure de coucher est restée remarquablement stable au cours de la dernière semaine."
+            "value" : "Ton heure de coucher est restée remarquablement stable au cours de la dernière semaine."
           }
         },
         "it" : {
@@ -132111,7 +132111,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos programmes d'entraînement créés apparaîtront ici."
+            "value" : "Tes programmes d'entraînement créés apparaîtront ici."
           }
         },
         "it" : {
@@ -132175,7 +132175,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre condition d'entraînement actuelle est %@."
+            "value" : "Ta condition d'entraînement actuelle est %@."
           }
         },
         "it" : {
@@ -132205,7 +132205,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ваш текущий статус тренировок: %@."
+            "value" : "Твой текущий статус тренировок: %@."
           }
         },
         "zh-Hans" : {
@@ -132239,7 +132239,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre objectif de poids actuel est de %1$@ jusqu'à %2$@, mais vous n'avez pas encore d'entrées de poids."
+            "value" : "Ton objectif de poids actuel est de %1$@ jusqu'à %2$@, mais tu n'as pas encore d'entrées de poids."
           }
         },
         "it" : {
@@ -132303,7 +132303,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre note d'effort et sa description apparaîtront ici."
+            "value" : "Ta note d'effort et sa description apparaîtront ici."
           }
         },
         "it" : {
@@ -132333,7 +132333,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ваша оценка усилия и её описание появятся здесь."
+            "value" : "Твоя оценка усилия и её описание появятся здесь."
           }
         },
         "zh-Hans" : {
@@ -132733,7 +132733,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre dernière heure moyenne de coucher est le %1$@. %2$@."
+            "value" : "Ta dernière heure moyenne de coucher est le %1$@. %2$@."
           }
         },
         "it" : {
@@ -132799,7 +132799,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre dernière heure moyenne de réveil est le %1$@. %2$@."
+            "value" : "Ta dernière heure moyenne de réveil est le %1$@. %2$@."
           }
         },
         "it" : {
@@ -132863,7 +132863,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre dernier poids enregistré était %1$@ le %2$@."
+            "value" : "Ton dernier poids enregistré était %1$@ le %2$@."
           }
         },
         "it" : {
@@ -132927,7 +132927,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "votre dernier poids est %@"
+            "value" : "ton dernier poids est %@"
           }
         },
         "it" : {
@@ -132991,7 +132991,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre dernier poids aujourd'hui est %@."
+            "value" : "Ton dernier poids aujourd'hui est %@."
           }
         },
         "it" : {
@@ -133055,7 +133055,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "votre dernier poids était %@"
+            "value" : "ton dernier poids était %@"
           }
         },
         "it" : {
@@ -133143,7 +133143,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В более длинных тренировках у вас больше общего объёма."
+            "value" : "В более длинных тренировках у тебя больше общего объёма."
           }
         },
         "zh-Hans" : {
@@ -133171,7 +133171,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre nom"
+            "value" : "Ton nom"
           }
         },
         "it" : {
@@ -133201,7 +133201,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ваше имя"
+            "value" : "Твоё имя"
           }
         },
         "zh-Hans" : {
@@ -133229,7 +133229,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre profil"
+            "value" : "Ton profil"
           }
         },
         "it" : {
@@ -133259,7 +133259,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ваш профиль"
+            "value" : "Твой профиль"
           }
         },
         "zh-Hans" : {
@@ -133289,7 +133289,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos séances en extérieur récentes n'ont pas enregistré d'itinéraire. Lancez-en une nouvelle avec la localisation activée."
+            "value" : "Tes séances en extérieur récentes n'ont pas enregistré d'itinéraire. Lance-en une nouvelle avec la localisation activée."
           }
         },
         "it" : {
@@ -133409,7 +133409,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos objectifs d'hydratation enregistrés et précédents apparaîtront ici."
+            "value" : "Tes objectifs d'hydratation enregistrés et précédents apparaîtront ici."
           }
         },
         "it" : {
@@ -133467,7 +133467,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos objectifs de sommeil enregistrés et précédents apparaîtront ici."
+            "value" : "Tes objectifs de sommeil enregistrés et précédents apparaîtront ici."
           }
         },
         "it" : {
@@ -133531,7 +133531,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos objectifs de pas enregistrés et précédents apparaîtront ici."
+            "value" : "Tes objectifs de pas enregistrés et précédents apparaîtront ici."
           }
         },
         "it" : {
@@ -133595,7 +133595,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos objectifs de poids enregistrés et précédents apparaîtront ici."
+            "value" : "Tes objectifs de poids enregistrés et précédents apparaîtront ici."
           }
         },
         "it" : {
@@ -133659,7 +133659,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos entrées de poids enregistrées apparaîtront ici."
+            "value" : "Tes entrées de poids enregistrées apparaîtront ici."
           }
         },
         "it" : {
@@ -133755,7 +133755,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Цель по сну: %1$@. Прошлой ночью вы спали %2$@, не хватило %3$@."
+            "value" : "Цель по сну: %1$@. Прошлой ночью у тебя было %2$@ сна, не хватило %3$@."
           }
         },
         "zh-Hans" : {
@@ -133847,7 +133847,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre objectif de sommeil est maintenant %1$@. %2$@"
+            "value" : "Ton objectif de sommeil est maintenant %1$@. %2$@"
           }
         },
         "it" : {
@@ -133905,7 +133905,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre objectif de sommeil doit être supérieur à 0."
+            "value" : "Ton objectif de sommeil doit être supérieur à 0."
           }
         },
         "it" : {
@@ -133969,7 +133969,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre split n'a pas encore de jours configurés."
+            "value" : "Ton split n'a pas encore de jours configurés."
           }
         },
         "it" : {
@@ -133999,7 +133999,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "В вашем сплите пока не настроено ни одного дня."
+            "value" : "В твоём сплите пока не настроено ни одного дня."
           }
         },
         "zh-Hans" : {
@@ -134033,7 +134033,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre objectif de pas est de %1$@ pas. Vous êtes à %2$@ aujourd'hui, il vous reste %3$@."
+            "value" : "Ton objectif de pas est de %1$@ pas. Tu es à %2$@ aujourd'hui, il te reste %3$@."
           }
         },
         "it" : {
@@ -134097,7 +134097,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre objectif de pas est maintenant de %@ pas."
+            "value" : "Ton objectif de pas est maintenant de %@ pas."
           }
         },
         "it" : {
@@ -134161,7 +134161,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre objectif de pas doit être supérieur à 0."
+            "value" : "Ton objectif de pas doit être supérieur à 0."
           }
         },
         "it" : {
@@ -134219,7 +134219,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre poids cible doit être supérieur à 0."
+            "value" : "Ton poids cible doit être supérieur à 0."
           }
         },
         "it" : {
@@ -134523,7 +134523,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos données de poids apparaîtront ici une fois que vous aurez ajouté ou synchronisé des entrées de poids corporel"
+            "value" : "Tes données de poids apparaîtront ici une fois que tu auras ajouté ou synchronisé des entrées de poids corporel"
           }
         },
         "it" : {
@@ -134553,7 +134553,7 @@
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Данные о весе появятся здесь, когда вы добавите или синхронизируете записи"
+            "value" : "Данные о весе появятся здесь, когда ты добавишь или синхронизируешь записи"
           }
         },
         "zh-Hans" : {
@@ -134587,7 +134587,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre entrée de poids doit être supérieure à 0."
+            "value" : "Ton entrée de poids doit être supérieure à 0."
           }
         },
         "it" : {
@@ -134651,7 +134651,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos données de séance ne seront pas synchronisées entre vos appareils ni sauvegardées si vous supprimez l'app."
+            "value" : "Tes données de séance ne seront pas synchronisées entre tes appareils ni sauvegardées si tu supprimes l'app."
           }
         },
         "it" : {
@@ -134715,7 +134715,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre historique de séances apparaîtra ici."
+            "value" : "Ton historique de séances apparaîtra ici."
           }
         },
         "it" : {

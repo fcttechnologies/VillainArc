@@ -63,6 +63,7 @@ struct WorkoutSplitListView: View {
                                     } label: {
                                         splitRowContent(for: split, isActive: false)
                                     }
+                                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitInactiveRowOpenButton(split))
                                     Button("Set Active", systemImage: "checkmark.circle") {
                                         withAnimation(reduceMotion ? nil : .smooth) { setActive(split) }
                                     }

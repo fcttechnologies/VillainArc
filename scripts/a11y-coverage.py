@@ -19,6 +19,16 @@ scan attributes each occurrence to the nearest enclosing control start.
 Deliberately NOT counted as controls: `Text`, `Label`, `Image` (not interactive on their own),
 and anything inside a `#if DEBUG` block is counted separately rather than mixed in.
 
+Two known false positives, both consequences of attributing an occurrence to the nearest enclosing
+control, so read a gap against its call site before treating it as one:
+
+- A control that IS a whole row or helper view, whose identifier every call site applies to the
+  returned view (`ExerciseSummaryRow`, `WorkoutRowView`, `WorkoutHistoryRowView`, and the
+  `splitUnavailableView` / `activeSplitCard` / `unavailableView` helpers). The identifier is real
+  and addressable; it just is not inside the element this scan measures.
+- A control in preview-only scaffolding that is not wrapped in `#if DEBUG` (`TimerDurationPickerDemo`).
+  It reaches no user, so an identifier on it would satisfy the count and nothing else.
+
 """
 import argparse
 import os

@@ -125,6 +125,28 @@ chooses the initial entry point, but the per-step screens drive the forward navi
 flow is active. The sheet sizes itself to the step on screen by measuring that step's natural
 content height, so it follows Dynamic Type and localization instead of a hardcoded detent.
 
+Measuring beats hardcoded fractions and stays. What it costs is that the resize trails the content
+swap by one layout pass, so the movement can read as two beats where the eye expects one. Four
+things feed that, the first structural:
+
+1. **The measurement cannot arrive before the step it measures.** `reportsOnboardingHeight`
+   (`onGeometryChange`) can only report once the next step has laid out, so the content swaps at the
+   *old* detent — clipped, or floating in slack — and the sheet catches up after. Only a
+   pre-computed or step-declared height moves both together.
+2. **`.animation(_:value:)` does not cleanly drive a detent change.** `UISheetPresentationController`
+   runs the resize on its own curve, so a SwiftUI animation layered over it is redundant at best and
+   a second competing curve at worst.
+3. **`OnboardingChrome.navStep` (100) and `.plain` (56) are guesses added on top of a measured
+   height**, so a step whose real chrome differs over- or undershoots and the sheet settles visibly.
+4. **The step switch carries no transition**: the `Group { switch manager.state }` and the `path`
+   pushes both swap without one.
+
+The shape a fix should take: keep the measurement as the source of truth but cache it per step the
+first time each is measured, so a step seen once resizes *with* its content; drop the `.animation`
+modifier and let the sheet own its curve; fold the chrome constants into the measured frame rather
+than adding them on top. This is design-led and is judged on a device, not from a static read — the
+2.0 device checklist carries the line that judges it.
+
 ### New User Flow
 
 For a true first-time user, the setup flow after sign-in is:

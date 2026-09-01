@@ -37,6 +37,7 @@ struct RestTimerSnippetView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .tint(.red)
+                .accessibilityIdentifier(AccessibilityIdentifiers.restTimerStopButton)
 
                 Button(intent: RestTimerControlIntent(action: .pause)) {
                     Text("Pause")
@@ -46,6 +47,7 @@ struct RestTimerSnippetView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .tint(.yellow)
+                .accessibilityIdentifier(AccessibilityIdentifiers.restTimerPauseButton)
             }
         } else if restTimer.isPaused {
             HStack(spacing: 16) {
@@ -57,6 +59,7 @@ struct RestTimerSnippetView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .tint(.red)
+                .accessibilityIdentifier(AccessibilityIdentifiers.restTimerStopButton)
                 
                 Button(intent: RestTimerControlIntent(action: .resume)) {
                     Text("Resume")
@@ -66,6 +69,7 @@ struct RestTimerSnippetView: View {
                         .frame(maxWidth: .infinity)
                 }
                 .tint(.green)
+                .accessibilityIdentifier(AccessibilityIdentifiers.restTimerResumeButton)
             }
         } else {
             EmptyView()
