@@ -45,7 +45,12 @@ struct RootView: View {
                 await onboardingManager.startOnboarding()
             }
             .onChange(of: scenePhase) { _, phase in
-                guard phase == .active else { return }
+                guard phase == .active else {
+                    // The nudge rung is foreground-only: iOS suspends the socket anyway, and
+                    // releasing it here is what keeps the teardown ours.
+                    VASync.shared.backgrounded()
+                    return
+                }
                 Task {
                     await VAAccount.controller.resume()
                     await VAAccount.controller.refreshAppleCredentialState()

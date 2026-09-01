@@ -117,7 +117,7 @@ struct VASyncRestoreTests {
 
         let stuck = try harness.writeSession(notes: "refused")
         await harness.server.setRejecting([stuck])
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
         #expect(harness.sync.counted.stuck >= 1, "the fixture must actually strand a record")
 
         #expect(await harness.sync.restoreAccountData())

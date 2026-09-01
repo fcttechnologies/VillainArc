@@ -19,10 +19,13 @@ struct VASyncConfiguration {
     var blobCacheDirectory: () throws -> URL
     var makeTransport: (any SyncAccount) -> any SyncTransport
     var makeBlobTransport: (any SyncAccount) -> any BlobTransport
-    /// The change triggers the engine listens on, beside the bootstrap's own manual pulse.
-    /// `LocalSaveTrigger` observes saves *process-wide*, which is right in an app and wrong in a
-    /// test process, where it would wake one suite's engine on another suite's writes.
+    /// The change triggers the engine listens on. `LocalSaveTrigger` observes saves
+    /// *process-wide*, which is right in an app and wrong in a test process, where it would wake
+    /// one suite's engine on another suite's writes.
     var makeTriggers: (ModelContainer) -> [any HistoryChangeTrigger]
+    /// Rung 2 of the ping ladder, held only while the app is foregrounded. `nil` where there is no
+    /// socket to open — a test process, and any device the channel cannot be built for.
+    var makeNudgeChannel: (any SyncAccount) -> SyncNudgeChannel?
 
     static var live: VASyncConfiguration {
         VASyncConfiguration(
@@ -47,14 +50,13 @@ struct VASyncConfiguration {
                     account: account
                 )
             },
-            // The cross-process rung is what makes a widget/intents-extension write reach the
-            // server without waiting for the app's next foreground.
-            makeTriggers: { container in
-                var triggers: [any HistoryChangeTrigger] = [LocalSaveTrigger()]
-                if let remote = try? RemoteHistoryChangeTrigger(container: container) {
-                    triggers.append(remote)
-                }
-                return triggers
+            makeTriggers: { container in SyncScheduler.engineTriggers(container: container) },
+            makeNudgeChannel: { account in
+                SyncNudgeChannel(
+                    baseURL: AccountEnvironment.fct.baseURL,
+                    publishableKey: AccountEnvironment.fct.publishableKey,
+                    account: account
+                )
             }
         )
     }
@@ -96,15 +98,19 @@ final class VASync {
     @ObservationIgnored private var blobs: BlobStore?
     @ObservationIgnored private var settledTask: Task<Void, Never>?
     @ObservationIgnored private var discardTask: Task<Void, Never>?
-    @ObservationIgnored private let manual = ManualTrigger()
     @ObservationIgnored private var eventTask: Task<Void, Never>?
     /// When a cycle runs — the trigger subscription, the debounce that coalesces a burst, and the
     /// backoff wait — owned by the package so the rule it keeps is maintained in one place.
-    @ObservationIgnored private lazy var scheduler = SyncScheduler { [weak self] in
-        await self?.syncNow()
+    @ObservationIgnored private lazy var scheduler = SyncScheduler { [weak self] cycle in
+        await self?.syncNow(cycle)
     }
+    /// The account's Realtime channel, and the task holding this foreground's subscription to it.
+    @ObservationIgnored private var nudges: SyncNudgeChannel?
+    @ObservationIgnored private var nudgeTask: Task<Void, Never>?
     @ObservationIgnored private var syncInFlight = false
-    @ObservationIgnored private var syncAgain = false
+    /// What a request arriving mid-cycle asks the loop to run next, at the strongest kind asked
+    /// for while the cycle was up.
+    @ObservationIgnored private var syncAgain: SyncCycle?
     @ObservationIgnored private var pathMonitor: NWPathMonitor?
     @ObservationIgnored private weak var controller: AccountController?
     @ObservationIgnored private var container: ModelContainer?
@@ -148,30 +154,61 @@ final class VASync {
     func foregrounded() {
         guard engine != nil else { return }
         engine?.resetBackoff()
-        manual.fire()
-        Task { await syncNow() }
+        startNudges()
+        Task { await syncNow(.full) }
+    }
+
+    /// Backgrounding. iOS suspends the socket anyway, so releasing it here is what keeps the
+    /// stream's teardown ours rather than the system's.
+    func backgrounded() {
+        nudgeTask?.cancel()
+        nudgeTask = nil
     }
 
     /// Force a cycle now — the post-sign-in and settings-refresh path. A cycle already in flight
     /// is not joined by a second one; the request is remembered and the loop runs again once
     /// (the applier's own save fires `LocalSaveTrigger`, so every pull that lands rows asks for
-    /// another cycle, which is correct and would otherwise re-enter).
-    func syncNow() async {
+    /// another cycle, which is correct and would otherwise re-enter). A request landing mid-cycle
+    /// keeps the stronger kind: a nudge arriving during a push cycle is one full cycle after it,
+    /// never a push that never asks.
+    func syncNow(_ cycle: SyncCycle) async {
         guard let engine else { return }
         if syncInFlight {
-            syncAgain = true
+            syncAgain = max(syncAgain ?? cycle, cycle)
             return
         }
         syncInFlight = true
         defer { syncInFlight = false }
+        var current = cycle
         repeat {
-            syncAgain = false
+            syncAgain = nil
             stageAuthoredAssets()
             if let blobs { _ = await blobs.sync() }
-            let result = await engine.sync()
+            let result = await engine.sync(current)
             publish(result)
             scheduler.scheduleRetry(after: result)
-        } while syncAgain
+            if let again = syncAgain { current = again }
+        } while syncAgain != nil
+    }
+
+    /// Rung 2: a fresh subscription for this foreground, each nudge spent as a full cycle.
+    ///
+    /// Cancel-and-restart rather than a guard, because that is exactly what the channel's own
+    /// contract is — one stream per foreground — and because every way a stream ends here is
+    /// **ordinary**: losing the rung degrades to pull-on-foreground and post-push, which is what
+    /// correctness rides on in the first place.
+    private func startNudges() {
+        nudgeTask?.cancel()
+        guard let nudges else { return }
+        nudgeTask = Task { [weak self] in
+            do {
+                for try await _ in nudges.nudges() {
+                    await self?.syncNow(.full)
+                }
+            } catch {
+                AppLog.info("Sync nudge rung absent for this foreground: \(error)")
+            }
+        }
     }
 
     /// Bring the account's rows down before Villain Arc's own setup asks for anything the account
@@ -194,7 +231,7 @@ final class VASync {
             guard ContinuousClock.now < deadline else { return false }
             try? await Task.sleep(for: .milliseconds(50))
         }
-        await syncNow()
+        await syncNow(.full)
 
         // The question is whether the PULL completed, not whether the outbox is clean. Records the
         // server judged and refused are a push-side fact that never clears by itself, so gating on
@@ -207,14 +244,17 @@ final class VASync {
         }
     }
 
-    /// Ask for one more pass, folded into a running cycle when one is up.
+    /// Ask for one more pass, folded into a running cycle when one is up. A **push**: the uploads
+    /// that settled freed records the gate was holding, which is a reason to send and never a
+    /// reason to ask.
     private func requestAnotherCycle() {
         if syncInFlight {
-            syncAgain = true
+            // Weaker than anything already asked for, so it only ever fills an empty slot.
+            syncAgain = syncAgain ?? .push
             return
         }
         settledTask?.cancel()
-        settledTask = Task { [weak self] in await self?.syncNow() }
+        settledTask = Task { [weak self] in await self?.syncNow(.push) }
     }
 
     // MARK: - Rule 7: the staging sweep (the profile photo)
@@ -285,11 +325,11 @@ final class VASync {
 
     func handle(_ event: AccountEvent) async {
         switch event {
-        case .enrolled(let accountID):
+        case .enrolled(let accountID, _):
             await startEngine(accountID: accountID, enrolling: true)
         case .resumed(let accountID):
             await startEngine(accountID: accountID, enrolling: false)
-        case .switched(_, let to):
+        case .switched(_, let to, _):
             // A different account. Account A's rows must not silently become account B's, so this
             // clears local data — discarding whatever A never pushed, because A's credentials are
             // already gone and nothing can push it now.
@@ -336,7 +376,7 @@ final class VASync {
     /// about to be lost".
     @discardableResult
     func signOutPreflight() async -> OutboxCensus? {
-        await syncNow()
+        await syncNow(.full)
         return unsyncedWork
     }
 
@@ -384,7 +424,7 @@ final class VASync {
         // `resume()` re-emits `.resumed` on every foregrounding: same account, not enrolling →
         // just run a cycle rather than rebuilding the trigger wiring per foreground.
         if let engine, !enrolling, engine.accountID == accountID {
-            await syncNow()
+            await syncNow(.full)
             return
         }
         stopEngine(releasing: true)
@@ -441,14 +481,18 @@ final class VASync {
         }
         self.engine = engine
         self.blobs = blobStore
+        self.nudges = configuration.makeNudgeChannel(credentials)
 
-        scheduler.observe(configuration.makeTriggers(container) + [manual])
+        scheduler.observe(configuration.makeTriggers(container))
+        startNudges()
 
-        await syncNow()
+        await syncNow(.full)
     }
 
     private func stopEngine(releasing: Bool) {
         scheduler.stop()
+        nudgeTask?.cancel()
+        nudgeTask = nil
         settledTask?.cancel()
         settledTask = nil
         discardTask?.cancel()
@@ -456,6 +500,7 @@ final class VASync {
         if releasing {
             engine = nil
             blobs = nil
+            nudges = nil
         }
     }
 
@@ -596,7 +641,7 @@ final class VASync {
             Task { @MainActor in
                 guard let self, self.engine != nil else { return }
                 self.engine?.resetBackoff()
-                await self.syncNow()
+                await self.syncNow(.full)
             }
         }
         monitor.start(queue: DispatchQueue(label: "com.fcttechnologies.VillainArc.sync.path"))
@@ -619,7 +664,7 @@ nonisolated struct UnreachableTransport: SyncTransport {
         throw SyncTransportError.connectivity("no account")
     }
 
-    func pull(schemaVersion: String, table: String, cursor: Int64, pageLimit: Int) async throws -> PullEnvelope {
+    func pullAll(schemaVersion: String, cursors: [String: Int64], rowBudget: Int) async throws -> PullAllEnvelope {
         throw SyncTransportError.connectivity("no account")
     }
 }
@@ -645,4 +690,8 @@ nonisolated struct DetachedAccount: SyncAccount {
     func accessToken(afterRefusalOf refused: String) async throws -> String {
         throw SyncTransportError.authRefused("no session")
     }
+
+    /// There is deliberately no session here, so a refusal is exactly what it looks like — never a
+    /// transient condition worth queueing behind a backoff.
+    func isSessionLoss(_ error: any Error) -> Bool { true }
 }

@@ -69,9 +69,9 @@ nonisolated struct VAFaultTransport: SyncTransport {
         return try await inner.push(schemaVersion: schemaVersion, records: records)
     }
 
-    func pull(schemaVersion: String, table: String, cursor: Int64, pageLimit: Int) async throws -> PullEnvelope {
+    func pullAll(schemaVersion: String, cursors: [String: Int64], rowBudget: Int) async throws -> PullAllEnvelope {
         try await injector.apply()
-        return try await inner.pull(schemaVersion: schemaVersion, table: table, cursor: cursor, pageLimit: pageLimit)
+        return try await inner.pullAll(schemaVersion: schemaVersion, cursors: cursors, rowBudget: rowBudget)
     }
 }
 
@@ -98,9 +98,12 @@ final class VASyncFaultHarness {
     ///     *about* the trigger path (the debounce) passes its own `ManualTrigger` instead.
     ///   - transport: replaces the fault-injecting wire wholesale, for a suite whose subject is
     ///     the wire's timing rather than the failures it can be made to raise.
+    ///   - nudges: the Realtime rung. `nil` by default — a test process opens no socket — so the
+    ///     suite that is *about* the rung passes one over a scripted socket.
     init(
         triggers: [any HistoryChangeTrigger] = [],
-        transport: (any SyncTransport)? = nil
+        transport: (any SyncTransport)? = nil,
+        nudges: SyncNudgeChannel? = nil
     ) throws {
         let made = try TestStoreFactory.onDisk(VillainArcSchemaV1.self)
         container = made.container
@@ -121,7 +124,8 @@ final class VASyncFaultHarness {
                 transport ?? VAFaultTransport(inner: FakeTransport(server: server), injector: injector)
             },
             makeBlobTransport: { _ in FakeBlobTransport(store: objects) },
-            makeTriggers: { _ in triggers }
+            makeTriggers: { _ in triggers },
+            makeNudgeChannel: { _ in nudges }
         )
 
         sync = VASync(configuration: configuration)
@@ -137,7 +141,7 @@ final class VASyncFaultHarness {
 
     /// Sign in: the engine is built and the first cycle runs.
     func enroll() async {
-        await sync.handle(.enrolled(accountID))
+        await sync.handle(.enrolled(accountID, appleFullName: nil))
     }
 
     /// One local change the server has never seen. Returns the row's sync id.
@@ -199,7 +203,7 @@ struct VASyncFaultInjectionTests {
         let freshnessBefore = harness.sync.lastSyncedAt
 
         await harness.injector.set(.unreachable)
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         #expect(isOffline(harness.sync.status))
         #expect(harness.sync.counted.retrying >= 1)
@@ -208,7 +212,7 @@ struct VASyncFaultInjectionTests {
         #expect(await harness.serverSessionCount() == 0)
 
         await harness.injector.set(nil)
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         #expect(harness.sync.counted.isDrained)
         #expect(harness.sync.lastSyncedAt != freshnessBefore, "a healthy cycle re-stamps freshness")
@@ -227,7 +231,7 @@ struct VASyncFaultInjectionTests {
         try harness.writeSession(notes: "call rejected")
 
         await harness.injector.set(.callRejected(status: 400))
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         #expect(isFailed(harness.sync.status))
         #expect(harness.sync.lastError != nil)
@@ -236,7 +240,7 @@ struct VASyncFaultInjectionTests {
         #expect(await harness.serverSessionCount() == 0)
 
         await harness.injector.set(nil)
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         #expect(harness.sync.counted.isDrained)
         #expect(await harness.serverSessionCount() == 1)
@@ -254,7 +258,7 @@ struct VASyncFaultInjectionTests {
         let id = try harness.writeSession(notes: "rejected")
 
         await harness.server.setRejecting([id])
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         #expect(isFailed(harness.sync.status))
         #expect(harness.sync.counted.stuck >= 1)
@@ -263,13 +267,13 @@ struct VASyncFaultInjectionTests {
 
         // A healthy cycle changes nothing: the entry was judged, not delayed.
         await harness.server.setRejecting([])
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
         #expect(harness.sync.counted.stuck >= 1, "a judged entry is never auto-retried")
         #expect(await harness.serverSessionCount() == 0)
 
         // A fresh edit re-queues it, and then it lands.
         try harness.editSession(id, notes: "edited after rejection")
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         #expect(harness.sync.counted.isDrained)
         #expect(await harness.serverSessionCount() == 1)
@@ -287,10 +291,10 @@ struct VASyncFaultInjectionTests {
         try harness.writeSession(notes: "lagging")
 
         await harness.injector.set(.lag(milliseconds: 300))
-        async let inFlight: Void = harness.sync.syncNow()
+        async let inFlight: Void = harness.sync.syncNow(.full)
         try await Task.sleep(for: .milliseconds(80))
         // Lands while the first cycle is still waiting on the wire.
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
         await inFlight
 
         #expect(harness.sync.counted.isDrained)
@@ -299,6 +303,11 @@ struct VASyncFaultInjectionTests {
             await harness.server.pushCallCount == 1,
             "a request arriving mid-cycle must not re-push a batch already in flight"
         )
+        // Three cycles ran — the enrolling one, the lagging one, and the pass the folded request
+        // bought — and the read path costs each of them exactly one call, whatever the schema's
+        // twenty-five tables would once have cost.
+        let reads = await harness.server.pullAllCallCount
+        #expect(reads == 3, "one read per cycle: \(reads) reads for three cycles")
     }
 
     /// Lag must not let a destructive step run against a stale reading: while the slow cycle is
@@ -310,7 +319,7 @@ struct VASyncFaultInjectionTests {
         try harness.writeSession(notes: "lagging sign-out")
 
         await harness.injector.set(.lag(milliseconds: 400))
-        async let inFlight: Void = harness.sync.syncNow()
+        async let inFlight: Void = harness.sync.syncNow(.full)
         try await Task.sleep(for: .milliseconds(80))
 
         let outstanding = try #require(harness.sync.unsyncedWork)
@@ -331,7 +340,7 @@ struct VASyncFaultInjectionTests {
         try harness.writeSession(notes: "must survive sign-out")
 
         await harness.injector.set(.unreachable)
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
         #expect(harness.sync.counted.total >= 1)
 
         await harness.sync.handle(.signedOut)
@@ -357,7 +366,7 @@ struct VASyncFaultInjectionTests {
         let harness = try VASyncFaultHarness()
         await harness.enroll()
         try harness.writeSession(notes: "safely pushed")
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         #expect(harness.sync.counted.isDrained)
         #expect(await harness.serverSessionCount() == 1)

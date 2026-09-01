@@ -20,7 +20,7 @@ struct VAAccountSection: View {
                 schema: VASyncSchema.appSlug,
                 appName: "Villain Arc",
                 barrier: DeletionBarrier {
-                    await VASync.shared.syncNow()
+                    await VASync.shared.syncNow(.full)
                     guard let census = await VASync.shared.unsyncedWork else {
                         throw VAAccountSectionError.uncountable
                     }

@@ -84,9 +84,18 @@ exists only while an account does:
 - `.switched` / `.deleted` → unconditional discard (account A's rows must not become account B's;
   5.1.1(v) respectively), then onboarding restarts
 
-Triggers: `LocalSaveTrigger` (in-process saves, debounced 250 ms), `RemoteHistoryChangeTrigger`
-(widget/intents-extension writes), a manual pulse on foregrounding and after uploads settle, and a
-network-path monitor that resets backoff when connectivity returns.
+What asks for a cycle, and which kind. A local write is a reason to send and never a reason to
+ask, so the trigger rungs — `SyncScheduler.engineTriggers`: in-process saves debounced 250 ms with
+the engine's own applier excluded, plus `RemoteHistoryChangeTrigger` for widget/intents-extension
+writes — spend a **push**; a settled blob upload asks for one too. Foregrounding, the network-path
+monitor's return-to-signal, and every Realtime nudge spend a **full** cycle, because a pull is the
+only thing any of them can act on. A request landing mid-cycle folds into the running one at the
+stronger of the two kinds.
+
+The nudge rung is `SyncNudgeChannel`, foreground-only: one socket on the account's private
+`sync:<account>` topic, started with the engine and on each `foregrounded()`, released on
+`backgrounded()`. Nothing rides it — losing it degrades to pull-on-foreground and post-push, which
+is what correctness rides on.
 
 Rows the engine applies bypass every app-side write seam, so `didApplyRemoteChanges` refreshes the
 derived surfaces directly: Spotlight reindex, widget reload, the exercise-analytics rebuild, and

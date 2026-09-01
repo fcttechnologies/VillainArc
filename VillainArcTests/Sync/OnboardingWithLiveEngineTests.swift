@@ -61,9 +61,9 @@ struct OnboardingWithLiveEngineTests {
         await harness.enroll()
 
         try save(harness) { $0.name = "Repro" }
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
         try save(harness) { $0.heightCm = 177.8 }
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         try save(harness) {
             $0.fitnessLevel = .advanced
@@ -74,12 +74,12 @@ struct OnboardingWithLiveEngineTests {
 
         // A cycle that cannot reach the server: it drains, but pushes and applies nothing.
         await harness.injector.set(.unreachable)
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
         #expect(try onDisk(harness)?.fitnessLevel == .advanced, "B: after a drain-only, offline cycle")
 
         // The full cycle: drain, push, pull, apply.
         await harness.injector.set(nil)
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         let id = VASyncIdentity.userProfileID
         let table = UserProfile.syncTableName
@@ -114,7 +114,7 @@ struct SyncedOptionalEnumSweepTests {
         goal.endedAt = .now
         goal.endReason = .achieved
         try context.save()
-        await harness.sync.syncNow()
+        await harness.sync.syncNow(.full)
 
         let reopened = try ModelContainer(
             for: SharedModelContainer.schema,

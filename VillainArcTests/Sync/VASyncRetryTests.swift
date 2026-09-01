@@ -36,7 +36,7 @@ private nonisolated final class RetryTransport: SyncTransport, @unchecked Sendab
         try await inner.push(schemaVersion: schemaVersion, records: records)
     }
 
-    func pull(schemaVersion: String, table: String, cursor: Int64, pageLimit: Int) async throws -> PullEnvelope {
+    func pullAll(schemaVersion: String, cursors: [String: Int64], rowBudget: Int) async throws -> PullAllEnvelope {
         if consumeFailure() {
             throw SyncTransportError.connectivity("injected: no route to host")
         }
@@ -52,8 +52,8 @@ private nonisolated final class RetryTransport: SyncTransport, @unchecked Sendab
             // a fresh 1 s · 2ⁿ backoff inside the quiet window `settled()` reads as the end.
             throw error
         }
-        return try await inner.pull(
-            schemaVersion: schemaVersion, table: table, cursor: cursor, pageLimit: pageLimit
+        return try await inner.pullAll(
+            schemaVersion: schemaVersion, cursors: cursors, rowBudget: rowBudget
         )
     }
 

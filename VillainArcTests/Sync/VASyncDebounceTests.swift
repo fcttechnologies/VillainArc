@@ -10,7 +10,7 @@ import Testing
 ///
 /// `Task.sleep` throwing `CancellationError` is the detector: a pull that is merely slow finishes,
 /// and a pull whose enclosing cycle was cancelled does not. That is exactly the distinction the
-/// production symptom shows as `NSURLErrorCancelled (-999)` on `rest/v1/rpc/sync_pull`.
+/// production symptom shows as `NSURLErrorCancelled (-999)` on `rest/v1/rpc/sync_pull_all`.
 private nonisolated final class SlowTransport: SyncTransport, @unchecked Sendable {
     private let inner: FakeTransport
     private let lock = NSLock()
@@ -28,7 +28,7 @@ private nonisolated final class SlowTransport: SyncTransport, @unchecked Sendabl
         try await inner.push(schemaVersion: schemaVersion, records: records)
     }
 
-    func pull(schemaVersion: String, table: String, cursor: Int64, pageLimit: Int) async throws -> PullEnvelope {
+    func pullAll(schemaVersion: String, cursors: [String: Int64], rowBudget: Int) async throws -> PullAllEnvelope {
         lock.withLock { _pullsStarted += 1 }
         do {
             try await Task.sleep(for: .milliseconds(120))
@@ -36,8 +36,8 @@ private nonisolated final class SlowTransport: SyncTransport, @unchecked Sendabl
             lock.withLock { _pullsCancelled += 1 }
             throw error
         }
-        return try await inner.pull(
-            schemaVersion: schemaVersion, table: table, cursor: cursor, pageLimit: pageLimit
+        return try await inner.pullAll(
+            schemaVersion: schemaVersion, cursors: cursors, rowBudget: rowBudget
         )
     }
 }
@@ -86,8 +86,7 @@ struct VASyncDebounceTests {
             """
         )
 
-        // VA's schema is 25 tables, so a cycle outlives the burst that started it. Let the last
-        // one drain rather than pulling the harness's store out from under it.
+        // Let the last cycle drain rather than pulling the harness's store out from under it.
         try await settle(transport)
     }
 
