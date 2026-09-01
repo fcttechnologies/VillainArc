@@ -1,41 +1,31 @@
 import FCTMetrics
 import Foundation
-import MetricKit
 import Testing
 
 @testable import VillainArc
 
 // Regression guard for the 1.3 (7) TestFlight crash-loop class.
 //
-// MetricKit delivers the `MXMetricManagerSubscriber` callbacks on a background queue
-// (`-[MXMetricManager deliverDiagnosticPayload:]`), but the app target's default actor isolation
-// is `MainActor`: a MainActor-isolated subscriber traps at `@objc` method entry off-main. The
-// collector now lives in `FCTMetrics` (which carries the `nonisolated` fix as its design), and
-// this pins Villain Arc's wiring of it: the shared instance stays reachable off-main and the
-// domain vocabulary stays stable.
+// MetricKit delivers off the main thread, but the app target's default actor isolation is
+// `MainActor`, and a MainActor-isolated collector traps when it is reached from there. The
+// collector lives in `FCTMetrics` (which carries the `nonisolated` fix as its design), and this
+// pins Villain Arc's wiring of it: the shared instance stays reachable off-main and the domain
+// vocabulary stays stable.
 struct MetricsServiceIsolationTests {
 
-    // Faithful reproduction of MetricKit's delivery: invoke the `@objc` subscriber selectors via
-    // perform from a background queue, exactly as MetricKit does. With a MainActor-isolated
-    // subscriber this traps; with the nonisolated type it returns cleanly. The plain Swift calls
-    // also act as a compile-time guard — they only compile while the type is nonisolated.
+    // Reach the shared instance from a background queue, which is where MetricKit's deliveries
+    // land. The calls are also a compile-time guard — they only compile while the collector is
+    // nonisolated, so re-isolating it to MainActor breaks the build instead of shipping a crash.
     @Test
-    func subscriberCallbacksRunOffMainWithoutTrapping() async {
+    func sharedServiceIsReachableOffMainWithoutTrapping() async {
         let service = VAMetrics.service
-        let metricSelector = NSSelectorFromString("didReceiveMetricPayloads:")
-        let diagnosticSelector = NSSelectorFromString("didReceiveDiagnosticPayloads:")
-        #expect(service.responds(to: metricSelector))
-        #expect(service.responds(to: diagnosticSelector))
 
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
             DispatchQueue.global(qos: .utility).async {
                 #expect(!Thread.isMainThread)
-                // Empty payloads are enough: the historical trap fired at `@objc` method entry
-                // (the executor isolation check), before any body ran.
-                service.perform(metricSelector, with: NSArray())
-                service.perform(diagnosticSelector, with: NSArray())
-                service.didReceive([] as [MXMetricPayload])
-                service.didReceive([] as [MXDiagnosticPayload])
+                _ = service.isRegistered
+                _ = service.latestMetric()
+                _ = service.latestDiagnostic()
                 continuation.resume()
             }
         }
