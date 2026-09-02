@@ -31,8 +31,9 @@ parent's completion):
 - plans and splits: `WorkoutPlan`, `ExercisePrescription`, `SetPrescription`, `WorkoutSplit`,
   `WorkoutSplitDay`, `RepRangePolicy`
 - the coaching record: `SuggestionEvent`, `SuggestionEvaluation`, `PrescriptionChange`
-- goals and identity: the five goal models, `TrainingConditionPeriod`, `UserProfile` (singleton),
-  `AppSettings` (singleton)
+- goals and identity: the five goal models, `TrainingConditionPeriod`, `UserProfile` (singleton —
+  VillainArc's own facts alone; the name and birthday are the account's, on `account.profile` and
+  `account.trusted`), `AppSettings` (singleton)
 - what the user has done to a catalog exercise: `ExercisePreference`, sparse — a row exists only
   for an exercise they actually touched (favorited, added, or tuned)
 - one byte surface: the profile photo, through `FCTBlobSync` (`va.user_profile.photo`; bytes in

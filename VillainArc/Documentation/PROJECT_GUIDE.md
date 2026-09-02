@@ -161,12 +161,16 @@ VillainArc keeps true singleton-style records in SwiftData:
 
 Startup code ensures they exist before the app treats launch as ready.
 
-`UserProfile` also owns user-facing profile state such as:
+`UserProfile` holds what is **VillainArc's own** about the person:
 
-- the required onboarding fields
-- the current display name
+- the required onboarding fields (gender, height)
 - the user fitness level and last confirmed timestamp
 - externally stored profile photo data
+
+The name, the birthday, the country and the avatar are **not** here: they are the FCT account's,
+one home for the whole fleet. The name comes off `account.profile`'s rows
+(`AccountProfileField.displayName(from:)`) and the birthday off the account's trusted row, read
+once per launch by `AccountBirthday` — which is what every age-based calculation is built on.
 
 ### One Store, Two Layers: SwiftData Local, the FCT Platform Canonical
 
@@ -285,7 +289,7 @@ VillainArc uses a dedicated top-level Profile tab. Settings remains an `AppSetti
 The profile surface owns:
 
 - avatar and profile photo management
-- name, birthday, gender, and height editing
+- gender and height editing
 - fitness-level editing
 - a fitness-level review cue when the current level has exceeded its time threshold (`beginner: 1 year`, `novice: 2 years`, `intermediate: 2 years`, `advanced: no cue`)
 - active training-goal editing

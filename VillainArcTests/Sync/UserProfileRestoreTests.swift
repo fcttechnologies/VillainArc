@@ -57,8 +57,6 @@ struct UserProfileApplyTests {
         let (_, profile) = try makeProfile()
 
         profile.apply([
-            "name": .string("Fernando"),
-            "birthday": .date(Date(timeIntervalSince1970: 1_034_000_000)),
             "gender": .string(UserGender.male.rawValue),
             "height_cm": .double(170.18),
             "fitness_level": .string(FitnessLevel.advanced.rawValue),

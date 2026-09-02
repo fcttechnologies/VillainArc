@@ -11,7 +11,6 @@ struct HealthWorkoutDetailView: View {
     let cardioSession: CardioSession?
 
     @Query(AppSettings.single) private var appSettings: [AppSettings]
-    @Query(UserProfile.single) private var userProfiles: [UserProfile]
     @State private var loader: HealthWorkoutDetailLoader
 
     init(workout: HealthWorkout, showsCloseButton: Bool = false, cardioSession: CardioSession? = nil) {
@@ -30,10 +29,7 @@ struct HealthWorkoutDetailView: View {
     }
 
     private var estimatedMaxHeartRate: Double? {
-        guard let birthday = userProfiles.first?.birthday else { return nil }
-        let years = Calendar.current.dateComponents([.year], from: birthday, to: loader.summary.startDate).year ?? 0
-        let age = max(1, years)
-        return max(120, Double(220 - age))
+        AccountBirthday.shared.estimatedMaxHeartRate(on: loader.summary.startDate)
     }
 
     var body: some View {

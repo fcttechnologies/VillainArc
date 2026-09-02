@@ -1,4 +1,5 @@
 import AVFoundation
+import FCTAccountProfile
 import MuscleMap
 import SwiftUI
 import SwiftData
@@ -82,6 +83,7 @@ private enum ProfileImagePickerSource: String, Identifiable {
 }
 
 struct ProfileSheetLauncherButton: View {
+    @Query private var accountProfileFields: [AccountProfileField]
     @Query(UserProfile.single) private var profiles: [UserProfile]
     @State private var router = AppRouter.shared
 
@@ -92,7 +94,7 @@ struct ProfileSheetLauncherButton: View {
             router.presentAppSheet(.profile)
             Task { await IntentDonations.donateOpenProfile() }
         } label: {
-            ProfileAvatarBadge(displayName: profiles.first?.trimmedName, imageData: profiles.first?.profileImageData, size: 40)
+            ProfileAvatarBadge(displayName: accountName, imageData: profiles.first?.profileImageData, size: 40)
         }
         .buttonStyle(.plain)
         .buttonBorderShape(.circle)
@@ -103,16 +105,20 @@ struct ProfileSheetLauncherButton: View {
         .padding(.trailing, 6)
     }
 
+    /// The account's name, or `nil` for the monogram's fallback glyph.
+    private var accountName: String? {
+        let name = AccountProfileField.displayName(from: accountProfileFields)
+        return name.isEmpty ? nil : name
+    }
+
     private var accessibilityValue: String {
-        if let profile = profiles.first, !profile.trimmedName.isEmpty {
-            return profile.trimmedName
-        }
-        return String(localized: "Not set")
+        accountName ?? String(localized: "Not set")
     }
 }
 struct ProfileSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var context
+    @Query private var accountProfileFields: [AccountProfileField]
     @Query(UserProfile.single) private var profiles: [UserProfile]
     @Query(TrainingGoal.active) private var activeTrainingGoals: [TrainingGoal]
     @Query(AppSettings.single) private var appSettings: [AppSettings]
@@ -131,7 +137,6 @@ struct ProfileSheetView: View {
     @State private var showAppSettings = false
     @State private var settingsDestination: AppSettingsDestination?
     @State private var didApplyInitialSettingsDestination = false
-    @State private var showBirthdayEditor = false
     @State private var showGenderEditor = false
     @State private var showHeightEditor = false
     @State private var showFitnessLevelEditor = false
@@ -140,14 +145,10 @@ struct ProfileSheetView: View {
     @State private var showCameraAccessAlert = false
     @State private var selectedProfileImage: UIImage?
     @State private var presentedImagePickerSource: ProfileImagePickerSource?
-    @State private var editableName = ""
-    @FocusState private var isNameFieldFocused: Bool
-
     private var profile: UserProfile? { profiles.first }
     private var activeTrainingGoal: TrainingGoal? { activeTrainingGoals.first }
     private var heightUnit: HeightUnit { appSettings.first?.heightUnit ?? .imperial }
     private var weightUnit: WeightUnit { appSettings.first?.weightUnit ?? .lbs }
-    private let defaultProfileName = String(localized: "Your Name")
 
     init(initialSettingsDestination: AppSettingsDestination? = nil, showsCloseButton: Bool = true) {
         self.initialSettingsDestination = initialSettingsDestination
@@ -176,15 +177,6 @@ struct ProfileSheetView: View {
             .sheet(isPresented: $showAppSettings) {
                 AppSettingsView(initialDestination: settingsDestination)
                     .presentationBackground(Color.sheetBg)
-            }
-            .sheet(isPresented: $showBirthdayEditor) {
-                ProfileBirthdayEditorSheet(initialBirthday: resolvedBirthday) { birthday in
-                    guard let profile else { return }
-                    profile.birthday = birthday
-                    saveContext(context: context)
-                }
-                .presentationDetents([.medium])
-                .presentationBackground(Color.sheetBg)
             }
             .sheet(isPresented: $showGenderEditor) {
                 ProfileGenderEditorSheet(initialSelection: profile?.gender ?? .notSet) { selectedGender in
@@ -271,7 +263,6 @@ struct ProfileSheetView: View {
                     if showsCloseButton {
                         Button(role: .close) {
                             Haptics.selection()
-                            commitNameIfNeeded()
                             dismiss()
                         }
                         .accessibilityHint(AccessibilityText.closeButtonHint)
@@ -291,29 +282,12 @@ struct ProfileSheetView: View {
                 }
             }
             .onAppear {
-                syncEditableName()
                 presentInitialSettingsDestinationIfNeeded()
-            }
-            .onChange(of: profile?.persistentModelID) { _, _ in
-                syncEditableName()
-            }
-            .onChange(of: isNameFieldFocused) { _, isFocused in
-                if !isFocused {
-                    commitNameIfNeeded()
-                }
-            }
-            .onChange(of: editableName) { _, _ in
-                guard profile != nil, isNameFieldFocused else { return }
-                profile?.name = editableName
-                scheduleSave(context: context)
             }
             .onChange(of: selectedProfileImage) { _, newImage in
                 guard let newImage else { return }
                 saveProfilePhoto(image: newImage)
                 selectedProfileImage = nil
-            }
-            .onDisappear {
-                commitNameIfNeeded()
             }
         }
         // Soft scroll-edge fade in the sheet presentation context (the root TabView modifier only
@@ -331,7 +305,7 @@ struct ProfileSheetView: View {
 
     private var profileSummary: some View {
         VStack(spacing: 8) {
-            ProfileAvatarBadge(displayName: trimmedEditableName, imageData: profile?.profileImageData, size: 96)
+            ProfileAvatarBadge(displayName: accountName, imageData: profile?.profileImageData, size: 96)
                 .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetAvatar)
 
             Text(effectiveDisplayName)
@@ -359,48 +333,6 @@ struct ProfileSheetView: View {
 
     private var detailsCard: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 16) {
-                Text("Name")
-                    .font(.body.weight(.semibold))
-                    .foregroundStyle(.primary)
-
-                Spacer(minLength: 16)
-
-                TextField("Name", text: $editableName)
-                    .font(.body)
-                    .multilineTextAlignment(.trailing)
-                    .textInputAutocapitalization(.words)
-                    .autocorrectionDisabled()
-                    .submitLabel(.done)
-                    .focused($isNameFieldFocused)
-                    .onSubmit {
-                        commitNameIfNeeded()
-                    }
-                    .disabled(profile == nil)
-                    .foregroundStyle(profile == nil ? .tertiary : .secondary)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetNameField)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 18)
-
-            Divider()
-                .padding(.horizontal, 16)
-
-            Button {
-                guard profile != nil else { return }
-                Haptics.selection()
-                showBirthdayEditor = true
-            } label: {
-                ProfileEditorRowLabel(title: "Birthday", value: birthdayText)
-            }
-            .buttonStyle(.borderless)
-            .foregroundStyle(.primary)
-            .disabled(profile == nil)
-            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetBirthdayRow)
-
-            Divider()
-                .padding(.horizontal, 16)
-
             ProfileDetailRow(title: "Age", value: ageText)
 
             Divider()
@@ -656,29 +588,20 @@ struct ProfileSheetView: View {
         return true
     }
 
-    private var trimmedEditableName: String? {
-        let trimmed = editableName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
+    /// The account's name, or `nil` for the monogram's fallback glyph.
+    private var accountName: String? {
+        let name = AccountProfileField.displayName(from: accountProfileFields)
+        return name.isEmpty ? nil : name
     }
 
     private var effectiveDisplayName: String {
-        guard let trimmedEditableName else {
-            return String(localized: "Your Profile")
-        }
-        return trimmedEditableName
+        accountName ?? String(localized: "Your Profile")
     }
 
-    private var birthdayText: String {
-        guard let birthday = profile?.birthday else {
-            return String(localized: "Not Set")
-        }
-        return birthday.formatted(date: .long, time: .omitted)
-    }
-
+    /// Age is the **account's** birthday, read once per launch. "Not Available" while that read
+    /// has not answered — which only happens before the account onboarding completes.
     private var ageText: String {
-        guard let birthday = profile?.birthday,
-              let years = Calendar.autoupdatingCurrent.dateComponents([.year], from: birthday, to: .now).year,
-              years >= 0 else {
+        guard let years = AccountBirthday.shared.age() else {
             return String(localized: "Not Available")
         }
         return String(localized: "\(years) years old")
@@ -927,32 +850,6 @@ struct ProfileSheetView: View {
     private var shouldShowFitnessLevelWarningIcon: Bool {
         guard let level = profile?.fitnessLevel, let setAt = profile?.fitnessLevelSetAt else { return false }
         return level.suggestedNextLevelIfReviewDue(lastSetAt: setAt) != nil
-    }
-
-    private var resolvedBirthday: Date {
-        if let birthday = profile?.birthday {
-            return birthday
-        }
-
-        return Calendar.autoupdatingCurrent.date(byAdding: .year, value: -18, to: .now) ?? .now
-    }
-
-    private func syncEditableName() {
-        editableName = profile?.name ?? ""
-    }
-
-    private func commitNameIfNeeded() {
-        guard let profile else { return }
-        let normalizedName = normalizedCommittedName(from: editableName)
-        editableName = normalizedName
-        guard profile.name != normalizedName else { return }
-        profile.name = normalizedName
-        saveContext(context: context)
-    }
-
-    private func normalizedCommittedName(from rawName: String) -> String {
-        let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? defaultProfileName : trimmed
     }
 
     private func startCameraFlow() async {

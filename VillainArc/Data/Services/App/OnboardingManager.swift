@@ -60,7 +60,6 @@ enum OnboardingState: Equatable {
     /// (Dynamic Type + localization aware) instead of a hardcoded fraction.
     var sheetHeight: CGFloat = 480
     private(set) var shouldInsertHealthPermissionsStep = false
-    private(set) var prefetchedBirthday: Date?
     private(set) var prefetchedGender: UserGender?
     private(set) var prefetchedHeightCm: Double?
     private var context: ModelContext { SharedModelContainer.container.mainContext }
@@ -156,22 +155,6 @@ enum OnboardingState: Equatable {
         await startOnboarding()
     }
 
-    func saveName(_ name: String) async -> Bool {
-        guard let profile else { return false }
-        profile.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        do { try context.save() } catch {
-            state = .error("Failed to save your profile: \(error.localizedDescription)")
-            return false
-        }
-        return true
-    }
-
-    func saveBirthday(_ birthday: Date) async -> Bool {
-        guard let profile else { return false }
-        profile.birthday = birthday
-        return await persistProfileAndMaybeFinish(saveFailureMessage: "Failed to save your birthday")
-    }
-
     func saveGender(_ gender: UserGender) async -> Bool {
         guard let profile else { return false }
         profile.gender = gender
@@ -211,8 +194,6 @@ enum OnboardingState: Equatable {
             _ = try SystemState.ensureHealthSyncState(context: context)
 
             let profile = try SystemState.ensureUserProfile(context: context)
-            profile.name = profile.trimmedName.isEmpty ? "Debug User" : profile.trimmedName
-            profile.birthday = profile.birthday ?? Calendar.autoupdatingCurrent.date(from: DateComponents(year: 1995, month: 1, day: 1))
             if profile.gender == .notSet {
                 profile.gender = .other
             }
@@ -246,8 +227,6 @@ enum OnboardingState: Equatable {
 
     private func prefillProfileFromHealthKit() async {
         let healthStore = HealthAuthorizationManager.healthStore
-
-        if profile?.birthday == nil { if let components = try? healthStore.dateOfBirthComponents(), let date = Calendar.current.date(from: components) { prefetchedBirthday = date } }
 
         if profile?.gender == .notSet {
             if let biologicalSex = try? healthStore.biologicalSex().biologicalSex {

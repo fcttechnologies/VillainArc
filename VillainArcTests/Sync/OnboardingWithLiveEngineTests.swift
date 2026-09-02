@@ -60,7 +60,7 @@ struct OnboardingWithLiveEngineTests {
         _ = try SystemState.ensureUserProfile(context: context)
         await harness.enroll()
 
-        try save(harness) { $0.name = "Repro" }
+        try save(harness) { $0.gender = .other }
         await harness.sync.syncNow(.full)
         try save(harness) { $0.heightCm = 177.8 }
         await harness.sync.syncNow(.full)

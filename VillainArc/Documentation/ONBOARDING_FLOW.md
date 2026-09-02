@@ -1,9 +1,9 @@
 # Onboarding Flow
 
 This document explains how VillainArc gets from process launch to a ready app state. It covers the
-front door (the intro carousel ending in the required FCT account sign-in), first bootstrap,
-returning launch, profile onboarding, the required fitness-level and training-goal steps, and the
-Apple Health permission prompt.
+front door (the intro carousel ending in the required FCT account sign-in, then the one FCT account
+onboarding), first bootstrap, returning launch, profile onboarding, the required fitness-level and
+training-goal steps, and the Apple Health permission prompt.
 
 This file is only about launch readiness. Ongoing profile editing after setup lives in the dedicated
 Profile surface (`Views/Profile/ProfileSheetView.swift`) rather than in onboarding.
@@ -64,6 +64,12 @@ no setting yet.
 
 Signing in routes from the top again, which is what picks up the setup that launch still owes.
 
+**The one FCT account onboarding sits between the session and everything else** — the fleet's
+position for it. `RootView` wraps `FCTAccountProfile.AccountOnboardingGate` around the setup sheet
+*and* the app, so the person's name, birthday and storefront country are asked once per account, in
+whichever FCT app they met first, and never again on any device. Nothing behind it asks for them:
+they are the account's, not this app's (`Data/Models/UserProfile.swift`).
+
 Losing the session closes the app behind the gate again, whatever caused it — an involuntary
 expiry, or a sign-out whose local clear was refused because this device still holds unpushed work.
 A clean sign-out clears the local store *and* the bootstrap marker, so the next thing the user sees
@@ -104,13 +110,17 @@ Returning launch does the short path:
 
 ## Profile Onboarding
 
-The required profile fields are:
+The required profile fields are the ones that are **VillainArc's own**:
 
-- name
-- birthday
 - gender
 - height
 - fitness level
+
+The name, the birthday, the country and the avatar are not among them and never will be: they are
+the FCT account's, one home for the whole fleet. The account onboarding above this asks for them,
+`AccountProfileSection` in App Settings edits them, and VillainArc reads the name off
+`account.profile`'s rows (`AccountProfileField.displayName(from:)`) and the birthday off the
+account's trusted row (`AccountBirthday`).
 
 Fitness-level completeness requires both:
 
@@ -151,16 +161,16 @@ than adding them on top. This is design-led and is judged on a device, not from 
 
 For a true first-time user, the setup flow after sign-in is:
 
-`name -> health permissions -> location permissions -> birthday -> gender -> height -> fitness level -> training goal`
+`health permissions -> location permissions -> gender -> height -> fitness level -> training goal`
 
-The in-flow Apple Health step comes immediately after the name step.
+The permission steps lead, and the location step follows the Health one.
 
 ### Returning User With Missing Profile Data
 
 For a returning user with an incomplete profile:
 
 - if the current Health permissions version still needs a prompt, onboarding starts with the Health
-  step after name
+  step, then location, then the first missing field
 - otherwise onboarding jumps directly to the first missing required profile field
 
 For a returning user whose profile fields are complete but who has no active training goal:
@@ -194,7 +204,7 @@ For new users:
 
 - the Health step lives inside profile onboarding
 - tapping Connect requests authorization
-- the app tries to prefill birthday, gender, and height for confirmation
+- the app tries to prefill gender and height for confirmation
 - tapping `Not Now` marks the current Health permissions version as handled and skips the request
   for that version
 

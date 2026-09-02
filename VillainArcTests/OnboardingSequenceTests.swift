@@ -35,7 +35,7 @@ struct OnboardingSequenceTests {
         #expect(OnboardingState.ready.presentsSetupSheet == false)
 
         #expect(OnboardingState.seeding.presentsSetupSheet)
-        #expect(OnboardingState.profile(.name).presentsSetupSheet)
+        #expect(OnboardingState.profile(.gender).presentsSetupSheet)
         #expect(OnboardingState.healthPermissions.presentsSetupSheet)
         #expect(OnboardingState.finishing.presentsSetupSheet)
         #expect(OnboardingState.error("boom").presentsSetupSheet)

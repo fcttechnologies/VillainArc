@@ -16,7 +16,8 @@ Read it first and run the short set rather than the whole list.
 - Confirm there is no way past the front door without a session.
 - Sign in with Apple. Sign out, relaunch, and confirm the gate alone appears (no carousel) on a device already set up.
 - Sign in with email and password, and confirm Password AutoFill offers the saved credential (the `webcredentials:fct-technologies.com` association).
-- Complete onboarding through to Home: name, Health, Location, birthday, gender, height, fitness level, training goal.
+- Complete the FCT account onboarding (name, birthday, country) — it comes before any VillainArc question, and never appears again on a second device.
+- Complete onboarding through to Home: Health, Location, gender, height, fitness level, training goal.
 - Watch the onboarding sheet resize between steps and judge whether the movement reads as one beat or two.
 
 ## Sync Across Devices

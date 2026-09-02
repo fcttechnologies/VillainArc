@@ -36,7 +36,6 @@ struct OptionalEnumPersistenceTests {
         let setAt = Date(timeIntervalSince1970: 1_772_000_000)
         try acrossARelaunch { context in
             let profile = UserProfile()
-            profile.name = "Fernando"
             profile.fitnessLevel = .advanced
             profile.fitnessLevelSetAt = setAt
             context.insert(profile)

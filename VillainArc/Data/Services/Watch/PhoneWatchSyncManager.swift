@@ -82,7 +82,7 @@ import WatchConnectivity
         payload.restTimer = restTimerSnapshot()
         payload.liveSession = liveSessionSnapshot(weightUnit: weightUnit, distanceUnit: distanceUnit, energyUnit: energyUnit)
         payload.quickStats = quickStatsSnapshot(context: context, weightUnit: weightUnit)
-        payload.heartRateZones = zoneConfig(context: context)
+        payload.heartRateZones = zoneConfig()
         return payload
     }
 
@@ -181,11 +181,12 @@ import WatchConnectivity
         return stats == WatchQuickStatsSnapshot() ? nil : stats
     }
 
-    private func zoneConfig(context: ModelContext) -> WatchHeartRateZoneConfig? {
-        guard let birthday = (try? context.fetch(FetchDescriptor<UserProfile>()))?.first?.birthday else { return nil }
-        let years = Calendar.current.dateComponents([.year], from: birthday, to: .now).year ?? 0
-        let age = max(1, years)
-        return WatchHeartRateZoneConfig(estimatedMaxHeartRate: max(120, Double(220 - age)))
+    /// The zones are age-derived, and the age is the **account's** birthday. Unknown until the
+    /// account onboarding's trusted row has been read, and the watch simply gets no zone payload
+    /// until then rather than one drawn from a guessed age.
+    private func zoneConfig() -> WatchHeartRateZoneConfig? {
+        guard let maximum = AccountBirthday.shared.estimatedMaxHeartRate() else { return nil }
+        return WatchHeartRateZoneConfig(estimatedMaxHeartRate: maximum)
     }
 
     // MARK: - Commands

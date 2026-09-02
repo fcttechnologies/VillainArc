@@ -1,8 +1,6 @@
 import Foundation
 
 enum UserProfileOnboardingStep: Int, CaseIterable, Hashable {
-    case name
-    case birthday
     case gender
     case height
     case fitnessLevel

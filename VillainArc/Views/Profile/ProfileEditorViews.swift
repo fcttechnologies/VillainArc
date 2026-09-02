@@ -56,55 +56,6 @@ struct ProfileEditorRowLabel: View {
     }
 }
 
-struct ProfileBirthdayEditorSheet: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let initialBirthday: Date
-    let onConfirm: (Date) -> Void
-
-    @State private var draftBirthday: Date
-
-    init(initialBirthday: Date, onConfirm: @escaping (Date) -> Void) {
-        self.initialBirthday = initialBirthday
-        self.onConfirm = onConfirm
-        _draftBirthday = State(initialValue: initialBirthday)
-    }
-
-    var body: some View {
-        NavigationStack {
-            VStack {
-                DatePicker("Birthday", selection: $draftBirthday, in: ...Date.now, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-                    .labelsHidden()
-                    .accessibilityIdentifier(AccessibilityIdentifiers.profileBirthdayEditorPicker)
-
-                Spacer()
-            }
-            .padding()
-            .sheetBackground()
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button(role: .close) {
-                        Haptics.selection()
-                        dismiss()
-                    }
-                    .accessibilityHint(AccessibilityText.closeButtonHint)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.profileBirthdayEditorCloseButton)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button(role: .confirm) {
-                        Haptics.selection()
-                        onConfirm(draftBirthday)
-                        dismiss()
-                    }
-                    .fontWeight(.semibold)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.profileBirthdayEditorConfirmButton)
-                }
-            }
-        }
-    }
-}
-
 struct ProfileGenderEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.accessibilityReduceMotion) private var reduceMotion

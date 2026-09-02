@@ -220,8 +220,6 @@ enum DebugOperations {
         _ = try SystemState.ensureHealthSyncState(context: context)
 
         let profile = try SystemState.ensureUserProfile(context: context)
-        profile.name = "Debug User"
-        profile.birthday = Calendar.autoupdatingCurrent.date(from: DateComponents(year: 1995, month: 1, day: 1))
         profile.gender = .other
         profile.heightCm = 175
         profile.fitnessLevel = .intermediate

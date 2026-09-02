@@ -40,6 +40,9 @@ struct RootView: View {
                 // A sign-out/switch/deletion wipes this device's copy; the next thing the user
                 // sees is the front door again, carousel included.
                 VASync.shared.onLocalDataCleared = {
+                    // The account boundary: a different account has a different birthday, and the
+                    // last one left standing would draw one person's heart-rate zones for another.
+                    AccountBirthday.shared.forget()
                     Task { await onboardingManager.startOnboarding() }
                 }
                 await VAAccount.controller.resume()
@@ -117,8 +120,6 @@ struct RootView: View {
     @ViewBuilder
     private var rootSurface: some View {
         switch onboardingManager.state {
-        case .ready:
-            accountOnboardingGate
         case .welcome:
             AccountOnboardingFlow(
                 items: VAOnboardingCarousel.items,
@@ -136,29 +137,38 @@ struct RootView: View {
                     onboardingManager.accountGateCompleted()
                 }
                 .overlay(alignment: .bottom) { debugTestAccountBar }
-        case .launching, .seeding, .restoring, .profile, .finishing, .healthPermissions, .error:
-            // The launch backdrop: the app's own background, matching the generated launch screen
-            // so the hand-off is seamless, and holding nothing of the app itself.
-            Color.bg
-                .ignoresSafeArea()
-                .sheet(isPresented: setupSheetBinding) {
-                    OnboardingView(manager: onboardingManager)
-                        .presentationBackground(Color.sheetBg)
-                        .interactiveDismissDisabled(true)
-                        .presentationDragIndicator(.hidden)
+        case .launching, .seeding, .restoring, .profile, .finishing, .healthPermissions, .error, .ready:
+            accountOnboardingGate {
+                if onboardingManager.state == .ready {
+                    ContentView()
+                } else {
+                    // The launch backdrop: the app's own background, matching the generated launch
+                    // screen so the hand-off is seamless, and holding nothing of the app itself.
+                    Color.bg
+                        .ignoresSafeArea()
+                        .sheet(isPresented: setupSheetBinding) {
+                            OnboardingView(manager: onboardingManager)
+                                .presentationBackground(Color.sheetBg)
+                                .interactiveDismissDisabled(true)
+                                .presentationDragIndicator(.hidden)
+                        }
                 }
+            }
         }
     }
 
-    /// The one FCT onboarding, between the session and the app. Villain Arc's own first-run
-    /// sequence already ran a restore by the time this renders, so the gate's wait is instant
-    /// there; a returning launch, which skips that restore, is what it actually waits for.
+    /// The one FCT onboarding, between the session and everything else — the fleet's position for
+    /// it, and Villain Arc's now that its own setup no longer asks for anything the account holds.
+    /// It wraps the setup stage as well as the app, so the name and the birthday are answered once
+    /// here and the questions behind it are only ever this app's own.
     ///
     /// The session can go away under a `.ready` state — an expiry, or a sign-out whose local clear
     /// was refused — and `onChange(of:)` routes to the sign-in gate one update later. The backdrop
     /// is that one update, rather than a force-unwrap of credentials that have already gone.
     @ViewBuilder
-    private var accountOnboardingGate: some View {
+    private func accountOnboardingGate<Content: View>(
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
         if let credentials = VAAccount.controller.credentials, let stateFile = VASync.shared.stateFile {
             AccountOnboardingGate(
                 tint: .accentColor,
@@ -168,7 +178,11 @@ struct RootView: View {
                 sync: { _ = await VASync.shared.restoreAccountData() },
                 trusted: AccountTrusted(account: credentials)
             ) {
-                ContentView()
+                content()
+                    // The trusted row exists by the time anything behind the gate renders, so this
+                    // is the first moment the birthday can be read — and the only one it needs to
+                    // be, since it is frozen for the launch.
+                    .task { await AccountBirthday.shared.loadIfNeeded(trusted: AccountTrusted(account: credentials)) }
             }
         } else {
             Color.bg.ignoresSafeArea()

@@ -1,10 +1,14 @@
 import Foundation
 import SwiftData
 
+/// What Villain Arc knows about the person that is **its own**: the body facts and the training
+/// self-assessment its programming reads.
+///
+/// The name, the birthday, the country and the avatar are not here and never will be — they are
+/// the FCT account's, one home for the whole fleet, read through `AccountProfileField` and
+/// ``AccountBirthday``.
 @Model final class UserProfile {
     @Attribute(.preserveValueOnDeletion) var id: UUID = VASyncIdentity.userProfileID
-    var name: String = ""
-    var birthday: Date?
     var gender: UserGender = UserGender.notSet
     var dateJoined: Date = Date()
     var heightCm: Double?
@@ -41,13 +45,9 @@ import SwiftData
         photoNeedsStaging = true
     }
 
-    var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
-
     var isComplete: Bool { firstMissingStep == nil }
 
     var firstMissingStep: UserProfileOnboardingStep? {
-        if trimmedName.isEmpty { return .name }
-        if birthday == nil { return .birthday }
         if gender == .notSet { return .gender }
         if heightCm == nil { return .height }
         if fitnessLevel == nil || fitnessLevelSetAt == nil { return .fitnessLevel }

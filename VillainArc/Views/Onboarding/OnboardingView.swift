@@ -12,7 +12,6 @@ private func normalizedOnboardingImperialHeightComponents(from centimeters: Doub
 private enum OnboardingStep: Hashable {
     case healthPermissions
     case locationPermissions
-    case birthday
     case gender
     case height
     case fitnessLevel
@@ -20,12 +19,8 @@ private enum OnboardingStep: Hashable {
 }
 
 private extension OnboardingStep {
-    init?(profileStep: UserProfileOnboardingStep) {
+    init(profileStep: UserProfileOnboardingStep) {
         switch profileStep {
-        case .name:
-            return nil
-        case .birthday:
-            self = .birthday
         case .gender:
             self = .gender
         case .height:
@@ -119,8 +114,6 @@ struct OnboardingView: View {
                         OnboardingHealthPermissionStepView(manager: manager, path: $path)
                     case .locationPermissions:
                         OnboardingLocationPermissionStepView(manager: manager, path: $path)
-                    case .birthday:
-                        ProfileBirthdayStepView(manager: manager, path: $path)
                     case .gender:
                         ProfileGenderStepView(manager: manager, path: $path)
                     case .height:
@@ -137,7 +130,7 @@ struct OnboardingView: View {
     @ViewBuilder
     private var profileRootView: some View {
         if case .profile(let step) = manager.state {
-            if step != .name && manager.shouldInsertHealthPermissionsStep {
+            if manager.shouldInsertHealthPermissionsStep {
                 OnboardingHealthPermissionStepView(manager: manager, path: $path)
             } else {
                 profileStepView(for: step)
@@ -150,10 +143,6 @@ struct OnboardingView: View {
     @ViewBuilder
     private func profileStepView(for step: UserProfileOnboardingStep) -> some View {
         switch step {
-        case .name:
-            ProfileNameStepView(manager: manager, path: $path)
-        case .birthday:
-            ProfileBirthdayStepView(manager: manager, path: $path)
         case .gender:
             ProfileGenderStepView(manager: manager, path: $path)
         case .height:
@@ -425,119 +414,7 @@ private struct OnboardingLocationPermissionStepView: View {
 
     private func pushNextStep() {
         guard let nextStep = manager.nextRequiredStep else { return }
-        if let onboardingStep = OnboardingStep(profileStep: nextStep) {
-            path.append(onboardingStep)
-        }
-    }
-}
-
-private struct ProfileNameStepView: View {
-    @Bindable var manager: OnboardingManager
-    @Binding var path: [OnboardingStep]
-    @State private var name: String
-
-    init(manager: OnboardingManager, path: Binding<[OnboardingStep]>) {
-        self.manager = manager
-        _path = path
-        _name = State(initialValue: manager.profile?.name ?? "")
-    }
-
-    var body: some View {
-        VStack {
-            Spacer()
-
-            TextField("Name", text: $name)
-                .textInputAutocapitalization(.words)
-                .autocorrectionDisabled()
-                .font(.largeTitle)
-                .fontWeight(.semibold)
-                .textContentType(.name)
-                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingNameField)
-
-            Spacer()
-        }
-        .padding()
-        .fixedSize(horizontal: false, vertical: true)
-        .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
-        .simultaneousGesture(
-            TapGesture().onEnded {
-                dismissKeyboard()
-            }
-        )
-        .navigationTitle("What's your name?")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-#if DEBUG
-            DebugSkipOnboardingToolbarItem(manager: manager, path: $path)
-#endif
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(role: .confirm) {
-                    Haptics.selection()
-                    Task {
-                        guard await manager.saveName(name) else { return }
-                        if manager.shouldInsertHealthPermissionsStep {
-                            path.append(.healthPermissions)
-                        } else {
-                            path.append(.locationPermissions)
-                        }
-                    }
-                }
-                .fontWeight(.semibold)
-                .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingNameContinueButton)
-            }
-        }
-    }
-}
-
-private struct ProfileBirthdayStepView: View {
-    @Bindable var manager: OnboardingManager
-    @Binding var path: [OnboardingStep]
-    @State private var birthday: Date
-
-    init(manager: OnboardingManager, path: Binding<[OnboardingStep]>) {
-        self.manager = manager
-        _path = path
-        let defaultBirthday = Calendar.current.date(byAdding: .year, value: -25, to: .now) ?? .now
-        _birthday = State(initialValue: manager.prefetchedBirthday ?? manager.profile?.birthday ?? defaultBirthday)
-    }
-
-    var body: some View {
-        VStack {
-            Spacer()
-
-            DatePicker("Birthday", selection: $birthday, in: ...Date.now, displayedComponents: .date)
-                .datePickerStyle(.wheel)
-                .labelsHidden()
-                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingBirthdayPicker)
-
-            Spacer()
-        }
-        .padding()
-        .fixedSize(horizontal: false, vertical: true)
-        .reportsOnboardingHeight(to: manager, chrome: OnboardingChrome.navStep)
-        .navigationTitle("When's your birthday?")
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-#if DEBUG
-            DebugSkipOnboardingToolbarItem(manager: manager, path: $path)
-#endif
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(role: .confirm) {
-                    Haptics.selection()
-                    Task {
-                        guard await manager.saveBirthday(birthday) else { return }
-                        if let nextStep = manager.nextRequiredStep {
-                            if let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                                path.append(onboardingStep)
-                            }
-                        }
-                    }
-                }
-                .fontWeight(.semibold)
-                .accessibilityIdentifier(AccessibilityIdentifiers.onboardingBirthdayContinueButton)
-            }
-        }
+        path.append(OnboardingStep(profileStep: nextStep))
     }
 }
 
@@ -614,9 +491,7 @@ private struct ProfileGenderStepView: View {
                     Task {
                         guard await manager.saveGender(gender) else { return }
                         if let nextStep = manager.nextRequiredStep {
-                            if let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                                path.append(onboardingStep)
-                            }
+                            path.append(OnboardingStep(profileStep: nextStep))
                         }
                     }
                 }
@@ -708,9 +583,7 @@ private struct ProfileHeightStepView: View {
                     Task {
                         guard await manager.saveHeight(cm: saveCm) else { return }
                         if let nextStep = manager.nextRequiredStep {
-                            if let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                                path.append(onboardingStep)
-                            }
+                            path.append(OnboardingStep(profileStep: nextStep))
                         }
                     }
                 }
@@ -765,8 +638,8 @@ private struct ProfileFitnessLevelStepView: View {
                     Haptics.selection()
                     Task {
                         guard await manager.saveFitnessLevel(selectedLevel) else { return }
-                        if let nextStep = manager.nextRequiredStep, let onboardingStep = OnboardingStep(profileStep: nextStep) {
-                            path.append(onboardingStep)
+                        if let nextStep = manager.nextRequiredStep {
+                            path.append(OnboardingStep(profileStep: nextStep))
                         }
                     }
                 }

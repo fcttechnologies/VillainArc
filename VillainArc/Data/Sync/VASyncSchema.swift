@@ -42,7 +42,8 @@ enum VASyncSchema {
     static let appSlug = "va"
 
     /// `<app>.<version>`. Bumped only when a migration changes what a row means on the wire.
-    static let version = "va.1"
+    /// At `2`, the name and the birthday left `va.user_profile` — they are the account's.
+    static let version = "va.2"
 
     /// Parents before children, so rows pulled in one cycle resolve their links on the same pass.
     /// `suggestion_event` sits after every table it names; `prescription_change` and
@@ -192,8 +193,6 @@ extension UserProfile: SyncedModel {
 
     func syncRow() -> [String: JSONValue] {
         [
-            "name": .string(name),
-            "birthday": birthday.map(JSONValue.date) ?? .null,
             "gender": .string(gender.rawValue),
             "date_joined": .date(dateJoined),
             "height_cm": heightCm.map(JSONValue.double) ?? .null,
@@ -207,8 +206,6 @@ extension UserProfile: SyncedModel {
 
     @discardableResult
     func apply(_ row: [String: JSONValue]) -> UUID? {
-        if let value = row["name"]?.stringValue { name = value }
-        if let value = row["birthday"] { birthday = value.dateValue }
         if let value = row["gender"]?.stringValue, let gender = UserGender(rawValue: value) { self.gender = gender }
         if let value = row["date_joined"]?.dateValue { dateJoined = value }
         if let value = row["height_cm"] { heightCm = value.doubleValue }

@@ -35,7 +35,6 @@ struct OptionalEnumApplierShapeTests {
 
     private func seed(_ container: ModelContainer) throws {
         let profile = try SystemState.ensureUserProfile(context: container.mainContext)
-        profile.name = "Repro"
         profile.heightCm = 177.8
         profile.fitnessLevel = .advanced
         profile.fitnessLevelSetAt = setAt
@@ -45,8 +44,6 @@ struct OptionalEnumApplierShapeTests {
     /// The row the applier really receives, as captured from the wire.
     private var wireRow: [String: JSONValue] {
         [
-            "name": .string("Repro"),
-            "birthday": .null,
             "gender": .string(UserGender.notSet.rawValue),
             "date_joined": .date(Date(timeIntervalSince1970: 1_700_000_000)),
             "height_cm": .double(177.8),

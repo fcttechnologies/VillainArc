@@ -47,8 +47,6 @@ struct OnboardingFitnessLevelHopTests {
         let profile = try SystemState.ensureUserProfile(context: context)
         manager.profile = profile
 
-        #expect(await manager.saveName("Repro"))
-        #expect(await manager.saveBirthday(Date(timeIntervalSince1970: 1_034_000_000)))
         #expect(await manager.saveGender(.male))
         #expect(await manager.saveHeight(cm: 177.8))
 
@@ -78,8 +76,6 @@ struct OnboardingFitnessLevelHopTests {
         manager.restoreAccountData = { true }
         manager.profile = try SystemState.ensureUserProfile(context: context)
 
-        #expect(await manager.saveName("Repro"))
-        #expect(await manager.saveBirthday(Date(timeIntervalSince1970: 1_034_000_000)))
         #expect(await manager.saveGender(.male))
         #expect(await manager.saveHeight(cm: 177.8))
         #expect(await manager.saveFitnessLevel(.advanced))
