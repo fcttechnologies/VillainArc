@@ -14,4 +14,4 @@ skills-lock.json
 .asc/
 
 # Build output from scripts/install-ios.sh
-.build-ios/
+DerivedData/
