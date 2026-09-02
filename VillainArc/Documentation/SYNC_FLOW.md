@@ -36,8 +36,10 @@ parent's completion):
   `account.trusted`), `AppSettings` (singleton)
 - what the user has done to a catalog exercise: `ExercisePreference`, sparse — a row exists only
   for an exercise they actually touched (favorited, added, or tuned)
-- the donation answer: `EngineDonation` (singleton) — whether the exercise behind an outcome may
-  ride with it (`SUGGESTION_AND_OUTCOME_FLOW.md`)
+
+The shared account fragment rides this same wire and is the package's rather than this app's:
+`account.onboarding`, `account.profile`, and `account.engine_donation` — the one donation answer
+for every FCT app that runs an engine (`SUGGESTION_AND_OUTCOME_FLOW.md`).
 
 **No byte surface.** Villain Arc authors no bytes at all, so it adopts no blob store of its own:
 the one picture is the FCT account's avatar, which `AccountBlobStore` carries under
@@ -79,11 +81,11 @@ the one picture is the FCT account's avatar, which `AccountBlobStore` carries un
 `RootView` starts `VASync` with the one `AccountController` and resumes the session; the engine
 exists only while an account does:
 
-- `.enrolled` / `.resumed` → build the engine (state file + **two** blob stores beside the store in
-  the App Group: the app's own, and the account's `AccountBlobStore`, which holds the one avatar the
-  account has and shares this app's blob transport), enroll marks-all-dirty on first sign-in, then
-  cycle. Both stores are drained in the cycle, both are consulted by the push gate, both count into
-  the sign-out barrier, and both are cleared on sign-out and account switch.
+- `.enrolled` / `.resumed` → build the engine (state file + the one blob store beside the store in
+  the App Group: the account's `AccountBlobStore`, which holds the one avatar the account has and
+  shares this app's blob transport), enroll marks-all-dirty on first sign-in, then cycle. That
+  store is drained in the cycle, consulted by the push gate, counted into the sign-out barrier,
+  cleared on sign-out and account switch, and reported by `BlobStatusRow` in Settings.
 - `.needsReauthentication` → engine idles, nothing cleared; the sign-in gate takes the window back
   over intact data
 - `.signedOut` → barrier-gated clear: one last push while a token exists (`signOutPreflight`),

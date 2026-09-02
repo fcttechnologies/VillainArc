@@ -828,11 +828,6 @@ enum AccessibilityIdentifiers {
     static let profileFitnessLevelEditorCloseButton = "profileFitnessLevelEditorCloseButton"
     static let profileFitnessLevelEditorConfirmButton = "profileFitnessLevelEditorConfirmButton"
 
-    // MARK: - Engine donation
-    static let engineDonationToggle = "engineDonationToggle"
-    static let engineDonationContinueButton = "engineDonationContinueButton"
-    static let settingsEngineDonationToggle = "settingsEngineDonationToggle"
-
     // MARK: - AppSettingsView
     static let settingsCloseButton = "settingsCloseButton"
     static let settingsThemePicker = "settingsThemePicker"

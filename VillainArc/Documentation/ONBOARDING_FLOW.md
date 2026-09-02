@@ -70,10 +70,11 @@ position for it. `RootView` wraps `FCTAccountProfile.AccountOnboardingGate` arou
 whichever FCT app they met first, and never again on any device. Nothing behind it asks for them:
 they are the account's, not this app's (`Data/Models/UserProfile.swift`).
 
-**One step of Villain Arc's own comes after all of it**: the engine's donation ask
-(`EngineDonationGate`, wrapped around `ContentView` at `.ready`), which asks once per account
-whether the exercise behind a suggestion's outcome may ride with it — off until tapped, and
-skipped entirely on a launch that has not yet pulled the account's answer. See
+**One more account step comes after all of it**: the engine donation ask
+(`FCTAccountProfile.EngineDonationGate`, wrapped around `ContentView` at `.ready`), which asks once
+per account whether the content behind a suggestion's outcome may ride with it — off until tapped,
+skipped entirely on a launch that has not yet pulled the account's answer, and never asked again in
+any FCT app once it is answered here. See
 [SUGGESTION_AND_OUTCOME_FLOW.md](./SUGGESTION_AND_OUTCOME_FLOW.md) § the donation ask.
 
 Losing the session closes the app behind the gate again, whatever caused it — an involuntary

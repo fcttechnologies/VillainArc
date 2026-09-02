@@ -55,9 +55,13 @@ struct AccountAdoptionTests {
         #expect(harness.sync.appleFullName?.familyName == "Cortez")
     }
 
-    /// The two account tables ride Villain Arc's own schema over Villain Arc's own wire: one
+    /// The three account tables ride Villain Arc's own schema over Villain Arc's own wire: one
     /// device writes them, a second device on the same account pulls them back under the fixed
     /// uuids the server pins.
+    ///
+    /// The donation answer is one of them, and it is the whole reason it is not this app's: the
+    /// row a person writes here is the row every other FCT app reads, so it is asked once and
+    /// withdrawn once for the fleet.
     @Test @MainActor
     func theAccountFragmentRoundTripsToASecondDevice() async throws {
         let server = FakeSyncServer()
@@ -69,6 +73,7 @@ struct AccountAdoptionTests {
         authored.insert(AccountOnboardingRecord(completedIn: VASyncSchema.appSlug))
         authored.insert(AccountProfileField(kind: .givenName, value: "Fernando"))
         authored.insert(AccountProfileField(kind: .familyName, value: "Cortez"))
+        AccountEngineDonation.record(donating: true, in: authored)
         try authored.save()
         await author.enroll()
         await author.sync.syncNow(.full)
@@ -88,5 +93,10 @@ struct AccountAdoptionTests {
         let family = try #require(try AccountProfileField.fetch(.familyName, in: read))
         #expect(family.value == "Cortez")
         #expect(family.id == AccountProfileField.Kind.familyName.id)
+
+        let donation = try read.fetch(FetchDescriptor<AccountEngineDonation>())
+        #expect(donation.count == 1)
+        #expect(donation.first?.id == AccountSchema.engineDonationID)
+        #expect(donation.first?.donating == true)
     }
 }

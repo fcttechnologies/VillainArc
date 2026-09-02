@@ -87,21 +87,26 @@ outright, which is an edit rather than a verdict.
 
 ### The donation ask — what may leave with an outcome
 
-`Data/Models/EngineDonation.swift` (the synced answer + the per-country default),
-`Views/Onboarding/EngineDonationStep.swift` (the ask), the "Send the Exercise Too" toggle in
-`AppSettingsView` (the withdrawal).
+The ask, the answer and the withdrawal are all `FCTAccountProfile`'s: `AccountEngineDonation` (the
+synced answer + the per-country default), `EngineDonationGate` (the ask, wrapped around
+`ContentView` in `RootView`), and `EngineDonationSettingsSection` (the withdrawal, dropped into
+`AppSettingsView`).
 
 Everything above is **structure**: which generator, which position, which verdict, how long it
 took. None of it is content and none of it is optional. The donation is the content behind it —
 which exercise — asked once, in one step after the FCT account onboarding and this app's own setup
 questions, off until tapped.
 
-**The answer is a synced singleton** (`va.engine_donation`), so it follows the account rather than
-the device. The row's presence is the record that the ask happened, which is why an absent row
-decides nothing until the table has been pulled — the same rule `AccountOnboardingGate` holds for
-its own row, and for the same reason: before the pull, "never asked" and "answered on another
-device" are indistinguishable, and asking twice would overwrite the first answer.
-`EngineDonation.asks(hasAnswer:pulled:)` is that rule.
+**The answer is the ACCOUNT's, one row for the whole fleet** (`account.engine_donation`), so it
+follows the person rather than the device or the app: asked once in whichever FCT app they met
+first, honoured in every other one, and turning it off anywhere turns it off everywhere. That is
+also why the ask speaks in fleet terms — *what a suggestion was about* — rather than naming the
+exercise: a consent given about one app's content may not be spent on another's. The row's presence
+is the record that the ask happened, which is why an absent row decides nothing until the table has
+been pulled — the same rule `AccountOnboardingGate` holds for its own row, and for the same reason:
+before the pull, "never asked" and "answered on another device" are indistinguishable, and asking
+twice would overwrite the first answer. `AccountEngineDonation.asks(hasAnswer:pulled:)` is that
+rule.
 
 **The step's default is a table, not a condition.** `EngineDonationDefaults.table` maps countries
 to what the toggle starts at, read against `AccountTrusted.get().country`, so opening the default

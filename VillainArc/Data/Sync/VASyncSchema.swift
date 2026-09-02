@@ -51,7 +51,6 @@ enum VASyncSchema {
         version: version,
         tables: AccountSchema.tables + [
             .of(AppSettings.self),
-            .of(EngineDonation.self),
             .of(UserProfile.self),
             .of(ExercisePreference.self),
             .of(TrainingGoal.self),
@@ -159,42 +158,6 @@ extension AppSettings: SyncedModel {
            let mode = HydrationEventNotificationMode(rawValue: Int(value)) { hydrationNotificationMode = mode }
         if let value = row["speed_unit"]?.stringValue, let unit = SpeedUnit(rawValue: value) { speedUnit = unit }
         if let value = row["favorite_cardio_kind"] { favoriteCardioKindRawValue = value.stringValue }
-        return nil
-    }
-}
-
-// MARK: - EngineDonation (singleton, fixed uuid)
-
-extension EngineDonation: SyncedModel {
-    static var syncTableName: String { "va.engine_donation" }
-    static var syncIDKeyPath: KeyPath<EngineDonation, UUID> { \.id }
-
-    static func descriptor(forSyncIDs ids: [UUID]) -> FetchDescriptor<EngineDonation> {
-        FetchDescriptor(predicate: #Predicate { ids.contains($0.id) })
-    }
-
-    static func descriptor(forPersistentIDs ids: [PersistentIdentifier]) -> FetchDescriptor<EngineDonation> {
-        FetchDescriptor(predicate: #Predicate { ids.contains($0.persistentModelID) })
-    }
-
-    static var allRecordsDescriptor: FetchDescriptor<EngineDonation> { FetchDescriptor() }
-
-    convenience init(syncID: UUID) {
-        self.init(donating: false)
-        id = syncID
-    }
-
-    func syncRow() -> [String: JSONValue] {
-        [
-            "donating": .bool(donating),
-            "decided_at": .date(decidedAt),
-        ]
-    }
-
-    @discardableResult
-    func apply(_ row: [String: JSONValue]) -> UUID? {
-        if let value = row["donating"]?.boolValue { donating = value }
-        if let value = row["decided_at"]?.dateValue { decidedAt = value }
         return nil
     }
 }

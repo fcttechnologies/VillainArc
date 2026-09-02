@@ -36,7 +36,6 @@ enum VillainArcSchemaV1: VersionedSchema {
             ExercisePreference.self,
             AppSettings.self,
             UserProfile.self,
-            EngineDonation.self,
             ExerciseHistory.self,
             ProgressionPoint.self,
             RepRangePolicy.self,

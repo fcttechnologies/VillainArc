@@ -1,5 +1,6 @@
 import FCTAccount
 import FCTAccountProfile
+import FCTBlobSync
 import FCTFeedback
 import FCTMetrics
 import FCTOnboarding
@@ -142,6 +143,9 @@ private struct AppSettingsFormView: View {
                     trusted: AccountTrusted(account: credentials),
                     avatars: avatars
                 )
+                // Silent while the blob layer is healthy, which is nearly always: it appears only
+                // when an upload is stuck on something the person can act on.
+                BlobStatusRow(store: avatars.blobs)
             }
 
             VAAccountSection()
@@ -736,29 +740,6 @@ private func dismissAllPresentedSheets() {
 
     for rootViewController in rootViewControllers {
         rootViewController.dismiss(animated: true)
-    }
-}
-
-/// The donation answer, where it can be withdrawn as easily as it was given — which is what makes
-/// it consent rather than a one-way door. The row is synced, so a change here reaches every device
-/// on the account.
-private struct EngineDonationSettingsSection: View {
-    @Environment(\.modelContext) private var context
-    @Query(EngineDonation.single) private var answers: [EngineDonation]
-
-    var body: some View {
-        Section {
-            Toggle(isOn: Binding(
-                get: { answers.first?.donating ?? false },
-                set: { EngineDonation.record(donating: $0, in: context) }
-            )) {
-                Label("Send the Exercise Too", systemImage: "chart.line.uptrend.xyaxis")
-            }
-            .accessibilityIdentifier(AccessibilityIdentifiers.settingsEngineDonationToggle)
-            .appGroupedListRow(position: .single)
-        } footer: {
-            Text("Villain Arc reports how each suggestion did — which generator made it, where it was shown, and whether the weight was right. Never which exercise it was. With this on, the exercise behind an outcome goes with it. Your workouts, your weights, your health data, your name and your account never go.")
-        }
     }
 }
 

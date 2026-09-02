@@ -5,7 +5,7 @@ import Foundation
 ///
 /// Three kinds of row exist before any sync runs, and each needs its cross-device name minted the
 /// same way on every device:
-/// - **Singletons** (`AppSettings`, `UserProfile`, `EngineDonation`) carry a fixed uuid the client
+/// - **Singletons** (`AppSettings`, `UserProfile`) carry a fixed uuid the client
 ///   hard-codes, so two devices that each create one converge as one row under LWW instead of two
 ///   rows wearing the same job (the platform's singleton convention).
 /// - **Catalog-derived rows** (`ExercisePreference`) name a bundled catalog entry that every
@@ -20,9 +20,6 @@ import Foundation
 nonisolated enum VASyncIdentity {
     static let appSettingsID = UUID(uuidString: "7A2E6F04-0001-4000-8000-56412D534554")!
     static let userProfileID = UUID(uuidString: "7A2E6F04-0002-4000-8000-56412D505246")!
-    /// Pinned by `va.engine_donation`'s own check constraint, so a row minted under any other id
-    /// is refused on its first push rather than found as a duplicate later.
-    static let engineDonationID = UUID(uuidString: "7A2E6F04-0003-4000-8000-56412D444F4E")!
 
     private static let exerciseNamespace = "com.fcttechnologies.VillainArc.exercise:"
     private static let exercisePreferenceNamespace = "com.fcttechnologies.VillainArc.exercise-preference:"
