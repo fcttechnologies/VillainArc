@@ -1,3 +1,4 @@
+import FCTAccount
 import FCTMetrics
 import FCTOnboarding
 import FCTSupport
@@ -1012,10 +1013,20 @@ private struct NotificationSettingsView: View {
 }
 
 #if DEBUG
+/// The debug menu, and the one rule that shapes it: **every operation here writes into the
+/// detached debug store**, never the app's own. Each of these seeds runs through the same `@Model`
+/// types the app syncs, so a seed pointed at the app's store sends every row it inserts to the
+/// account and a clear-first seed sends a tombstone per row it removes.
+///
+/// The exceptions are the three that write nothing synced: the exercise-catalog resync (local
+/// `Exercise` rows, whose synced half is `ExercisePreference`), the Health resync (the
+/// device-sourced Health mirror, which never syncs up), and the Spotlight reindex (a read).
 private struct DebugSettingsView: View {
+    @Environment(\.debugStoreSwitch) private var debugStore
     @State private var isWorking = false
     @State private var statusMessage = "Ready"
     @State private var showsResetConfirmation = false
+    @State private var resetRefusal: DebugResetRefusal?
     @State private var introPreview: WhatsNewPresentation?
     @State private var showsCarouselPreview = false
 
@@ -1030,10 +1041,17 @@ private struct DebugSettingsView: View {
     var body: some View {
         Form {
             Section {
-                ScreenshotStudioLink(scenes: ScreenshotStudioCatalog.scenes) {
-                    try ScreenshotStudioSeeder.seedAll()
+                ScreenshotStudioLink(scenes: ScreenshotStudioCatalog.scenes) { context in
+                    try ScreenshotStudioSeeder.seedAll(in: context)
                 }
-                .appGroupedListRow(position: .single)
+                .appGroupedListRow(position: .top)
+
+                Toggle("Render Debug Store", systemImage: "shippingbox", isOn: debugStoreBinding)
+                    .disabled(debugStore == nil)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.debugRenderDebugStoreToggle)
+                    .appGroupedListRow(position: .bottom)
+            } footer: {
+                Text("Every seed below writes into the detached debug store. Turn this on to point the app itself at that store and see them; the Screenshot Studio turns it on for as long as it is open.")
             }
 
             Section {
@@ -1065,7 +1083,7 @@ private struct DebugSettingsView: View {
             }
 
             Section {
-                Button("Delete All Data", systemImage: "trash", role: .destructive) {
+                Button("Reset Debug Data", systemImage: "trash", role: .destructive) {
                     Haptics.selection()
                     showsResetConfirmation = true
                 }
@@ -1101,8 +1119,8 @@ private struct DebugSettingsView: View {
                 .appGroupedListRow(position: .middle)
 
                 Button("Touch All Models", systemImage: "square.stack.3d.up") {
-                    runOperation("All model tables touched.") {
-                        try DebugOperations.touchAllModels()
+                    runSeed("All model tables touched.") { context in
+                        try DebugOperations.touchAllModels(in: context)
                     }
                 }
                 .disabled(isWorking)
@@ -1110,8 +1128,8 @@ private struct DebugSettingsView: View {
                 .appGroupedListRow(position: .middle)
 
                 Button("Seed Workout Data", systemImage: "dumbbell") {
-                    runOperation("Workout data seeded.") {
-                        try DebugOperations.seedWorkoutData()
+                    runSeed("Workout data seeded.") { context in
+                        try DebugOperations.seedWorkoutData(in: context)
                     }
                 }
                 .disabled(isWorking)
@@ -1123,8 +1141,8 @@ private struct DebugSettingsView: View {
 
             Section {
                 Button("Seed Demo Data", systemImage: "wand.and.sparkles") {
-                    runOperation("Demo data seeded.") {
-                        try await DebugOperations.seedDemoData()
+                    runSeed("Demo data seeded.") { context in
+                        try DebugOperations.seedDemoData(in: context)
                     }
                 }
                 .disabled(isWorking)
@@ -1133,14 +1151,14 @@ private struct DebugSettingsView: View {
             } header: {
                 Text("Demo Capture")
             } footer: {
-                Text("One action: a clean store, the profile and goal a ready app needs, workout history, and 35 days of Health data — the state store screenshots and demo footage are captured from.")
+                Text("One action: the profile and goal a ready app needs, workout history, and 35 days of Health data — the state store screenshots and demo footage are captured from.")
             }
 
             Section {
                 ForEach(DebugOperations.HealthSampleScenario.allCases) { scenario in
                     Button(scenario.title, systemImage: "chart.line.uptrend.xyaxis") {
-                        runOperation("\(scenario.title) samples seeded.") {
-                            try DebugOperations.seedHealthSamples(scenario: scenario)
+                        runSeed("\(scenario.title) samples seeded.") { context in
+                            try DebugOperations.seedHealthSamples(scenario: scenario, in: context)
                         }
                     }
                     .disabled(isWorking)
@@ -1157,17 +1175,20 @@ private struct DebugSettingsView: View {
         .toolbarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
-        .alert("Delete All Data?", isPresented: $showsResetConfirmation) {
-            Button("Delete All Data", role: .destructive) {
-                runOperation("App data reset.") {
-                    try await DebugOperations.resetAppData()
-                }
+        .alert("Reset Debug Data?", isPresented: $showsResetConfirmation) {
+            Button("Reset Debug Data", role: .destructive) {
+                performReset()
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.debugResetAppDataConfirmButton)
             Button("Cancel", role: .cancel) {}
                 .accessibilityIdentifier(AccessibilityIdentifiers.debugResetAppDataCancelButton)
         } message: {
-            Text("This clears local app data and recreates the minimum records needed for testing.")
+            Text("This erases the detached debug store and this device's sync caches. Your account's own data is not touched.")
+        }
+        .alert(resetRefusal?.title ?? "", isPresented: refusalBinding, presenting: resetRefusal) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { refusal in
+            Text(refusal.message)
         }
         .sheet(item: $introPreview) { presentation in
             WhatsNewSheet(presentation: presentation) {
@@ -1186,6 +1207,72 @@ private struct DebugSettingsView: View {
             ) {
                 showsCarouselPreview = false
             }
+        }
+    }
+
+    /// Whether the app is rendering the detached debug store rather than its own.
+    private var debugStoreBinding: Binding<Bool> {
+        Binding(
+            get: { debugStore?.isEngaged ?? false },
+            set: { shouldEngage in
+                guard let debugStore else {
+                    statusMessage = DebugStoreSwitch.missingSwitchMessage
+                    return
+                }
+                guard shouldEngage else {
+                    debugStore.disengage()
+                    statusMessage = "Rendering the app's own store."
+                    return
+                }
+                do {
+                    try debugStore.engage()
+                    statusMessage = "Rendering the detached debug store."
+                } catch {
+                    statusMessage = "Debug store unavailable: \(error.localizedDescription)"
+                }
+            }
+        )
+    }
+
+    private var refusalBinding: Binding<Bool> {
+        Binding(get: { resetRefusal != nil }, set: { if !$0 { resetRefusal = nil } })
+    }
+
+    /// Runs a seed against the **detached** store's context — the only context a debug write is
+    /// ever handed here, so there is no path from this screen to the account's own data.
+    private func runSeed(_ successMessage: String, operation: @escaping (ModelContext) throws -> Void) {
+        guard let debugStore else {
+            statusMessage = DebugStoreSwitch.missingSwitchMessage
+            return
+        }
+        do {
+            let context = try debugStore.detachedContainer().mainContext
+            runOperation(successMessage) { try operation(context) }
+        } catch {
+            statusMessage = "Debug store unavailable: \(error.localizedDescription)"
+        }
+    }
+
+    private func performReset() {
+        guard let debugStore else {
+            statusMessage = DebugStoreSwitch.missingSwitchMessage
+            return
+        }
+        let configuration = VASyncConfiguration.live
+        let caches = [
+            try? configuration.stateFileURL(),
+            try? configuration.blobStateFileURL(),
+            try? configuration.blobCacheDirectory(),
+        ].compactMap { $0 }
+        do {
+            try DebugReset.perform(debugStore, isSignedIn: VAAccount.controller.state.isSignedIn, localCaches: caches)
+            statusMessage = "Debug store erased."
+        } catch let refusal as DebugResetRefusal {
+            resetRefusal = refusal
+            statusMessage = refusal.message
+        } catch {
+            statusMessage = "Failed: \(error.localizedDescription)"
+            AppLog.error("Debug reset failed", error: error)
         }
     }
 

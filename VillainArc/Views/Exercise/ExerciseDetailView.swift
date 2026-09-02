@@ -122,6 +122,7 @@ struct ExerciseDetailView: View {
     @State private var addedConfirmationDestination: ActiveFlowAddDestination?
     private let exerciseHistoryChartTip = ExerciseHistoryChartTip()
     #if DEBUG
+    @Environment(\.modelContext) private var context
     @State private var isSeedingDebugHistory = false
     #endif
 
@@ -665,7 +666,7 @@ struct ExerciseDetailView: View {
         isSeedingDebugHistory = true
         Task {
             do {
-                try DebugOperations.seedExerciseHistory(for: exercise)
+                try DebugOperations.seedExerciseHistory(for: exercise, in: context)
             } catch {
                 AppLog.error("Debug exercise history seed failed", error: error)
             }

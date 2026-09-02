@@ -1,5 +1,8 @@
 import FCTComponentsUI
 import FCTMetrics
+#if DEBUG
+import FCTScreenshotStudio
+#endif
 import CoreSpotlight
 import SwiftUI
 import SwiftData
@@ -32,6 +35,14 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 struct VillainArcApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    #if DEBUG
+    /// The debug surface's own store. Every seed, sample and reset the Debug menu offers writes
+    /// through the app's `@Model` types, and those are the types that sync — so they write into a
+    /// second, local-only file instead, and this points the whole app at it while the demo data is
+    /// what the screens are meant to show.
+    @State private var debugStore = DebugStoreSwitch(store: SharedModelContainer.configuration)
+    #endif
+
     init() {
         VAMetrics.start()
         VAMetrics.service.trackLaunchTask(.launch, stateLabel: "app-init") {
@@ -43,27 +54,37 @@ struct VillainArcApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootView()
-                .onContinueUserActivity(CSSearchableItemActionType) { userActivity in
-                    AppRouter.shared.handleSpotlight(userActivity)
-                }
-                .onContinueUserActivity("com.villainarc.siri.startWorkout") { userActivity in
-                    AppRouter.shared.handleSiriWorkout(userActivity)
-                }
-                .onContinueUserActivity("com.villainarc.siri.cancelWorkout") { userActivity in
-                    AppRouter.shared.handleSiriCancelWorkout(userActivity)
-                }
-                .onContinueUserActivity("com.villainarc.siri.endWorkout") { userActivity in
-                    AppRouter.shared.handleSiriEndWorkout(userActivity)
-                }
-                .onOpenURL { url in
-                    AppRouter.shared.handleIncomingURL(url)
-                }
-                .withToast()
+            #if DEBUG
+            rootSurface
+                .environment(\.debugStoreSwitch, debugStore)
+                .modelContainer(debugStore.container(or: SharedModelContainer.container))
+            #else
+            rootSurface
+                .modelContainer(SharedModelContainer.container)
+            #endif
         }
-        .modelContainer(SharedModelContainer.container)
         .backgroundTask(.appRefresh(WeeklyHealthCoachingCoordinator.taskIdentifier)) {
             await WeeklyHealthCoachingCoordinator.shared.performBackgroundRefresh()
         }
+    }
+
+    private var rootSurface: some View {
+        RootView()
+            .onContinueUserActivity(CSSearchableItemActionType) { userActivity in
+                AppRouter.shared.handleSpotlight(userActivity)
+            }
+            .onContinueUserActivity("com.villainarc.siri.startWorkout") { userActivity in
+                AppRouter.shared.handleSiriWorkout(userActivity)
+            }
+            .onContinueUserActivity("com.villainarc.siri.cancelWorkout") { userActivity in
+                AppRouter.shared.handleSiriCancelWorkout(userActivity)
+            }
+            .onContinueUserActivity("com.villainarc.siri.endWorkout") { userActivity in
+                AppRouter.shared.handleSiriEndWorkout(userActivity)
+            }
+            .onOpenURL { url in
+                AppRouter.shared.handleIncomingURL(url)
+            }
+            .withToast()
     }
 }

@@ -5,17 +5,17 @@ import Testing
 
 @testable import VillainArc
 
-/// The Screenshot Studio seed runs against the signed-in account's own store, and the models it
-/// touches are sync-enrolled, so a deletion here rides the persistent-history feed out to every
-/// device on the account. The seed therefore converges: it may insert, it may re-anchor what it
-/// wrote before, and it may never delete. These pin all three — the user's own rows survive a
-/// seed, a second seed neither deletes nor duplicates the first one's, and the demo content the
-/// screenshots are captured from is exactly what it was.
+/// The Screenshot Studio seed runs against the detached debug store, so what it may delete is not
+/// the question — `DetachedDebugStoreTests` settles that the store is a different file. What is
+/// left is the property the captures depend on: the button is pressed repeatedly, and every press
+/// has to leave the same curated rows reading as today. A demo session that duplicated on a second
+/// press, or that was rebuilt as a new row rather than moved forward, photographs differently on
+/// Tuesday than it did on Monday.
 @MainActor
 struct ScreenshotStudioSeederTests {
-    // MARK: - Convergence
+    // MARK: - Idempotence
 
-    @Test func secondSeedDeletesNothingAndDuplicatesNothing() throws {
+    @Test func secondSeedDuplicatesNothingAndMovesTheDemoRowsRatherThanRebuildingThem() throws {
         let context = ModelContext(try TestModelContainer.make())
 
         try ScreenshotStudioSeeder.seedAll(in: context)
@@ -26,22 +26,21 @@ struct ScreenshotStudioSeederTests {
 
         for (table, rowsBefore) in before.sorted(by: { $0.key < $1.key }) {
             let rowsAfter = after[table] ?? []
-            let deleted = rowsBefore.subtracting(rowsAfter)
-            #expect(deleted.isEmpty, "the second seed deleted \(deleted.count) of \(rowsBefore.count) \(table) row(s)")
             #expect(rowsAfter.count == rowsBefore.count, "the second seed changed the \(table) row count: \(rowsBefore.count) → \(rowsAfter.count)")
+            guard Self.fixedIdentityTables.contains(table) else { continue }
+            let replaced = rowsBefore.subtracting(rowsAfter)
+            #expect(replaced.isEmpty, "the second seed rebuilt \(replaced.count) of \(rowsBefore.count) \(table) row(s) instead of moving them forward")
         }
     }
 
-    @Test func userAuthoredRowsSurviveEverySeed() throws {
-        let context = ModelContext(try TestModelContainer.make())
-        let own = try seedUserAuthoredData(in: context)
-
-        try ScreenshotStudioSeeder.seedAll(in: context)
-        try assertUserAuthoredDataIntact(own, in: context, after: "the first seed")
-
-        try ScreenshotStudioSeeder.seedAll(in: context)
-        try assertUserAuthoredDataIntact(own, in: context, after: "the second seed")
-    }
+    /// The rows the seeder writes under a fixed `DemoID` and re-anchors on a re-seed. The health
+    /// window is deliberately not among them: the health seed rebuilds its 35 days every press,
+    /// which is what makes switching scenarios switch the data.
+    private static let fixedIdentityTables: Set<String> = [
+        "WorkoutPlan", "ExercisePrescription", "SetPrescription",
+        "WorkoutSession", "ExercisePerformance", "SetPerformance",
+        "CardioSession", "CardioRoutePoint", "Exercise",
+    ]
 
     // MARK: - The demo content the scenes photograph
 
@@ -66,9 +65,9 @@ struct ScreenshotStudioSeederTests {
         let after = try snapshot(context)
 
         try assertDemoContent(in: context, after: "a re-seed of a week-old store")
-        for (table, rowsBefore) in before.sorted(by: { $0.key < $1.key }) {
-            let deleted = rowsBefore.subtracting(after[table] ?? [])
-            #expect(deleted.isEmpty, "re-seeding a week-old store deleted \(deleted.count) \(table) row(s)")
+        for table in Self.fixedIdentityTables.sorted() {
+            let replaced = (before[table] ?? []).subtracting(after[table] ?? [])
+            #expect(replaced.isEmpty, "re-seeding a week-old store rebuilt \(replaced.count) \(table) row(s) instead of moving them forward")
         }
     }
 
@@ -94,9 +93,9 @@ struct ScreenshotStudioSeederTests {
         try context.save()
     }
 
-    /// The Debug scenario buttons still replace: each one hands back exactly its own 35 days, and
-    /// switching scenarios switches the data rather than layering onto it.
-    @Test func aReplacingHealthSeedStillRewritesTheWholeWindow() throws {
+    /// Each scenario button hands back exactly its own 35 days: switching scenarios switches the
+    /// data rather than layering onto it.
+    @Test func switchingScenarioRewritesTheWholeWindow() throws {
         let context = ModelContext(try TestModelContainer.make())
 
         try DebugOperations.seedHealthSamples(scenario: .daily, in: context)
@@ -113,9 +112,9 @@ struct ScreenshotStudioSeederTests {
 
     // MARK: - Store snapshot
 
-    /// Every table the seed writes or used to clear, keyed by name. `PersistentIdentifier` is the
-    /// row's store identity, so a row that was deleted and re-inserted reads as a different row —
-    /// which is the deletion this is looking for.
+    /// Every table the seed writes, keyed by name. `PersistentIdentifier` is the row's store
+    /// identity, so a row that was deleted and re-inserted reads as a different row — which is how
+    /// a rebuild is told apart from a re-anchor.
     private func snapshot(_ context: ModelContext) throws -> [String: Set<PersistentIdentifier>] {
         var tables: [String: Set<PersistentIdentifier>] = [:]
         func add<T: PersistentModel>(_ type: T.Type) throws {
@@ -143,105 +142,6 @@ struct ScreenshotStudioSeederTests {
         try add(HealthSleepNight.self)
         try add(HealthSleepBlock.self)
         return tables
-    }
-
-    // MARK: - User-authored data
-
-    private struct UserAuthoredData {
-        let planID: UUID
-        let sessionID: UUID
-        let cardioID: UUID
-        let weightEntryID: UUID
-        let weightGoalID: UUID
-        let catalogID: String
-    }
-
-    /// The profile the user filled in at onboarding, a plan, a completed session on an exercise
-    /// the demo set never touches (so its cached history row is the user's alone), a cardio
-    /// session, a weigh-in and a weight goal.
-    private func seedUserAuthoredData(in context: ModelContext) throws -> UserAuthoredData {
-        let profile = UserProfile()
-        profile.name = "Fernando"
-        profile.heightCm = 170.18
-        profile.fitnessLevel = .advanced
-        context.insert(profile)
-
-        let catalogID = "barbell_squat"
-        let exercise = Exercise(from: ExerciseCatalog.byID[catalogID]!)
-        context.insert(exercise)
-
-        let plan = WorkoutPlan(title: "My Own Plan", completed: true)
-        context.insert(plan)
-        plan.addExercise(exercise)
-
-        let session = WorkoutSession(from: plan)
-        session.title = "My Own Workout"
-        session.startedAt = .now.addingTimeInterval(-3 * 86400)
-        session.endedAt = session.startedAt.addingTimeInterval(3600)
-        session.status = SessionStatus.done.rawValue
-        context.insert(session)
-        for performance in session.sortedExercises {
-            for set in performance.sortedSets {
-                set.weight = 102.5
-                set.reps = 5
-                set.complete = true
-                set.completedAt = session.startedAt.addingTimeInterval(600)
-            }
-            performance.syncDateToLatestCompletedSet()
-        }
-        ExerciseHistoryUpdater.updateHistoriesForCompletedWorkout(session, context: context)
-
-        let cardio = CardioSession(activity: .walk, environment: .outdoor)
-        cardio.startedAt = .now.addingTimeInterval(-5 * 86400)
-        cardio.endedAt = cardio.startedAt?.addingTimeInterval(1800)
-        cardio.statusValue = .done
-        context.insert(cardio)
-
-        let weightEntry = WeightEntry(date: .now.addingTimeInterval(-86400), weight: 81.5)
-        context.insert(weightEntry)
-
-        let weightGoal = WeightGoal(type: .cut, startWeight: 81.5, targetWeight: 78)
-        context.insert(weightGoal)
-
-        try context.save()
-        return UserAuthoredData(
-            planID: plan.id,
-            sessionID: session.id,
-            cardioID: cardio.id,
-            weightEntryID: weightEntry.id,
-            weightGoalID: weightGoal.id,
-            catalogID: catalogID
-        )
-    }
-
-    private func assertUserAuthoredDataIntact(_ own: UserAuthoredData, in context: ModelContext, after moment: String) throws {
-        // The profile is a synced singleton, so a seed that rewrote it would rename the user on
-        // every device on the account — the one row here with no second copy to restore it from.
-        let profile = try context.fetch(UserProfile.single).first
-        #expect(profile?.name == "Fernando", "the user's name did not survive \(moment)")
-        #expect(profile?.heightCm == 170.18, "the user's height did not survive \(moment)")
-        #expect(profile?.fitnessLevel == .advanced, "the user's fitness level did not survive \(moment)")
-
-        let plan = try context.fetch(WorkoutPlan.byID(own.planID)).first
-        #expect(plan?.title == "My Own Plan", "the user's plan did not survive \(moment)")
-
-        let session = try context.fetch(WorkoutSession.byID(own.sessionID)).first
-        #expect(session?.title == "My Own Workout", "the user's workout did not survive \(moment)")
-        #expect(session?.totalSets == 1, "the user's workout lost its sets in \(moment)")
-
-        let cardio = try context.fetch(CardioSession.byID(own.cardioID)).first
-        #expect(cardio != nil, "the user's cardio session did not survive \(moment)")
-
-        let history = try context.fetch(ExerciseHistory.forCatalogID(own.catalogID)).first
-        #expect(history != nil, "the user's \(own.catalogID) history did not survive \(moment)")
-
-        let weightEntryID = own.weightEntryID
-        let weightEntry = try context.fetch(FetchDescriptor<WeightEntry>(predicate: #Predicate { $0.id == weightEntryID })).first
-        #expect(weightEntry?.weight == 81.5, "the user's weigh-in did not survive \(moment)")
-
-        let weightGoalID = own.weightGoalID
-        let weightGoal = try context.fetch(FetchDescriptor<WeightGoal>(predicate: #Predicate { $0.id == weightGoalID })).first
-        #expect(weightGoal != nil, "the user's weight goal did not survive \(moment)")
     }
 
     // MARK: - Demo content

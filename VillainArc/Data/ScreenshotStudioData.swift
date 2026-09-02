@@ -2,21 +2,20 @@
 import Foundation
 import SwiftData
 
-/// Seeds the real app store with curated, marketing-grade demo data for the Screenshot Studio.
-/// Reuses the same unit conventions the app uses (completed-set weights in kg → display as clean lbs;
-/// active-session weights in display units).
+/// Seeds curated, marketing-grade demo data into the detached debug store for the Screenshot
+/// Studio. Reuses the same unit conventions the app uses (completed-set weights in kg → display as
+/// clean lbs; active-session weights in display units).
 ///
-/// **Converging: it inserts what is missing, re-anchors what it wrote before to the present, and
-/// deletes nothing.** The store is the signed-in account's own and every model here syncs, so a
-/// clear-first seed would push tombstones for the user's real training to every one of their
-/// devices.
+/// **Idempotent, because the button is pressed repeatedly:** it inserts what is missing and
+/// re-anchors what it wrote before to the present, so every capture photographs the same curated
+/// rows, still reading as today.
 @MainActor
 enum ScreenshotStudioSeeder {
     /// Catalog IDs for the demo push plan.
     private static let planExerciseIDs = ["barbell_bench_press", "dumbbell_incline_bench_press", "cable_bench_chest_fly", "cable_bar_pushdown"]
 
-    /// The fixed identities of the demo rows: what makes a re-seed converge, and what each scene
-    /// fetches so it photographs the curated row rather than whatever else the account holds.
+    /// The fixed identities of the demo rows: what makes a re-seed land on the rows it wrote last
+    /// time, and what each scene fetches so it photographs the curated row.
     enum DemoID {
         static let plan = VASyncIdentity.screenshotStudioID("plan")
         static let activeSession = VASyncIdentity.screenshotStudioID("active-session")
@@ -25,10 +24,11 @@ enum ScreenshotStudioSeeder {
         static func historySession(_ index: Int) -> UUID { VASyncIdentity.screenshotStudioID("history-session-\(index)") }
     }
 
-    static func seedAll(in context: ModelContext = SharedModelContainer.container.mainContext) throws {
+    static func seedAll(in context: ModelContext) throws {
         dedupeExercises(in: context)
-        // Health caches (35 days of steps, energy, sleep, heart, hydration, weight + a goal).
-        try DebugOperations.seedHealthSamples(scenario: .daily, replacingExisting: false, in: context)
+        // The singletons every screen reads, then 35 days of steps, energy, sleep, heart,
+        // hydration and weight, plus a goal.
+        try DebugOperations.seedHealthSamples(scenario: .daily, in: context)
 
         let plan = demoPlan(in: context)
         seedCompletedHistory(plan: plan, in: context)

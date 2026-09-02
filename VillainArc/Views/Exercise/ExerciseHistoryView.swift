@@ -202,7 +202,7 @@ struct ExerciseHistoryView: View {
         isSeedingDebugHistory = true
         Task {
             do {
-                try DebugOperations.seedExerciseHistory(for: exercise)
+                try DebugOperations.seedExerciseHistory(for: exercise, in: context)
             } catch {
                 AppLog.error("Debug exercise history seed failed", error: error)
             }

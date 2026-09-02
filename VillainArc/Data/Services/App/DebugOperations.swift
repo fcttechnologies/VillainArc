@@ -26,40 +26,14 @@ enum DebugOperations {
         }
     }
 
-    static func resetAppData() async throws {
-        AppLog.info("Debug reset app data started.")
-        let context = SharedModelContainer.container.mainContext
-
-        RestTimerState.shared.stop()
-        WorkoutActivityManager.end()
-        NotificationCoordinator.cancelRestTimer()
-        SharedModelContainer.sharedDefaults.removeObject(forKey: DataManager.exerciseCatalogVersionKey)
-
-        let deletedCount = try deleteAllModels(in: context)
-        try ensureDebugReadyBaseline(in: context)
-        try await DataManager.seedExercisesForOnboarding()
-        let isSetupReady = SetupGuard.isReady(context: context)
-
-        HealthMetricWidgetReloader.reloadAllHealthMetrics()
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.activeAppSheet = nil
-        AppRouter.shared.activeHealthSheet = nil
-        AppRouter.shared.activeSplitSheet = nil
-        AppRouter.shared.homeTabPath.removeAll()
-        AppRouter.shared.healthTabPath.removeAll()
-        AppRouter.shared.tabSelection = .home
-        AppLog.info("Debug reset app data completed. deletedRecords=\(deletedCount), setupReady=\(isSetupReady)")
-    }
-
-    /// Everything a capture needs, in one action: the store cleared to a known state, then the
-    /// records that make the app look like someone has been using it. Reset first, so the result
-    /// is the same whatever the device was holding — a demo seeded on top of yesterday's seed is
-    /// not a reproducible capture.
-    static func seedDemoData() async throws {
+    /// Everything a capture needs, in one action: the singletons a ready app holds, workout
+    /// history, and 35 days of Health data. Each stage rebuilds the rows it owns, so the result is
+    /// the same whatever the demo store was already holding.
+    static func seedDemoData(in context: ModelContext) throws {
         AppLog.info("Debug demo data seed started.")
-        try await resetAppData()
-        try seedWorkoutData()
-        try seedHealthSamples(scenario: .daily)
+        try seedBaseline(in: context)
+        try seedWorkoutData(in: context)
+        try seedHealthSamples(scenario: .daily, in: context)
         AppLog.info("Debug demo data seed completed.")
     }
 
@@ -90,38 +64,27 @@ enum DebugOperations {
         AppLog.info("Debug Spotlight reindex queued.")
     }
 
-    /// `replacingExisting` is the scenario buttons' contract: pick a scenario, get exactly that
-    /// scenario's 35 days. The Screenshot Studio passes `false` — it seeds into the signed-in
-    /// account's own store, where the replace tombstones the user's synced weight goal and wipes
-    /// their weigh-ins and hydration. Converging instead, it fills only the days the store has no
-    /// rows for, so what the user's own device recorded stays and stays theirs.
-    static func seedHealthSamples(scenario: HealthSampleScenario, replacingExisting: Bool = true, in context: ModelContext = SharedModelContainer.container.mainContext) throws {
+    /// Pick a scenario, get exactly that scenario's 35 days: the window is rebuilt every time, so
+    /// switching scenarios switches the data rather than layering onto it.
+    static func seedHealthSamples(scenario: HealthSampleScenario, in context: ModelContext) throws {
         AppLog.info("Debug health sample seed started: \(scenario.rawValue)")
 
-        if replacingExisting {
-            try deleteHealthSampleModels(in: context)
-        }
-        try ensureDebugReadyBaseline(in: context)
+        try deleteHealthSampleModels(in: context)
+        try seedBaseline(in: context)
 
         let calendar = Calendar.autoupdatingCurrent
         let today = calendar.startOfDay(for: .now)
         let startDay = calendar.date(byAdding: .day, value: -34, to: today) ?? today
         let startWeight = startingWeight(for: scenario)
-        // Empty after a replace, so that path seeds exactly what it always did.
-        let alreadySeeded = try SeededHealthDays(calendar: calendar, in: context)
 
-        if !alreadySeeded.hasWeightGoal {
-            seedWeightGoal(for: scenario, startDay: startDay, startWeight: startWeight, context: context)
-        }
+        seedWeightGoal(for: scenario, startDay: startDay, startWeight: startWeight, context: context)
 
         for offset in 0..<35 {
             guard let day = calendar.date(byAdding: .day, value: offset, to: startDay) else { continue }
             let progress = Double(offset) / 34.0
-            if !alreadySeeded.metricDays.contains(day) {
-                seedDailyHealthRows(on: day, offset: offset, progress: progress, scenario: scenario, context: context)
-            }
+            seedDailyHealthRows(on: day, offset: offset, progress: progress, scenario: scenario, context: context)
 
-            if shouldLogWeight(onOffset: offset, scenario: scenario), !alreadySeeded.weighInDays.contains(day) {
+            if shouldLogWeight(onOffset: offset, scenario: scenario) {
                 let weight = sampleWeight(startWeight: startWeight, progress: progress, offset: offset, scenario: scenario)
                 context.insert(WeightEntry(date: day.addingTimeInterval(8 * 3600), weight: weight, hasBeenExportedToHealth: true, healthSampleUUID: UUID(), isAvailableInHealthKit: true))
             }
@@ -132,11 +95,13 @@ enum DebugOperations {
         AppLog.info("Debug health sample seed completed: \(scenario.rawValue)")
     }
 
-    static func seedWorkoutData() throws {
-        let context = SharedModelContainer.container.mainContext
+    /// A plan and three completed sessions. Rebuilds what it owns, so the button is pressed
+    /// repeatedly without stacking a fourth, fifth and sixth copy of the same week.
+    static func seedWorkoutData(in context: ModelContext) throws {
         AppLog.info("Debug workout data seed started.")
 
-        try ensureDebugReadyBaseline(in: context)
+        try seedBaseline(in: context)
+        try deleteWorkoutModels(in: context)
 
         let catalogIDs = ["barbell_bench_press", "barbell_squat", "deadlift", "barbell_overhead_press", "pull_ups"]
         var planExercises: [Exercise] = []
@@ -216,8 +181,7 @@ enum DebugOperations {
         AppLog.info("Debug workout data seed completed.")
     }
 
-    static func seedExerciseHistory(for exercise: Exercise) throws {
-        let context = SharedModelContainer.container.mainContext
+    static func seedExerciseHistory(for exercise: Exercise, in context: ModelContext) throws {
         AppLog.info("Debug exercise history seed started: \(exercise.catalogID)")
 
         let existing = try context.fetch(ExercisePerformance.matching(catalogID: exercise.catalogID, includingHidden: true))
@@ -248,26 +212,20 @@ enum DebugOperations {
         AppLog.info("Debug exercise history seed completed: \(exercise.catalogID)")
     }
 
-    /// The singletons a seeded store needs before anything else can be written into it, filled in
-    /// only where the store has none.
-    ///
-    /// The profile is the guarded one: it is a synced row with no second copy anywhere, so
-    /// stamping the debug identity over one the store already holds renames the signed-in user on
-    /// every device on their account. A profile this call had to create is the debug baseline's to
-    /// fill in; one that was already there is theirs.
-    private static func ensureDebugReadyBaseline(in context: ModelContext) throws {
+    /// The singletons a demo store needs before anything else can be written into it: the settings
+    /// and health-sync rows every screen reads, and the profile and training goal the app treats
+    /// as always present.
+    static func seedBaseline(in context: ModelContext) throws {
         _ = try SystemState.ensureAppSettings(context: context)
         _ = try SystemState.ensureHealthSyncState(context: context)
 
-        if try SystemState.userProfile(context: context) == nil {
-            let profile = try SystemState.ensureUserProfile(context: context)
-            profile.name = "Debug User"
-            profile.birthday = Calendar.autoupdatingCurrent.date(from: DateComponents(year: 1995, month: 1, day: 1))
-            profile.gender = .other
-            profile.heightCm = 175
-            profile.fitnessLevel = .intermediate
-            profile.fitnessLevelSetAt = .now
-        }
+        let profile = try SystemState.ensureUserProfile(context: context)
+        profile.name = "Debug User"
+        profile.birthday = Calendar.autoupdatingCurrent.date(from: DateComponents(year: 1995, month: 1, day: 1))
+        profile.gender = .other
+        profile.heightCm = 175
+        profile.fitnessLevel = .intermediate
+        profile.fitnessLevelSetAt = .now
 
         if try context.fetch(TrainingGoal.active).first == nil {
             context.insert(TrainingGoal(kind: .generalTraining))
@@ -276,19 +234,16 @@ enum DebugOperations {
         try context.save()
     }
 
-    /// What the store already holds, so a converging health seed writes only into the gaps. The
-    /// day's rows are seeded as one batch, so they are guarded as one: a day whose steps row
-    /// exists keeps the rest of its metrics as they are too.
-    private struct SeededHealthDays {
-        let metricDays: Set<Date>
-        let weighInDays: Set<Date>
-        let hasWeightGoal: Bool
-
-        init(calendar: Calendar, in context: ModelContext) throws {
-            metricDays = Set(try context.fetch(FetchDescriptor<HealthStepsDistance>()).map { calendar.startOfDay(for: $0.date) })
-            weighInDays = Set(try context.fetch(FetchDescriptor<WeightEntry>()).map { calendar.startOfDay(for: $0.date) })
-            hasWeightGoal = try !context.fetch(FetchDescriptor<WeightGoal>()).isEmpty
-        }
+    private static func deleteWorkoutModels(in context: ModelContext) throws {
+        _ = try deleteAll(SetPerformance.self, in: context)
+        _ = try deleteAll(ExercisePerformance.self, in: context)
+        _ = try deleteAll(WorkoutSession.self, in: context)
+        _ = try deleteAll(SetPrescription.self, in: context)
+        _ = try deleteAll(ExercisePrescription.self, in: context)
+        _ = try deleteAll(WorkoutPlan.self, in: context)
+        _ = try deleteAll(ExerciseHistory.self, in: context)
+        _ = try deleteAll(ProgressionPoint.self, in: context)
+        try context.save()
     }
 
     private static func deleteHealthSampleModels(in context: ModelContext) throws {
@@ -412,54 +367,7 @@ enum DebugOperations {
         context.insert(HealthWristTemperature(date: day, temperature: 36.4 + sin(Double(offset) * 0.45) * 0.25))
     }
 
-    private static func deleteAllModels(in context: ModelContext) throws -> Int {
-        var deletedCount = 0
-        deletedCount += try deleteAll(PrescriptionChange.self, in: context)
-        deletedCount += try deleteAll(SuggestionEvaluation.self, in: context)
-        deletedCount += try deleteAll(SuggestionEvent.self, in: context)
-        deletedCount += try deleteAll(SetPerformance.self, in: context)
-        deletedCount += try deleteAll(ExercisePerformance.self, in: context)
-        deletedCount += try deleteAll(PreWorkoutContext.self, in: context)
-        deletedCount += try deleteAll(WorkoutSession.self, in: context)
-        deletedCount += try deleteAll(SetPrescription.self, in: context)
-        deletedCount += try deleteAll(ExercisePrescription.self, in: context)
-        deletedCount += try deleteAll(WorkoutPlan.self, in: context)
-        deletedCount += try deleteAll(WorkoutSplitDay.self, in: context)
-        deletedCount += try deleteAll(WorkoutSplit.self, in: context)
-        deletedCount += try deleteAll(HealthSleepBlock.self, in: context)
-        deletedCount += try deleteAll(HealthSleepNight.self, in: context)
-        deletedCount += try deleteAll(ProgressionPoint.self, in: context)
-        deletedCount += try deleteAll(ExerciseHistory.self, in: context)
-        deletedCount += try deleteAll(RepRangePolicy.self, in: context)
-        deletedCount += try deleteAll(HealthWorkout.self, in: context)
-        deletedCount += try deleteAll(WeightEntry.self, in: context)
-        deletedCount += try deleteAll(HealthStepsDistance.self, in: context)
-        deletedCount += try deleteAll(HealthEnergy.self, in: context)
-        deletedCount += try deleteAll(HealthHeart.self, in: context)
-        deletedCount += try deleteAll(HealthRespiratoryRate.self, in: context)
-        deletedCount += try deleteAll(HealthWristTemperature.self, in: context)
-        deletedCount += try deleteAll(HydrationEntry.self, in: context)
-        deletedCount += try deleteAll(HydrationGoal.self, in: context)
-        deletedCount += try deleteAll(CardioRoutePoint.self, in: context)
-        deletedCount += try deleteAll(CardioMachineInterval.self, in: context)
-        deletedCount += try deleteAll(CardioSession.self, in: context)
-        deletedCount += try deleteAll(TrainingConditionPeriod.self, in: context)
-        deletedCount += try deleteAll(HealthSyncState.self, in: context)
-        deletedCount += try deleteAll(WeightGoal.self, in: context)
-        deletedCount += try deleteAll(StepsGoal.self, in: context)
-        deletedCount += try deleteAll(Exercise.self, in: context)
-        deletedCount += try deleteAll(AppSettings.self, in: context)
-        deletedCount += try deleteAll(UserProfile.self, in: context)
-        deletedCount += try deleteAll(RestTimeHistory.self, in: context)
-        deletedCount += try deleteAll(TrainingGoal.self, in: context)
-        deletedCount += try deleteAll(SleepGoal.self, in: context)
-        try context.save()
-        return deletedCount
-    }
-
-    static func touchAllModels() throws {
-        let context = SharedModelContainer.container.mainContext
-
+    static func touchAllModels(in context: ModelContext) throws {
         // Standalone models
         let appSettings = AppSettings(); context.insert(appSettings)
         let userProfile = UserProfile(); context.insert(userProfile)
