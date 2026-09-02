@@ -161,7 +161,7 @@ struct HealthWorkoutSplitSummary: Identifiable, Hashable {
     let averageHeartRate: Double?
 }
 
-private struct HealthWorkoutDistanceSample: Hashable {
+struct HealthWorkoutDistanceSample: Hashable {
     let startDate: Date
     let endDate: Date
     let distanceMeters: Double
@@ -342,7 +342,7 @@ enum HealthWorkoutSummaryStatsLoader {
         heartRateZoneSource = zoneData.source
         heartRateZoneRanges = zoneData.ranges
         heartRateZones = zoneData.summaries
-        splits = makeSplitSummaries(from: distanceSamples, heartRateSamples: heartRateSamples, workoutStart: workoutStart, workoutEnd: workoutEnd, distanceUnit: distanceUnit)
+        splits = Self.makeSplitSummaries(from: distanceSamples, heartRateSamples: heartRateSamples, workoutStart: workoutStart, workoutEnd: workoutEnd, distanceUnit: distanceUnit)
     }
     private func fetchWorkout() async throws -> HKWorkout? {
         let predicate = NSPredicate(format: "%K == %@", HKPredicateKeyPathUUID, cachedWorkout.healthWorkoutUUID as NSUUID)
@@ -493,7 +493,7 @@ enum HealthWorkoutSummaryStatsLoader {
                 upperBoundBPM: bounds.upper.map { Int($0.rounded(.down)) }
             )
         }
-        let intervals = makeHeartRateIntervals(from: samples, workoutStart: workoutStart, workoutEnd: workoutEnd)
+        let intervals = Self.makeHeartRateIntervals(from: samples, workoutStart: workoutStart, workoutEnd: workoutEnd)
         guard !intervals.isEmpty else {
             return HealthWorkoutHeartRateZoneData(source: .estimated, ranges: ranges, summaries: [])
         }
@@ -535,7 +535,7 @@ enum HealthWorkoutSummaryStatsLoader {
         default: return (nil, nil)
         }
     }
-    private func makeSplitSummaries(from distanceSamples: [HealthWorkoutDistanceSample], heartRateSamples: [HealthWorkoutHeartRateSample], workoutStart: Date, workoutEnd: Date, distanceUnit: DistanceUnit) -> [HealthWorkoutSplitSummary] {
+    static func makeSplitSummaries(from distanceSamples: [HealthWorkoutDistanceSample], heartRateSamples: [HealthWorkoutHeartRateSample], workoutStart: Date, workoutEnd: Date, distanceUnit: DistanceUnit) -> [HealthWorkoutSplitSummary] {
         guard !distanceSamples.isEmpty else { return [] }
         let targetSplitDistance = distanceUnit.toMeters(1)
         guard targetSplitDistance > 0 else { return [] }
@@ -581,16 +581,19 @@ enum HealthWorkoutSummaryStatsLoader {
         }
         return splits
     }
-    private func makeSplitSummary(id: Int, markerDistanceMeters: Double, segmentDistanceMeters: Double, duration: TimeInterval, startDate: Date, endDate: Date, heartRateIntervals: [HealthWorkoutHeartRateInterval]) -> HealthWorkoutSplitSummary {
-        let averageHeartRate = averageHeartRate(in: DateInterval(start: startDate, end: endDate), heartRateIntervals: heartRateIntervals)
+    private static func makeSplitSummary(id: Int, markerDistanceMeters: Double, segmentDistanceMeters: Double, duration: TimeInterval, startDate: Date, endDate: Date, heartRateIntervals: [HealthWorkoutHeartRateInterval]) -> HealthWorkoutSplitSummary {
+        let averageHeartRate = averageHeartRate(from: startDate, to: endDate, heartRateIntervals: heartRateIntervals)
         return HealthWorkoutSplitSummary(id: id, markerDistanceMeters: markerDistanceMeters, segmentDistanceMeters: segmentDistanceMeters, duration: duration, averageHeartRate: averageHeartRate)
     }
-    private func averageHeartRate(in interval: DateInterval, heartRateIntervals: [HealthWorkoutHeartRateInterval]) -> Double? {
+    private static func averageHeartRate(from start: Date, to end: Date, heartRateIntervals: [HealthWorkoutHeartRateInterval]) -> Double? {
+        // HealthKit's distance samples can overlap (two writers, or a source that back-fills), so a
+        // split's end can land before its start; that is no interval, never a trap.
+        guard end > start else { return nil }
         var weightedHeartRate = 0.0
         var totalDuration = 0.0
         for heartRateInterval in heartRateIntervals {
-            let overlapStart = max(interval.start, heartRateInterval.startDate)
-            let overlapEnd = min(interval.end, heartRateInterval.endDate)
+            let overlapStart = max(start, heartRateInterval.startDate)
+            let overlapEnd = min(end, heartRateInterval.endDate)
             let overlapDuration = overlapEnd.timeIntervalSince(overlapStart)
             guard overlapDuration > 0 else { continue }
             weightedHeartRate += heartRateInterval.bpm * overlapDuration
@@ -599,7 +602,7 @@ enum HealthWorkoutSummaryStatsLoader {
         guard totalDuration > 0 else { return nil }
         return weightedHeartRate / totalDuration
     }
-    private func makeHeartRateIntervals(from samples: [HealthWorkoutHeartRateSample], workoutStart: Date, workoutEnd: Date) -> [HealthWorkoutHeartRateInterval] {
+    private static func makeHeartRateIntervals(from samples: [HealthWorkoutHeartRateSample], workoutStart: Date, workoutEnd: Date) -> [HealthWorkoutHeartRateInterval] {
         guard !samples.isEmpty, workoutEnd > workoutStart else { return [] }
         return samples.enumerated()
             .compactMap { index, sample in
@@ -621,7 +624,7 @@ enum HealthWorkoutSummaryStatsLoader {
                 return HealthWorkoutHeartRateInterval(startDate: clampedStartDate, endDate: clampedEndDate, bpm: sample.bpm)
             }
     }
-    private func midpoint(between start: Date, and end: Date) -> Date { Date(timeIntervalSince1970: (start.timeIntervalSince1970 + end.timeIntervalSince1970) / 2) }
+    private static func midpoint(between start: Date, and end: Date) -> Date { Date(timeIntervalSince1970: (start.timeIntervalSince1970 + end.timeIntervalSince1970) / 2) }
     private func makeEffortSummary(from samples: [HKSample]) -> HealthWorkoutEffortSummary? {
         let quantitySamples = samples.compactMap { $0 as? HKQuantitySample }
         if let workoutEffortType = HKQuantityType.quantityType(forIdentifier: .workoutEffortScore), let actualSample = quantitySamples.first(where: { $0.quantityType == workoutEffortType }) {
