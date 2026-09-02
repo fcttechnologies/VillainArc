@@ -99,7 +99,7 @@ For routing intents and deep links:
 Top-level tab chrome separates profile identity from app configuration:
 
 - `Profile` is a dedicated tab and still supports the legacy profile sheet presentation path for deep links and sheets
-- `Profile` owns profile fields, fitness-level editing/review, training goal editing, profile photo actions, training summary, muscle-map distribution, and the complete-day heatmap
+- `Profile` owns profile fields, fitness-level editing/review, training goal editing, training summary, muscle-map distribution, and the complete-day heatmap
 - `Settings` is a dedicated tab and still supports sheet presentation from legacy routes
 - `Settings` owns app settings, support/legal links, App Store review entry, and uses the shared quick-action bottom inset when shown as a tab
 
@@ -165,7 +165,6 @@ Startup code ensures they exist before the app treats launch as ready.
 
 - the required onboarding fields (gender, height)
 - the user fitness level and last confirmed timestamp
-- externally stored profile photo data
 
 The name, the birthday, the country and the avatar are **not** here: they are the FCT account's,
 one home for the whole fleet. The name comes off `account.profile`'s rows
@@ -288,7 +287,8 @@ VillainArc uses a dedicated top-level Profile tab. Settings remains an `AppSetti
 
 The profile surface owns:
 
-- avatar and profile photo management
+- the account's face and name, shown (`AccountAvatar`) and edited nowhere but Settings'
+  `AccountProfileSection`, which is the fleet's one editor for either
 - gender and height editing
 - fitness-level editing
 - a fitness-level review cue when the current level has exceeded its time threshold (`beginner: 1 year`, `novice: 2 years`, `intermediate: 2 years`, `advanced: no cue`)

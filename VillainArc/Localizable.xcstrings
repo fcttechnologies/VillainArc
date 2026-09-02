@@ -13939,64 +13939,6 @@
         }
       }
     },
-    "Allow camera access in Settings to take a profile photo." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erlaube den Kamerazugriff in den Einstellungen, um ein Profilfoto aufzunehmen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permite el acceso a la cámara en Ajustes para tomar una foto de perfil."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Autorisez l'accès à l'appareil photo dans les Réglages pour prendre une photo de profil."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Consenti l'accesso alla fotocamera nelle Impostazioni per scattare una foto profilo."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロフィール写真を撮影するには、設定でカメラへのアクセスを許可してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "프로필 사진을 찍으려면 설정에서 카메라 접근을 허용하세요."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Permita o acesso à câmera em Ajustes para tirar uma foto de perfil."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Разрешите доступ к камере в Настройках, чтобы сделать фото профиля."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "请在“设置”中允许访问相机，以拍摄头像照片。"
-          }
-        }
-      }
-    },
     "Allowed" : {
       "localizations" : {
         "de" : {
@@ -19581,64 +19523,6 @@
         }
       }
     },
-    "Camera Access Needed" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kamerazugriff erforderlich"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se necesita acceso a la cámara"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accès à l'appareil photo requis"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Serve l'accesso alla fotocamera"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "カメラへのアクセスが必要です"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "카메라 접근 필요"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Acesso à câmera necessário"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Нужен доступ к камере"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "需要相机权限"
-          }
-        }
-      }
-    },
     "Cancel" : {
       "localizations" : {
         "de" : {
@@ -22386,64 +22270,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "清除收藏"
-          }
-        }
-      }
-    },
-    "Clear Photo" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Foto entfernen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Quitar foto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Supprimer la photo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rimuovi foto"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写真を削除"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "사진 지우기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remover foto"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Удалить фото"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "清除照片"
           }
         }
       }
@@ -34028,64 +33854,6 @@
         }
       }
     },
-    "Edit photo" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Foto bearbeiten"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar foto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifier la photo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifica foto"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写真を編集"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "사진 편집"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar foto"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Изменить фото"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "编辑照片"
-          }
-        }
-      }
-    },
     "Edit Plan" : {
       "localizations" : {
         "de" : {
@@ -34146,64 +33914,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "编辑计划"
-          }
-        }
-      }
-    },
-    "Edit profile photo" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profilfoto bearbeiten"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar foto de perfil"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifier la photo de profil"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifica foto profilo"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロフィール写真を編集"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "프로필 사진 편집"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar foto de perfil"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Изменить фото профиля"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "编辑头像照片"
           }
         }
       }
@@ -62018,64 +61728,6 @@
         }
       }
     },
-    "No photo selected" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kein Foto ausgewählt"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se seleccionó ninguna foto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune photo sélectionnée"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nessuna foto selezionata"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写真が選択されていません"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "선택한 사진 없음"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nenhuma foto selecionada"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Фото не выбрано"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未选择照片"
-          }
-        }
-      }
-    },
     "No plan notes." : {
       "comment" : "Text displayed when a plan has no notes.",
       "isCommentAutoGenerated" : true,
@@ -75622,64 +75274,6 @@
         }
       }
     },
-    "Photo added" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Foto hinzugefügt"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Foto añadida"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Photo ajoutée"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Foto aggiunta"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写真を追加しました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "사진 추가됨"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Foto adicionada"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Фото добавлено"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已添加照片"
-          }
-        }
-      }
-    },
     "Pick a rep range that matches your goal: strength usually sits around 1–3 reps, hypertrophy is often 8–12 reps, endurance is commonly 12–20+ reps." : {
       "localizations" : {
         "de" : {
@@ -88278,64 +87872,6 @@
         }
       }
     },
-    "Select Photo" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Foto auswählen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seleccionar foto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sélectionner une photo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Seleziona foto"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写真を選択"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "사진 선택"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Selecionar foto"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Выбрать фото"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择照片"
-          }
-        }
-      }
-    },
     "Select Plan" : {
       "localizations" : {
         "de" : {
@@ -94700,64 +94236,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示肌肉筛选选项。"
-          }
-        }
-      }
-    },
-    "Shows options to take, select, or remove your profile photo." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeigt Optionen, um dein Profilfoto aufzunehmen, auszuwählen oder zu entfernen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Muestra opciones para tomar, seleccionar o quitar tu foto de perfil."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Affiche les options pour prendre, sélectionner ou supprimer ta photo de profil."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra le opzioni per scattare, scegliere o rimuovere la foto profilo."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロフィール写真の撮影、選択、削除のオプションを表示します。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "프로필 사진을 찍거나 선택하거나 삭제하는 옵션을 표시합니다."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mostra opções para tirar, selecionar ou remover sua foto de perfil."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Показывает действия: снять, выбрать или удалить фото профиля."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示拍摄、选择或移除头像照片的选项。"
           }
         }
       }
@@ -104574,64 +104052,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "系统默认"
-          }
-        }
-      }
-    },
-    "Take Photo" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Foto aufnehmen"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tomar foto"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prendre une photo"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scatta foto"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "写真を撮る"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "사진 찍기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tirar foto"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Сделать фото"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "拍照"
           }
         }
       }
@@ -115868,64 +115288,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "更新已完成训练的备注。"
-          }
-        }
-      }
-    },
-    "Update Profile Photo" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profilfoto aktualisieren"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actualizar foto de perfil"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mettre à jour la photo de profil"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiorna foto profilo"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロフィール写真を更新"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "프로필 사진 업데이트"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Atualizar foto de perfil"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Обновить фото профиля"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更新头像照片"
           }
         }
       }
@@ -134816,6 +134178,396 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的账户已迁移 — 请重新登录"
+          }
+        }
+      }
+    },
+    "Help improve the engine" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hilf mit, die Vorschläge zu verbessern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Help improve the engine"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ayuda a mejorar las sugerencias"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aidez-nous à améliorer les suggestions"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aiutaci a migliorare i suggerimenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提案の改善に協力する"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "제안 개선에 참여하기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajude a melhorar as sugestões"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Помогите улучшить подсказки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "帮助改进建议"
+          }
+        }
+      }
+    },
+    "Villain Arc already reports how each suggestion did — which generator made it, where it was shown, and whether the weight was right. Never which exercise it was." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc meldet ohnehin, wie sich jeder Vorschlag geschlagen hat — welcher Generator ihn erstellt hat, wo er angezeigt wurde und ob das Gewicht gepasst hat. Nie, um welche Übung es ging."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc already reports how each suggestion did — which generator made it, where it was shown, and whether the weight was right. Never which exercise it was."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc ya informa de cómo le fue a cada sugerencia: qué generador la creó, dónde se mostró y si el peso era el adecuado. Nunca de qué ejercicio era."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc indique déjà comment chaque suggestion s'en est sortie : quel générateur l'a produite, où elle est apparue et si la charge était juste. Jamais de quel exercice il s'agissait."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc riporta già come è andato ogni suggerimento: quale generatore l'ha creato, dove è stato mostrato e se il peso era giusto. Mai di quale esercizio si trattasse."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc は、それぞれの提案がどうだったかをすでに報告しています — どの生成器が作ったか、どこで表示されたか、重量が適切だったか。どの種目だったかは決して送りません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc는 각 제안이 어땠는지 이미 보고합니다 — 어떤 생성기가 만들었는지, 어디에 표시됐는지, 무게가 적절했는지. 어떤 운동이었는지는 절대 보내지 않습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Villain Arc já informa como cada sugestão se saiu: qual gerador a criou, onde foi mostrada e se o peso estava certo. Nunca qual exercício era."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc уже сообщает, как показала себя каждая подсказка: какой генератор её создал, где она была показана и был ли вес верным. Никогда — какое это было упражнение."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc 已经会汇报每条建议的表现——由哪个生成器给出、在哪里显示、重量是否合适。但从不包含它是哪个动作。"
+          }
+        }
+      }
+    },
+    "With this on, the exercise behind an outcome goes with it, so a suggestion that worked can be told from one that got lucky. Your workouts, your weights, your health data, your name and your account never go — nothing sent here can be traced back to you." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn das an ist, geht die Übung hinter einem Ergebnis mit — so lässt sich ein Vorschlag, der funktioniert hat, von einem Glückstreffer unterscheiden. Deine Workouts, deine Gewichte, deine Gesundheitsdaten, dein Name und dein Account gehen nie mit — nichts davon lässt sich zu dir zurückverfolgen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With this on, the exercise behind an outcome goes with it, so a suggestion that worked can be told from one that got lucky. Your workouts, your weights, your health data, your name and your account never go — nothing sent here can be traced back to you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con esto activado, el ejercicio detrás de cada resultado se envía con él, para poder distinguir una sugerencia que funcionó de una que tuvo suerte. Tus entrenamientos, tus pesos, tus datos de salud, tu nombre y tu cuenta nunca se envían: nada de lo que sale de aquí puede rastrearse hasta ti."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avec cette option, l'exercice à l'origine d'un résultat part avec lui, ce qui permet de distinguer une suggestion qui a marché d'un coup de chance. Vos séances, vos charges, vos données de santé, votre nom et votre compte ne partent jamais : rien de ce qui est envoyé ici ne peut remonter jusqu'à vous."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con questa opzione attiva, l'esercizio dietro un esito parte insieme a esso, così un suggerimento che ha funzionato si distingue da uno fortunato. I tuoi allenamenti, i tuoi carichi, i tuoi dati sulla salute, il tuo nome e il tuo account non partono mai: nulla di ciò che viene inviato può risalire a te."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オンにすると、結果のもとになった種目も一緒に送られ、うまくいった提案とまぐれ当たりを見分けられるようになります。ワークアウト、重量、ヘルスデータ、名前、アカウントは一切送られません — ここから送られるものからあなたを特定することはできません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 설정을 켜면 결과의 바탕이 된 운동 종목도 함께 전송되어, 효과가 있었던 제안과 우연히 맞은 제안을 구분할 수 있습니다. 운동 기록, 중량, 건강 데이터, 이름, 계정은 절대 전송되지 않으며, 여기서 나가는 어떤 것으로도 회원님을 특정할 수 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Com isso ativado, o exercício por trás de um resultado vai junto, para distinguir uma sugestão que funcionou de uma que deu sorte. Seus treinos, suas cargas, seus dados de saúde, seu nome e sua conta nunca vão — nada do que sai daqui pode ser ligado a você."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Когда это включено, вместе с результатом отправляется и упражнение — так подсказку, которая сработала, можно отличить от случайного попадания. Ваши тренировки, веса, данные о здоровье, имя и аккаунт не отправляются никогда: ничто из отправленного нельзя связать с вами."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开启后，结果背后的动作名称会一并发送，这样才能分辨出真正有效的建议和碰巧猜中的建议。你的训练记录、重量、健康数据、姓名和账户永远不会发送——从这里发出的内容无法追溯到你。"
+          }
+        }
+      }
+    },
+    "You can change this any time in Settings." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kannst das jederzeit in den Einstellungen ändern."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can change this any time in Settings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puedes cambiar esto en cualquier momento en Ajustes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous pouvez modifier ce choix à tout moment dans les réglages."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puoi cambiare questa scelta in qualsiasi momento nelle impostazioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この設定はいつでも「設定」で変更できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 설정은 언제든지 설정에서 변경할 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você pode mudar isso a qualquer momento nos ajustes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Это можно изменить в любой момент в настройках."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你可以随时在“设置”中更改。"
+          }
+        }
+      }
+    },
+    "Send the Exercise Too" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auch die Übung senden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Send the Exercise Too"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar también el ejercicio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envoyer aussi l'exercice"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia anche l'esercizio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "種目名も送信する"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "운동 종목도 보내기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar também o exercício"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отправлять и упражнение"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同时发送动作名称"
+          }
+        }
+      }
+    },
+    "Villain Arc reports how each suggestion did — which generator made it, where it was shown, and whether the weight was right. Never which exercise it was. With this on, the exercise behind an outcome goes with it. Your workouts, your weights, your health data, your name and your account never go." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc meldet, wie sich jeder Vorschlag geschlagen hat — welcher Generator ihn erstellt hat, wo er angezeigt wurde und ob das Gewicht gepasst hat. Nie, um welche Übung es ging. Wenn das an ist, geht die Übung hinter einem Ergebnis mit. Deine Workouts, deine Gewichte, deine Gesundheitsdaten, dein Name und dein Account gehen nie mit."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc reports how each suggestion did — which generator made it, where it was shown, and whether the weight was right. Never which exercise it was. With this on, the exercise behind an outcome goes with it. Your workouts, your weights, your health data, your name and your account never go."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc informa de cómo le fue a cada sugerencia: qué generador la creó, dónde se mostró y si el peso era el adecuado. Nunca de qué ejercicio era. Con esto activado, el ejercicio detrás de un resultado se envía con él. Tus entrenamientos, tus pesos, tus datos de salud, tu nombre y tu cuenta nunca se envían."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc indique comment chaque suggestion s'en est sortie : quel générateur l'a produite, où elle est apparue et si la charge était juste. Jamais de quel exercice il s'agissait. Avec cette option, l'exercice à l'origine d'un résultat part avec lui. Vos séances, vos charges, vos données de santé, votre nom et votre compte ne partent jamais."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc riporta come è andato ogni suggerimento: quale generatore l'ha creato, dove è stato mostrato e se il peso era giusto. Mai di quale esercizio si trattasse. Con questa opzione attiva, l'esercizio dietro un esito parte insieme a esso. I tuoi allenamenti, i tuoi carichi, i tuoi dati sulla salute, il tuo nome e il tuo account non partono mai."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc は、それぞれの提案がどうだったかを報告します — どの生成器が作ったか、どこで表示されたか、重量が適切だったか。どの種目だったかは決して送りません。オンにすると、結果のもとになった種目も一緒に送られます。ワークアウト、重量、ヘルスデータ、名前、アカウントは一切送られません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc는 각 제안이 어땠는지 보고합니다 — 어떤 생성기가 만들었는지, 어디에 표시됐는지, 무게가 적절했는지. 어떤 운동이었는지는 절대 보내지 않습니다. 이 설정을 켜면 결과의 바탕이 된 운동 종목도 함께 전송됩니다. 운동 기록, 중량, 건강 데이터, 이름, 계정은 절대 전송되지 않습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Villain Arc informa como cada sugestão se saiu: qual gerador a criou, onde foi mostrada e se o peso estava certo. Nunca qual exercício era. Com isso ativado, o exercício por trás de um resultado vai junto. Seus treinos, suas cargas, seus dados de saúde, seu nome e sua conta nunca vão."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc сообщает, как показала себя каждая подсказка: какой генератор её создал, где она была показана и был ли вес верным. Никогда — какое это было упражнение. Когда это включено, вместе с результатом отправляется и упражнение. Ваши тренировки, веса, данные о здоровье, имя и аккаунт не отправляются никогда."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc 会汇报每条建议的表现——由哪个生成器给出、在哪里显示、重量是否合适。但从不包含它是哪个动作。开启后，结果背后的动作名称会一并发送。你的训练记录、重量、健康数据、姓名和账户永远不会发送。"
           }
         }
       }

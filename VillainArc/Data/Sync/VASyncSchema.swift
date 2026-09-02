@@ -1,5 +1,4 @@
 import FCTAccountProfile
-import FCTBlobSync
 import FCTServerSync
 import Foundation
 import SwiftData
@@ -33,12 +32,12 @@ import SwiftData
 /// save, not at its parent's completion). The one-active-flow rule therefore holds across devices,
 /// which is the product's own invariant said cross-device.
 ///
-/// **One authored byte surface**: the profile photo, through `FCTBlobSync` (an `AssetSource` on
-/// `va.user_profile`, the bytes in the object store, the ~180 px preview riding the row).
+/// **Villain Arc authors no bytes.** Every model here is records-only, so the app adopts no blob
+/// store of its own: the one picture a person has is the FCT account's avatar, which the account
+/// blob store carries under `<account>/account/` and `AccountAvatar` renders.
 enum VASyncSchema {
     /// The app's path segment in the object store, and **the synced Postgres schema name** — one
-    /// string deliberately: blob keys are `<account>/<appSlug>/<blob id>` and the per-app erase
-    /// resolves its sweep prefix from the schema name. Pinned by the blob contract suite.
+    /// string deliberately: the per-app erase resolves its sweep prefix from the schema name.
     static let appSlug = "va"
 
     /// `<app>.<version>`. Bumped only when a migration changes what a row means on the wire.
@@ -52,6 +51,7 @@ enum VASyncSchema {
         version: version,
         tables: AccountSchema.tables + [
             .of(AppSettings.self),
+            .of(EngineDonation.self),
             .of(UserProfile.self),
             .of(ExercisePreference.self),
             .of(TrainingGoal.self),
@@ -163,7 +163,43 @@ extension AppSettings: SyncedModel {
     }
 }
 
-// MARK: - UserProfile (singleton, fixed uuid, photo through the blob layer)
+// MARK: - EngineDonation (singleton, fixed uuid)
+
+extension EngineDonation: SyncedModel {
+    static var syncTableName: String { "va.engine_donation" }
+    static var syncIDKeyPath: KeyPath<EngineDonation, UUID> { \.id }
+
+    static func descriptor(forSyncIDs ids: [UUID]) -> FetchDescriptor<EngineDonation> {
+        FetchDescriptor(predicate: #Predicate { ids.contains($0.id) })
+    }
+
+    static func descriptor(forPersistentIDs ids: [PersistentIdentifier]) -> FetchDescriptor<EngineDonation> {
+        FetchDescriptor(predicate: #Predicate { ids.contains($0.persistentModelID) })
+    }
+
+    static var allRecordsDescriptor: FetchDescriptor<EngineDonation> { FetchDescriptor() }
+
+    convenience init(syncID: UUID) {
+        self.init(donating: false)
+        id = syncID
+    }
+
+    func syncRow() -> [String: JSONValue] {
+        [
+            "donating": .bool(donating),
+            "decided_at": .date(decidedAt),
+        ]
+    }
+
+    @discardableResult
+    func apply(_ row: [String: JSONValue]) -> UUID? {
+        if let value = row["donating"]?.boolValue { donating = value }
+        if let value = row["decided_at"]?.dateValue { decidedAt = value }
+        return nil
+    }
+}
+
+// MARK: - UserProfile (singleton, fixed uuid)
 
 extension UserProfile: SyncedModel {
     static var syncTableName: String { "va.user_profile" }
@@ -184,13 +220,6 @@ extension UserProfile: SyncedModel {
         id = syncID
     }
 
-    /// The staged photo's typed face over `photoAssetText` (rule 7: authored bytes travel through
-    /// the blob layer; `profileImageData` is the local render cache and never rides the row).
-    var photoAsset: AssetSource? {
-        get { photoAssetText.flatMap(AssetSource.init(storedText:)) }
-        set { photoAssetText = newValue?.storedText }
-    }
-
     func syncRow() -> [String: JSONValue] {
         [
             "gender": .string(gender.rawValue),
@@ -198,9 +227,6 @@ extension UserProfile: SyncedModel {
             "height_cm": heightCm.map(JSONValue.double) ?? .null,
             "fitness_level": fitnessLevel.map { .string($0.rawValue) } ?? .null,
             "fitness_level_set_at": fitnessLevelSetAt.map(JSONValue.date) ?? .null,
-            // The staged photo (rule 7). Pre-staging bytes never ride: a null is a photo the
-            // sweep has not moved across yet, which is honest where a dangling ref would not be.
-            "photo": photoAsset?.jsonValue ?? .null,
         ]
     }
 
@@ -217,16 +243,6 @@ extension UserProfile: SyncedModel {
         // null level is a pair no write path produces, and `firstMissingStep` reads it as still
         // missing — so the step returns however many times the user answers it.
         if fitnessLevel == nil { fitnessLevelSetAt = nil }
-        if let value = row["photo"] {
-            let incoming = AssetSource(jsonValue: value)
-            if incoming != photoAsset {
-                photoAsset = incoming
-                // The cached bytes belong to the previous asset; the bootstrap's hydration pass
-                // refills them from the blob cache or a lazy fetch.
-                if incoming == nil { profileImageData = nil }
-                photoNeedsStaging = false
-            }
-        }
         return nil
     }
 }

@@ -14,7 +14,7 @@ struct SchemaContractTests {
     /// Update this count deliberately whenever an `@Model` is added or removed.
     @Test @MainActor
     func v1SchemaIncludesEveryActiveModel() {
-        #expect(VillainArcSchemaV1.models.count == 43)
+        #expect(VillainArcSchemaV1.models.count == 44)
     }
 
     /// The by-name half of the schema-membership tripwire, via `FCTSync.SchemaContract`: pins the
@@ -42,6 +42,7 @@ struct SchemaContractTests {
             ExercisePreference.self,
             AppSettings.self,
             UserProfile.self,
+            EngineDonation.self,
             ExerciseHistory.self,
             ProgressionPoint.self,
             RepRangePolicy.self,
@@ -66,7 +67,7 @@ struct SchemaContractTests {
             CardioRoutePoint.self,
             CardioMachineInterval.self
         ]
-        #expect(expected.count == 43)
+        #expect(expected.count == 44)
         let missing = SchemaContract.missingModelNames(in: VillainArcSchemaV1.self, requiring: expected)
         #expect(missing.isEmpty, "Models missing from VillainArcSchemaV1.models: \(missing)")
     }

@@ -1,9 +1,7 @@
-import AVFoundation
 import FCTAccountProfile
 import MuscleMap
 import SwiftUI
 import SwiftData
-import UIKit
 
 private struct ProfileCompletionDay: Identifiable {
     let date: Date
@@ -66,26 +64,10 @@ private extension Muscle {
     }
 }
 
-private enum ProfileImagePickerSource: String, Identifiable {
-    case photoLibrary
-    case camera
-
-    var id: String { rawValue }
-
-    var uiKitSourceType: UIImagePickerController.SourceType {
-        switch self {
-        case .photoLibrary:
-            return .photoLibrary
-        case .camera:
-            return .camera
-        }
-    }
-}
-
 struct ProfileSheetLauncherButton: View {
     @Query private var accountProfileFields: [AccountProfileField]
-    @Query(UserProfile.single) private var profiles: [UserProfile]
     @State private var router = AppRouter.shared
+    @State private var sync = VASync.shared
 
     let accessibilityIdentifier: String
 
@@ -94,7 +76,7 @@ struct ProfileSheetLauncherButton: View {
             router.presentAppSheet(.profile)
             Task { await IntentDonations.donateOpenProfile() }
         } label: {
-            ProfileAvatarBadge(displayName: accountName, imageData: profiles.first?.profileImageData, size: 40)
+            AccountFace(diameter: 40, avatars: sync.avatars)
         }
         .buttonStyle(.plain)
         .buttonBorderShape(.circle)
@@ -113,6 +95,25 @@ struct ProfileSheetLauncherButton: View {
 
     private var accessibilityValue: String {
         accountName ?? String(localized: "Not set")
+    }
+}
+
+/// The account's avatar wherever Villain Arc draws a person: `AccountAvatar` once the account's
+/// blob store exists, and a neutral circle of the same size for the moments before it does — a
+/// launch that has not started the engine yet, and the update after a sign-out. The size is held
+/// either way so the toolbar does not jump.
+private struct AccountFace: View {
+    let diameter: CGFloat
+    let avatars: AccountBlobStore?
+
+    var body: some View {
+        if let avatars {
+            AccountAvatar(diameter: diameter, avatars: avatars)
+        } else {
+            Circle()
+                .fill(.quaternary)
+                .frame(width: diameter, height: diameter)
+        }
     }
 }
 struct ProfileSheetView: View {
@@ -141,10 +142,7 @@ struct ProfileSheetView: View {
     @State private var showHeightEditor = false
     @State private var showFitnessLevelEditor = false
     @State private var showTrainingGoalEditor = false
-    @State private var showPhotoOptions = false
-    @State private var showCameraAccessAlert = false
-    @State private var selectedProfileImage: UIImage?
-    @State private var presentedImagePickerSource: ProfileImagePickerSource?
+    @State private var sync = VASync.shared
     private var profile: UserProfile? { profiles.first }
     private var activeTrainingGoal: TrainingGoal? { activeTrainingGoals.first }
     private var heightUnit: HeightUnit { appSettings.first?.heightUnit ?? .imperial }
@@ -220,44 +218,6 @@ struct ProfileSheetView: View {
                 .presentationDetents([.fraction(0.8)])
                 .presentationBackground(Color.sheetBg)
             }
-            .sheet(item: $presentedImagePickerSource) { source in
-                ProfileImagePicker(sourceType: source.uiKitSourceType, image: $selectedProfileImage)
-                    .ignoresSafeArea()
-            }
-            .confirmationDialog("Update Profile Photo", isPresented: $showPhotoOptions, titleVisibility: .visible) {
-                if canUseCamera() {
-                    Button("Take Photo") {
-                        Haptics.selection()
-                        Task { await startCameraFlow() }
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetTakePhotoButton)
-                }
-
-                Button("Select Photo") {
-                    Haptics.selection()
-                    presentedImagePickerSource = .photoLibrary
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetSelectPhotoButton)
-
-                if profile?.profileImageData != nil {
-                    Button("Clear Photo", role: .destructive) {
-                        Haptics.selection()
-                        clearProfilePhoto()
-                    }
-                    .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetClearPhotoButton)
-                }
-            }
-            .alert("Camera Access Needed", isPresented: $showCameraAccessAlert) {
-                Button("Open Settings") {
-                    guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-                    UIApplication.shared.open(url)
-                }
-                .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetCameraAccessOpenSettingsButton)
-                Button("OK", role: .cancel) {}
-                    .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetCameraAccessDismissButton)
-            } message: {
-                Text("Allow camera access in Settings to take a profile photo.")
-            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     if showsCloseButton {
@@ -284,11 +244,6 @@ struct ProfileSheetView: View {
             .onAppear {
                 presentInitialSettingsDestinationIfNeeded()
             }
-            .onChange(of: selectedProfileImage) { _, newImage in
-                guard let newImage else { return }
-                saveProfilePhoto(image: newImage)
-                selectedProfileImage = nil
-            }
         }
         // Soft scroll-edge fade in the sheet presentation context (the root TabView modifier only
         // covers this view when it's the Profile tab). Inert on the iOS 26 SDK (see ContentView).
@@ -303,29 +258,17 @@ struct ProfileSheetView: View {
         showAppSettings = true
     }
 
+    /// The account's face and name. Both are edited in Settings' `AccountProfileSection`, which is
+    /// the one place in the fleet either is changed, so this shows them and offers nothing.
     private var profileSummary: some View {
         VStack(spacing: 8) {
-            ProfileAvatarBadge(displayName: accountName, imageData: profile?.profileImageData, size: 96)
+            AccountFace(diameter: 96, avatars: sync.avatars)
                 .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetAvatar)
 
             Text(effectiveDisplayName)
                 .font(.title2.weight(.bold))
                 .multilineTextAlignment(.center)
                 .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetName)
-
-            Button {
-                Haptics.selection()
-                showPhotoOptions = true
-            } label: {
-                Text("Edit photo")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(AccessibilityText.profileSheetEditPhotoLabel)
-            .accessibilityValue(AccessibilityText.profileSheetEditPhotoValue(hasPhoto: profile?.profileImageData != nil))
-            .accessibilityIdentifier(AccessibilityIdentifiers.profileSheetEditPhotoButton)
-            .accessibilityHint(AccessibilityText.profileSheetEditPhotoHint)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 8)
@@ -850,42 +793,6 @@ struct ProfileSheetView: View {
     private var shouldShowFitnessLevelWarningIcon: Bool {
         guard let level = profile?.fitnessLevel, let setAt = profile?.fitnessLevelSetAt else { return false }
         return level.suggestedNextLevelIfReviewDue(lastSetAt: setAt) != nil
-    }
-
-    private func startCameraFlow() async {
-        guard canUseCamera() else { return }
-
-        let status = AVCaptureDevice.authorizationStatus(for: .video)
-        switch status {
-        case .authorized:
-            presentedImagePickerSource = .camera
-        case .notDetermined:
-            let granted = await AVCaptureDevice.requestAccess(for: .video)
-            if granted {
-                presentedImagePickerSource = .camera
-            } else {
-                showCameraAccessAlert = true
-            }
-        case .denied, .restricted:
-            showCameraAccessAlert = true
-        @unknown default:
-            showCameraAccessAlert = true
-        }
-    }
-
-    private func saveProfilePhoto(image: UIImage) {
-        guard let data = processedProfileImageData(from: image) else { return }
-        saveProfilePhoto(data: data)
-    }
-
-    private func saveProfilePhoto(data: Data?) {
-        guard let profile else { return }
-        profile.setPhoto(data)
-        saveContext(context: context)
-    }
-
-    private func clearProfilePhoto() {
-        saveProfilePhoto(data: nil)
     }
 
 }

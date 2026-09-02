@@ -140,7 +140,7 @@ struct RootView: View {
         case .launching, .seeding, .restoring, .profile, .finishing, .healthPermissions, .error, .ready:
             accountOnboardingGate {
                 if onboardingManager.state == .ready {
-                    ContentView()
+                    engineDonationGate { ContentView() }
                 } else {
                     // The launch backdrop: the app's own background, matching the generated launch
                     // screen so the hand-off is seamless, and holding nothing of the app itself.
@@ -187,6 +187,34 @@ struct RootView: View {
         } else {
             Color.bg.ignoresSafeArea()
         }
+    }
+
+    /// The last step of setup, and this app's own rather than the account's: the engine's donation
+    /// ask, once per account, after Villain Arc's own questions rather than before them.
+    ///
+    /// Without a state file there is no engine either, and a step answered on a device that cannot
+    /// read the account would overwrite an answer already given elsewhere — so the app opens and
+    /// the ask waits for a launch that can.
+    @ViewBuilder
+    private func engineDonationGate<Content: View>(
+        @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        if let stateFile = VASync.shared.stateFile {
+            EngineDonationGate(stateFile: stateFile, country: Self.storefrontCountry) {
+                content()
+            }
+        } else {
+            content()
+        }
+    }
+
+    /// The account's storefront country, or nil when the row cannot be read — the donation step
+    /// reads it for the default its toggle starts at, and nothing else in the app needs it.
+    private static func storefrontCountry() async -> String? {
+        guard let credentials = VAAccount.controller.credentials,
+              case .set(let record, _) = try? await AccountTrusted(account: credentials).get()
+        else { return nil }
+        return record.country
     }
 
     private func cleanupEditingWorkoutPlanCopies() {

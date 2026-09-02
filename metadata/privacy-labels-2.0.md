@@ -24,13 +24,13 @@ Tracking: **none**. `NSPrivacyTracking` is `false` and `NSPrivacyTrackingDomains
 
 | ASC category | ASC data type | Manifest key | What makes it collected |
 |---|---|---|---|
-| Contact Info | Name | `…TypeName` | `va.user_profile` display name |
+| Contact Info | Name | `…TypeName` | The FCT account's given and family name (`account.profile`), asked once at the account onboarding |
 | Contact Info | Email Address | `…TypeEmailAddress` | FCT account identity |
 | Identifiers | User ID | `…TypeUserID` | FCT account id, scopes every synced row |
 | Health & Fitness | Fitness | `…TypeFitness` | `va.workout_session`, `exercise_performance`, `set_performance`, `cardio_session` |
 | Health & Fitness | Health | `…TypeHealth` | `va.weight_goal`, `sleep_goal`, `hydration_goal`, `steps_goal` — the goals the user sets over Health metrics |
 | Location | Precise Location | `…TypePreciseLocation` | `va.cardio_route_point` — outdoor cardio routes |
-| User Content | Photos or Videos | `…TypePhotosorVideos` | Profile photo, uploaded through `FCTBlobSync` |
+| User Content | Photos or Videos | `…TypePhotosorVideos` | The FCT account's avatar, uploaded through `AccountBlobStore`. The app has no picture of its own |
 | Other Data | Other Data Types | `…TypeOtherDataTypes` | The remaining synced tables: `app_settings`, `exercise_preference`, `training_goal`, `training_condition_period`, `suggestion_event`, `suggestion_evaluation`, `prescription_change`, `rep_range_policy`, `pre_workout_context`, `workout_plan`/`split` structure |
 
 ### Data Not Linked to You — 4 types

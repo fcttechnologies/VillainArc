@@ -49,7 +49,6 @@ struct OptionalEnumApplierShapeTests {
             "height_cm": .double(177.8),
             "fitness_level": .string(FitnessLevel.advanced.rawValue),
             "fitness_level_set_at": .date(setAt),
-            "photo": .null,
         ]
     }
 

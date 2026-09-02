@@ -16,10 +16,8 @@ extension AccountCredentials: @retroactive SyncAccount {}
 /// transport.
 struct VASyncConfiguration {
     var stateFileURL: () throws -> URL
-    var blobStateFileURL: () throws -> URL
-    var blobCacheDirectory: () throws -> URL
-    /// The account blob store's own state file and cache — its own, never the app store's: two
-    /// stores sharing one state file would each overwrite the other's queue.
+    /// The account blob store's own state file and cache. Villain Arc authors no bytes of its own,
+    /// so this is the only blob store the app builds.
     var accountBlobStateFileURL: () throws -> URL
     var accountBlobCacheDirectory: () throws -> URL
     var makeTransport: (any SyncAccount) -> any SyncTransport
@@ -35,12 +33,6 @@ struct VASyncConfiguration {
     static var live: VASyncConfiguration {
         VASyncConfiguration(
             stateFileURL: { try VASyncConfiguration.stateURL(suffix: "syncstate.json") },
-            blobStateFileURL: { try VASyncConfiguration.stateURL(suffix: "blobstate.json") },
-            blobCacheDirectory: {
-                try SharedModelContainer.configuration.storeURL()
-                    .deletingLastPathComponent()
-                    .appendingPathComponent("blob-cache")
-            },
             accountBlobStateFileURL: { try VASyncConfiguration.stateURL(suffix: "account-blobstate.json") },
             accountBlobCacheDirectory: {
                 try SharedModelContainer.configuration.storeURL()
@@ -97,7 +89,8 @@ final class VASync {
     /// The record outbox, split by whether waiting will clear it: `retrying` goes by itself,
     /// `stuck` never will.
     private(set) var counted: OutboxCensus = OutboxCensus()
-    /// Staged uploads and refused uploads — the blob half of "what has not reached the account".
+    /// Staged uploads and refused uploads of the account's avatar — the blob half of "what has not
+    /// reached the account".
     private(set) var blobPendingCount: Int = 0
     private(set) var lastError: String?
     /// Set when a sign-out or switch discarded local changes the server never saw.
@@ -109,13 +102,11 @@ final class VASync {
     /// `switched` carry it — so it is kept off the event here, or it is lost for that Apple id.
     private(set) var appleFullName: PersonNameComponents?
 
-    /// The account's own blob store, beside the app's: same transport, its own state file and
-    /// cache. It holds the one avatar the account has, which every FCT app reads through
-    /// `AccountAvatar` and none keeps a copy of.
+    /// The app's one blob store. It holds the one avatar the account has, which every FCT app
+    /// reads through `AccountAvatar` and none keeps a copy of.
     @ObservationIgnored private(set) var avatars: AccountBlobStore?
 
     @ObservationIgnored private var engine: SyncEngine?
-    @ObservationIgnored private var blobs: BlobStore?
     @ObservationIgnored private var settledTask: Task<Void, Never>?
     @ObservationIgnored private var discardTask: Task<Void, Never>?
     @ObservationIgnored private var eventTask: Task<Void, Never>?
@@ -202,8 +193,6 @@ final class VASync {
         var current = cycle
         repeat {
             syncAgain = nil
-            stageAuthoredAssets()
-            if let blobs { _ = await blobs.sync() }
             if let avatars { _ = await avatars.blobs.sync() }
             let result = await engine.sync(current)
             publish(result)
@@ -278,70 +267,6 @@ final class VASync {
         settledTask = Task { [weak self] in await self?.syncNow(.push) }
     }
 
-    // MARK: - Rule 7: the staging sweep (the profile photo)
-
-    /// Move the profile photo's authored bytes into the blob layer: stage (cache + durable upload
-    /// queue), write the `AssetSource` back onto the row, release a replaced object. The write
-    /// dirties the record and the engine's push gate holds it until the upload confirms, so no
-    /// device ever pulls a profile whose photo the object store cannot serve.
-    private func stageAuthoredAssets() {
-        guard let blobs, let container else { return }
-        let context = container.mainContext
-        guard let profile = try? context.fetch(UserProfile.single).first, profile.photoNeedsStaging else { return }
-
-        let previous = profile.photoAsset?.blobRef
-        do {
-            if let data = profile.profileImageData {
-                let ref = try blobs.stage(
-                    data,
-                    contentType: VAImageBytes.contentType(of: data),
-                    preview: BlobPreview.imageThumbnail(from: data),
-                    owner: BlobOwner(table: UserProfile.syncTableName, uuid: profile.id)
-                )
-                profile.photoAsset = .authored(ref)
-            } else {
-                profile.photoAsset = nil
-            }
-            profile.photoNeedsStaging = false
-            if let previous, previous.id != profile.photoAsset?.blobRef?.id {
-                blobs.discard(previous)
-            }
-            saveContext(context: context)
-        } catch {
-            lastError = "\(error)"
-        }
-    }
-
-    /// A restored device's photo: the row carries the asset, the cache may not carry the bytes.
-    /// Fill `profileImageData` from the cache or a lazy digest-verified fetch — directly, never
-    /// through `setPhoto(_:)`, which would re-stage bytes the account already holds.
-    private func hydrateProfilePhotoIfNeeded() {
-        guard let blobs, let container else { return }
-        let context = container.mainContext
-        guard let profile = try? context.fetch(UserProfile.single).first,
-              profile.profileImageData == nil,
-              !profile.photoNeedsStaging,
-              let ref = profile.photoAsset?.blobRef
-        else { return }
-
-        if let cached = blobs.cachedData(for: ref) {
-            profile.profileImageData = cached
-            saveContext(context: context)
-            return
-        }
-        Task { [weak self] in
-            guard let data = try? await blobs.data(for: ref) else { return }
-            guard let self, let container = self.container else { return }
-            let context = container.mainContext
-            guard let profile = try? context.fetch(UserProfile.single).first,
-                  profile.photoAsset?.blobRef?.id == ref.id,
-                  profile.profileImageData == nil
-            else { return }
-            profile.profileImageData = data
-            saveContext(context: context)
-        }
-    }
-
     // MARK: - Account lifecycle
 
     func handle(_ event: AccountEvent) async {
@@ -382,12 +307,12 @@ final class VASync {
     /// there is no engine to ask — a count this device cannot take, which is never spelled as
     /// zero at the moment a clear is being decided.
     var unsyncedWork: OutboxCensus? {
-        engine.map { unsyncedWork(engine: $0, blobs: blobs, avatars: avatars) }
+        engine.map { unsyncedWork(engine: $0, avatars: avatars) }
     }
 
-    private func unsyncedWork(engine: SyncEngine, blobs: BlobStore?, avatars: AccountBlobStore?) -> OutboxCensus {
+    private func unsyncedWork(engine: SyncEngine, avatars: AccountBlobStore?) -> OutboxCensus {
         var census = engine.state.counted
-        for blobCensus in [blobs?.counted, avatars?.blobs.counted].compactMap({ $0 }) {
+        if let blobCensus = avatars?.blobs.counted {
             census.retrying += blobCensus.retrying
             census.stuck += blobCensus.stuck
         }
@@ -416,9 +341,8 @@ final class VASync {
         // Detached stand-ins, because `.signedOut` can land on a process that never built an
         // engine (a relaunch between the tap and the event).
         let engine = self.engine ?? makeDetachedEngine(container: container)
-        let blobs = self.blobs ?? makeDetachedBlobStore()
         let avatars = self.avatars ?? makeDetachedAccountBlobStore()
-        let outstanding = engine.map { unsyncedWork(engine: $0, blobs: blobs, avatars: avatars) }
+        let outstanding = engine.map { unsyncedWork(engine: $0, avatars: avatars) }
         stopEngine(releasing: false)
 
         do {
@@ -426,20 +350,17 @@ final class VASync {
                 throw SyncEngineError.outboxNotEmpty(outstanding ?? OutboxCensus())
             }
             try engine?.clearSyncedData()
-            try blobs?.clearLocalData()
             try avatars?.blobs.clearLocalData()
             clearLocalCaches()
             lastSyncedAt = nil
             counted = OutboxCensus()
             blobPendingCount = 0
             self.engine = nil
-            self.blobs = nil
             self.avatars = nil
             onLocalDataCleared?()
         } catch {
             keptOnSignOut = max(outstanding?.total ?? 0, engine?.state.counted.total ?? 0)
             self.engine = nil
-            self.blobs = nil
             self.avatars = nil
         }
     }
@@ -457,17 +378,9 @@ final class VASync {
         stopEngine(releasing: true)
 
         let stateFile: SyncStateFile
-        let blobStore: BlobStore
         let avatarStore: AccountBlobStore
         do {
             stateFile = SyncStateFile(url: try configuration.stateFileURL())
-            blobStore = BlobStore(
-                appSlug: VASyncSchema.appSlug,
-                account: credentials,
-                transport: configuration.makeBlobTransport(credentials),
-                stateFileURL: try configuration.blobStateFileURL(),
-                cacheDirectory: try configuration.blobCacheDirectory()
-            )
             // The account's store shares this app's transport — one account, one JWT, one bucket —
             // and nothing else.
             avatarStore = AccountBlobStore(
@@ -489,25 +402,19 @@ final class VASync {
             account: credentials,
             schema: VASyncSchema.schema
         )
-        // The ordering rule's engine half: a record with a pending or failed upload stays held,
-        // so no device ever pulls a profile whose photo the object store cannot serve.
-        engine.pushGate = { [weak blobStore, weak avatarStore] table, uuid in
-            (blobStore?.isRecordPushable(table: table, uuid: uuid) ?? true)
-                && (avatarStore?.blobs.isRecordPushable(table: table, uuid: uuid) ?? true)
+        // The ordering rule's engine half: a record with a pending or failed upload stays held, so
+        // no device ever pulls a profile row naming an avatar the object store cannot serve.
+        engine.pushGate = { [weak avatarStore] table, uuid in
+            avatarStore?.blobs.isRecordPushable(table: table, uuid: uuid) ?? true
         }
         // The liveness half: a record the gate held is pushed the moment its upload lands.
-        blobStore.onUploadsSettled = { [weak self] in
-            guard let self else { return }
-            self.engine?.resetBackoff()
-            self.requestAnotherCycle()
-        }
         avatarStore.blobs.onUploadsSettled = { [weak self] in
             guard let self else { return }
             self.engine?.resetBackoff()
             self.requestAnotherCycle()
         }
         // Server-applied writes bypass every app-side write seam, so the derived surfaces
-        // (Spotlight, widgets, exercise analytics, the photo cache) are told directly.
+        // (Spotlight, widgets, exercise analytics) are told directly.
         engine.didApplyRemoteChanges = { [weak self] in self?.remoteChangesLanded() }
         engine.onAccountDeleted = { [weak self] in
             guard let self, let controller = self.controller else { return }
@@ -529,7 +436,6 @@ final class VASync {
             }
         }
         self.engine = engine
-        self.blobs = blobStore
         self.avatars = avatarStore
         self.nudges = configuration.makeNudgeChannel(credentials)
 
@@ -549,7 +455,6 @@ final class VASync {
         discardTask = nil
         if releasing {
             engine = nil
-            blobs = nil
             avatars = nil
             nudges = nil
         }
@@ -573,13 +478,10 @@ final class VASync {
         let engine = self.engine ?? makeDetachedEngine(container: container)
         discardedOnSwitch = engine?.state.outbox.count ?? 0
         try? engine?.clearSyncedData(discardingUnsynced: true)
-        let blobs = self.blobs ?? makeDetachedBlobStore()
-        try? blobs?.clearLocalData(discardingUnsynced: true)
         let avatars = self.avatars ?? makeDetachedAccountBlobStore()
         try? avatars?.blobs.clearLocalData(discardingUnsynced: true)
         clearLocalCaches()
         self.engine = nil
-        self.blobs = nil
         self.avatars = nil
         lastSyncedAt = nil
         counted = OutboxCensus()
@@ -651,19 +553,6 @@ final class VASync {
         )
     }
 
-    private func makeDetachedBlobStore() -> BlobStore? {
-        guard let stateURL = try? configuration.blobStateFileURL(),
-              let cacheURL = try? configuration.blobCacheDirectory()
-        else { return nil }
-        return BlobStore(
-            appSlug: VASyncSchema.appSlug,
-            account: DetachedAccount(accountID: UUID()),
-            transport: UnreachableBlobTransport(),
-            stateFileURL: stateURL,
-            cacheDirectory: cacheURL
-        )
-    }
-
     private func makeDetachedAccountBlobStore() -> AccountBlobStore? {
         guard let stateURL = try? configuration.accountBlobStateFileURL(),
               let cacheURL = try? configuration.accountBlobCacheDirectory()
@@ -679,18 +568,17 @@ final class VASync {
     // MARK: - Reacting
 
     /// Rows the engine applied bypass every app-side write path, so each derived surface is
-    /// refreshed here: Spotlight + widgets, the exercise-analytics cache, and the photo bytes.
+    /// refreshed here: Spotlight + widgets and the exercise-analytics cache.
     private func remoteChangesLanded() {
         guard let container else { return }
         SpotlightIndexer.reindexAll(context: container.mainContext)
         WidgetCenter.shared.reloadAllTimelines()
         ExerciseHistoryUpdater.rebuildAllHistories(context: container.mainContext)
-        hydrateProfilePhotoIfNeeded()
     }
 
     private func publish(_ result: SyncStatus) {
         status = result
-        lastError = engine?.lastError ?? blobs?.lastError
+        lastError = engine?.lastError ?? avatars?.blobs.lastError
         refreshCounters()
     }
 
@@ -698,7 +586,7 @@ final class VASync {
         guard let state = engine?.state else { return }
         lastSyncedAt = state.lastSyncedAt
         counted = state.counted
-        blobPendingCount = blobs.map { $0.counted.retrying + $0.counted.stuck } ?? 0
+        blobPendingCount = avatars.map { $0.blobs.counted.retrying + $0.blobs.counted.stuck } ?? 0
     }
 
     // MARK: - Backoff and connectivity
@@ -718,16 +606,6 @@ final class VASync {
             }
         }
         monitor.start(queue: DispatchQueue(label: "com.fcttechnologies.VillainArc.sync.path"))
-    }
-}
-
-/// The MIME type staged bytes are filed under, read from the bytes themselves.
-nonisolated enum VAImageBytes {
-    static func contentType(of data: Data) -> String {
-        let head = [UInt8](data.prefix(12))
-        if head.count >= 4, Array(head[0...3]) == [0x89, 0x50, 0x4E, 0x47] { return "image/png" }
-        if head.count >= 12, Array(head[4...11]) == Array("ftypheic".utf8) { return "image/heic" }
-        return "image/jpeg"
     }
 }
 

@@ -28,13 +28,7 @@ enum AccessibilityIdentifiers {
     static let profileSheetCloseButton = "profileSheetCloseButton"
     static let profileSheetSettingsButton = "profileSheetSettingsButton"
     static let profileSheetAvatar = "profileSheetAvatar"
-    static let profileSheetEditPhotoButton = "profileSheetEditPhotoButton"
     static let profileSheetName = "profileSheetName"
-    static let profileSheetTakePhotoButton = "profileSheetTakePhotoButton"
-    static let profileSheetSelectPhotoButton = "profileSheetSelectPhotoButton"
-    static let profileSheetClearPhotoButton = "profileSheetClearPhotoButton"
-    static let profileSheetCameraAccessOpenSettingsButton = "profileSheetCameraAccessOpenSettingsButton"
-    static let profileSheetCameraAccessDismissButton = "profileSheetCameraAccessDismissButton"
     static let profileSheetGenderRow = "profileSheetGenderRow"
     static let profileSheetHeightRow = "profileSheetHeightRow"
     static let profileSheetDetailsCard = "profileSheetDetailsCard"
@@ -834,6 +828,11 @@ enum AccessibilityIdentifiers {
     static let profileFitnessLevelEditorCloseButton = "profileFitnessLevelEditorCloseButton"
     static let profileFitnessLevelEditorConfirmButton = "profileFitnessLevelEditorConfirmButton"
 
+    // MARK: - Engine donation
+    static let engineDonationToggle = "engineDonationToggle"
+    static let engineDonationContinueButton = "engineDonationContinueButton"
+    static let settingsEngineDonationToggle = "settingsEngineDonationToggle"
+
     // MARK: - AppSettingsView
     static let settingsCloseButton = "settingsCloseButton"
     static let settingsThemePicker = "settingsThemePicker"
@@ -898,8 +897,6 @@ enum AccessibilityText {
     static let profileLabel = localized("Profile")
     static let profileHint = localized("Shows your profile.")
     static let profileSheetSettingsHint = localized("Shows app settings.")
-    static let profileSheetEditPhotoLabel = localized("Edit profile photo")
-    static let profileSheetEditPhotoHint = localized("Shows options to take, select, or remove your profile photo.")
     static let profileSheetReviewHint = localized("Opens the App Store review page.")
     static let profileSheetPrivacyPolicyHint = localized("Shows the privacy policy.")
     static let profileSheetTermsOfServiceHint = localized("Shows the terms of service.")
@@ -1475,7 +1472,6 @@ enum AccessibilityText {
     static func onboardingGenderOptionValue(isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
     static func onboardingFitnessLevelOptionValue(isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
     static func onboardingTrainingGoalOptionValue(isSelected: Bool) -> String { isSelected ? localized("Selected") : localized("Not selected") }
-    static func profileSheetEditPhotoValue(hasPhoto: Bool) -> String { hasPhoto ? localized("Photo added") : localized("No photo selected") }
     static func settingsAppleHealthActionHint(action: HealthAuthorizationAction) -> String {
         switch action {
         case .requestAccess:

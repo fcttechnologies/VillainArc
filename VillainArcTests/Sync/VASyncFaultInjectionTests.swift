@@ -1,4 +1,5 @@
 import FCTAccount
+import FCTAccountProfile
 import FCTBlobSync
 import FCTBlobSyncTesting
 import FCTServerSync
@@ -126,8 +127,6 @@ final class VASyncFaultHarness {
         let injector = injector
         let configuration = VASyncConfiguration(
             stateFileURL: { directory.appendingPathComponent("syncstate.json") },
-            blobStateFileURL: { directory.appendingPathComponent("blobstate.json") },
-            blobCacheDirectory: { directory.appendingPathComponent("blob-cache") },
             accountBlobStateFileURL: { directory.appendingPathComponent("account-blobstate.json") },
             accountBlobCacheDirectory: { directory.appendingPathComponent("account-blob-cache") },
             makeTransport: { _ in
@@ -163,6 +162,14 @@ final class VASyncFaultHarness {
         context.insert(session)
         try context.save()
         return session.id
+    }
+
+    /// The account's `avatar_blob` row, written the way `AccountProfileSection` writes it: the
+    /// blob's uuid as the field's value, saved after the bytes are staged.
+    func writeAvatarRow(_ id: UUID) throws {
+        let context = container.mainContext
+        context.insert(AccountProfileField(kind: .avatarBlob, value: id.uuidString.lowercased()))
+        try context.save()
     }
 
     func editSession(_ id: UUID, notes: String) throws {

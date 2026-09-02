@@ -167,6 +167,7 @@
 				Data/LiveActivity/WorkoutActivityAttributes.swift,
 				Data/LiveActivity/WorkoutActivityManager.swift,
 				Data/Models/AppSettings.swift,
+				Data/Models/EngineDonation.swift,
 				Data/Models/Enums/AppAppearanceMode.swift,
 				Data/Models/Enums/AppTab.swift,
 				Data/Models/Enums/Exercise/EquipmentType.swift,

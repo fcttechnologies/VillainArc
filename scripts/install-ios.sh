@@ -63,29 +63,11 @@ xcodebuild -project VillainArc.xcodeproj -scheme VillainArc \
 BUILT="$DERIVED/Build/Products/Release-iphoneos/$APP_NAME"
 [[ -d "$BUILT" ]] || { echo "✗ Built app not found: $BUILT" >&2; exit 1; }
 
-# Retain this build's dSYM, keyed by the UUID a crash report names.
-#
-# MetricKit delivers a crash up to ~24 HOURS after it happened, and by then the build that
-# crashed is gone: `$DERIVED` is scratch the next run overwrites, and reading raw offsets without
-# symbols is invention rather than diagnosis. Keyed by UUID because that is the only thing a
-# payload and a binary share.
-DSYM="$DERIVED/Build/Products/Release-iphoneos/$APP_NAME.dSYM"
-if [[ -d "$DSYM" ]]; then
-  DSYM_UUID="$(dwarfdump --uuid "$DSYM" 2>/dev/null | awk '/UUID:/ {print $2; exit}')"
-  if [[ -n "$DSYM_UUID" ]]; then
-    mkdir -p "$HOME/.jarvis/dsyms"
-    KEEP="$HOME/.jarvis/dsyms/$DSYM_UUID.dSYM"
-    [[ -d "$KEEP" ]] || cp -R "$DSYM" "$KEEP"
-    echo "› dSYM retained for crash reports: $DSYM_UUID"
-    # Bounded at the newest 20 across every app that retains here — a crash older than twenty
-    # device builds is one nobody is still chasing, and keeping every build is a slow disk leak.
-    ls -dt "$HOME/.jarvis/dsyms"/*.dSYM 2>/dev/null | tail -n +21 | while read -r old; do
-      rm -rf "$old"
-    done
-  fi
-else
-  echo "⚠ no dSYM produced — a crash from this build could not be symbolicated" >&2
-fi
+# Retain this build's dSYM, keyed by the UUID a crash report names — the fleet's one hook, which
+# prunes PER BINARY over the archive every app shares. It exits 0 when there is no dSYM to keep, so
+# an install never fails over symbols.
+"$HOME/Jarvis/tools/diag/archive-dsym.sh" \
+  "$DERIVED/Build/Products/Release-iphoneos/$APP_NAME.dSYM"
 
 # App Shortcuts extract per BUILT ARTIFACT, not per source tree, so the gate's green reading on a
 # simulator build says nothing about this one. Same verifier and same contract as the gate: a null

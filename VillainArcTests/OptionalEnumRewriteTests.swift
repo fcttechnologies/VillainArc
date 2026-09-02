@@ -31,7 +31,6 @@ struct OptionalEnumRewriteTests {
     private func seed(_ container: ModelContainer, setAt: Date) throws {
         let profile = try SystemState.ensureUserProfile(context: container.mainContext)
         profile.heightCm = 177.8
-        profile.photoAssetText = "seeded"
         profile.fitnessLevel = .advanced
         profile.fitnessLevelSetAt = setAt
         try container.mainContext.save()
@@ -48,14 +47,12 @@ struct OptionalEnumRewriteTests {
         let profile = try #require(try applier.fetch(UserProfile.single).first)
         #expect(profile.fitnessLevel == .advanced, "precondition: the applier reads it before rewriting")
         profile.heightCm = 177.8
-        profile.photoAssetText = "seeded"
         profile.fitnessLevel = .advanced
         profile.fitnessLevelSetAt = setAt
         try applier.save()
 
         let stored = try #require(try reread(url))
         #expect(stored.heightCm == 177.8, "Double?")
-        #expect(stored.photoAssetText == "seeded", "String?")
         #expect(stored.fitnessLevelSetAt == setAt, "Date?")
         #expect(stored.fitnessLevel == .advanced, "the optional enum")
     }

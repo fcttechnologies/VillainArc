@@ -214,52 +214,20 @@ struct VASyncContractAdapter: SyncContractAdapter {
     }
 }
 
-/// The blob half runs on its own adapter because the asset column lives on `va.user_profile`,
-/// not on the record suite's primary table. The insert override is the app's real assignment
-/// path — the `photoAsset` typed projection over the stored text column.
-@MainActor
-struct VABlobContractAdapter: BlobContractAdapter {
-    var schema: SyncSchema { VASyncSchema.schema }
-    var primaryTable: String { UserProfile.syncTableName }
-    var markerColumn: String { "name" }
-    var appSlug: String { VASyncSchema.appSlug }
-    var blobColumn: String { "photo" }
-
-    func makeStore() throws -> SyncContractStore {
-        let made = try TestStoreFactory.onDisk(VillainArcSchemaV1.self)
-        return SyncContractStore(container: made.container, url: made.url)
-    }
-
-    func insert(asset: AssetSource, id: UUID, in container: ModelContainer) async throws {
-        let context = container.mainContext
-        let profile = UserProfile(syncID: id)
-        profile.photoAsset = asset
-        context.insert(profile)
-        try context.save()
-    }
-
-    func asset(of id: UUID, in container: ModelContainer) throws -> AssetSource? {
-        let context = container.mainContext
-        return try context.fetch(UserProfile.descriptor(forSyncIDs: [id])).first?.photoAsset
-    }
-}
-
-/// The whole instantiation: one adapter per suite, one parameterized test each. The same
-/// scenarios every adopting app runs, through Villain Arc's own models, joins, and write paths.
+/// The whole instantiation: one adapter, one parameterized test. The same scenarios every adopting
+/// app runs, through Villain Arc's own models, joins, and write paths.
+///
+/// **There is no blob adapter beside it, because Villain Arc authors no bytes.** The one picture is
+/// the account's avatar, which is not this app's record to carry: it lives on `account.profile`'s
+/// `avatar_blob` row as a blob uuid rather than as an `AssetSource`, and the shape this suite's
+/// blob half asserts — an asset column on an app's own synced table — is one no Villain Arc row
+/// has. What the app does own there is the wiring it gives `AccountBlobStore`, and that is pinned
+/// against the real bootstrap in `AccountBlobWiringTests`.
 @Suite("FCTServerSync adopter contract — Villain Arc instantiation")
 struct VASyncContractTests {
     @Test(arguments: SyncContractScenario.all)
     @MainActor
     func contract(_ scenario: SyncContractScenario) async throws {
         try await scenario.run(with: VASyncContractAdapter())
-    }
-}
-
-@Suite("FCTBlobSync adopter contract — Villain Arc instantiation")
-struct VABlobContractTests {
-    @Test(arguments: BlobContractScenario.all)
-    @MainActor
-    func contract(_ scenario: BlobContractScenario) async throws {
-        try await scenario.run(with: VABlobContractAdapter())
     }
 }

@@ -85,6 +85,38 @@ is reported when it resolves and not before: nothing ages one out, so `unresolve
 a pending event either meets a later workout that judges it, or its plan changes and it is deleted
 outright, which is an edit rather than a verdict.
 
+### The donation ask — what may leave with an outcome
+
+`Data/Models/EngineDonation.swift` (the synced answer + the per-country default),
+`Views/Onboarding/EngineDonationStep.swift` (the ask), the "Send the Exercise Too" toggle in
+`AppSettingsView` (the withdrawal).
+
+Everything above is **structure**: which generator, which position, which verdict, how long it
+took. None of it is content and none of it is optional. The donation is the content behind it —
+which exercise — asked once, in one step after the FCT account onboarding and this app's own setup
+questions, off until tapped.
+
+**The answer is a synced singleton** (`va.engine_donation`), so it follows the account rather than
+the device. The row's presence is the record that the ask happened, which is why an absent row
+decides nothing until the table has been pulled — the same rule `AccountOnboardingGate` holds for
+its own row, and for the same reason: before the pull, "never asked" and "answered on another
+device" are indistinguishable, and asking twice would overwrite the first answer.
+`EngineDonation.asks(hasAnswer:pulled:)` is that rule.
+
+**The step's default is a table, not a condition.** `EngineDonationDefaults.table` maps countries
+to what the toggle starts at, read against `AccountTrusted.get().country`, so opening the default
+somewhere later is a row rather than a change to a surface. One row today: no EU/EEA/UK account is
+ever offered a pre-checked box, because a pre-checked box is not consent under the GDPR. Everywhere
+else falls to `fallback`, which is off as well — so the toggle starts off everywhere, and the row
+is what keeps a future fallback from silently including the countries it may never include.
+
+**Nothing richer is on the wire yet, and the switch is deliberately ahead of it.** `AlgorithmOutcome`
+is closed types end to end and the server binds every text column of `diag.algorithm_outcomes` to a
+closed vocabulary, so a donating account currently sends exactly what a refusing one does. Giving
+that content a home is a platform change (`FCTPlatform`'s `Documentation/diagnostics.md`); this app
+ships the switch and the account's answer, and `SuggestionOutcomeReporting` is where the payload
+will read it.
+
 ## Where Suggestions Start
 
 The main lifecycle starts in `WorkoutSummaryView`.

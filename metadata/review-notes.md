@@ -35,7 +35,7 @@ The account is seeded with training history — three completed "Push Pull Legs"
 | HealthKit (Share + Read) | Workout import/export, weight, sleep, steps, distance, energy, heart-rate vitals, respiratory rate, wrist temperature, and dietary water. | First launch onboarding, and again only after a new Health permissions catalog version ships. |
 | Location When In Use | Outdoor cardio route recording for run/walk sessions. When-In-Use only. | After the user chooses an outdoor cardio session and taps Continue on the app's location explanation screen, the iOS system permission sheet appears. Treadmill sessions never trigger Location. |
 | User Notifications | Local notifications for rest timers, goals, hydration, and weekly health coaching recaps. No remote push or APNs. | After onboarding reaches the ready state. |
-| Camera / Photo Library | Optional profile photo. | Only when the user taps to change their profile photo. |
+| Photo Library | The optional FCT account avatar, chosen through the system photo picker. | Only when the user taps to change their account photo in Settings. The picker runs out of process, so no photo-library permission prompt appears and the app sees only the one image chosen. |
 
 No advertising identifiers, tracking permissions, or App Tracking Transparency prompts, and no third-party analytics or tracking SDKs. The privacy nutrition label and `PrivacyInfo.xcprivacy` declare two separate groups: account-scoped content the user syncs (name, email address, user ID, fitness, health, precise location, photos or videos, other data types — all linked to identity, app functionality only), and anonymous diagnostics (crash, performance, other diagnostic, product interaction — not linked to identity, keyed to a random install identifier).
 
@@ -64,7 +64,7 @@ AI workout plan generation and AI exercise replacement use `SystemLanguageModel.
 ## Data, Storage, And Sync
 
 - All user data lives locally in SwiftData in the App Group container `group.com.fcttechnologies.VillainArc1`. There is no CloudKit mirror.
-- Cross-device sync is the FCT platform: the app's authored rows (25 tables) and the profile photo go to FCT's own backend, hosted on Supabase, scoped to the signed-in account. Apple Health mirror data, weight and hydration entries, and derived caches stay on the device.
+- Cross-device sync is the FCT platform: the app's authored rows (26 tables) go to FCT's own backend, hosted on Supabase, scoped to the signed-in account. The app stores no photos or files of its own; the one picture is the FCT account's avatar, which the account carries for every FCT app. Apple Health mirror data, weight and hydration entries, and derived caches stay on the device.
 - Anonymous diagnostics post to FCT's `diag-ingest` endpoint under a random install identifier that carries no account token.
 - HealthKit reads/writes use conventional `HKHealthStore` APIs, anchored queries, and live workout sessions.
 - App Group entitlement is shared by the main app, widget extension, and intents extension. HealthKit entitlement is on the main app only.

@@ -36,8 +36,12 @@ parent's completion):
   `account.trusted`), `AppSettings` (singleton)
 - what the user has done to a catalog exercise: `ExercisePreference`, sparse — a row exists only
   for an exercise they actually touched (favorited, added, or tuned)
-- one byte surface: the profile photo, through `FCTBlobSync` (`va.user_profile.photo`; bytes in
-  the object store, preview riding the row, `profileImageData` as the local render cache)
+- the donation answer: `EngineDonation` (singleton) — whether the exercise behind an outcome may
+  ride with it (`SUGGESTION_AND_OUTCOME_FLOW.md`)
+
+**No byte surface.** Villain Arc authors no bytes at all, so it adopts no blob store of its own:
+the one picture is the FCT account's avatar, which `AccountBlobStore` carries under
+`<account>/account/` and `AccountAvatar` renders wherever a person is drawn.
 
 ## What Never Syncs, and Why
 
@@ -102,9 +106,7 @@ The nudge rung is `SyncNudgeChannel`, foreground-only: one socket on the account
 is what correctness rides on.
 
 Rows the engine applies bypass every app-side write seam, so `didApplyRemoteChanges` refreshes the
-derived surfaces directly: Spotlight reindex, widget reload, the exercise-analytics rebuild, and
-profile-photo hydration (cache or lazy digest-verified fetch — never through `setPhoto`, which
-would re-stage bytes the account already holds).
+derived surfaces directly: Spotlight reindex, widget reload, and the exercise-analytics rebuild.
 
 ## The Deletion Doors
 
@@ -117,7 +119,11 @@ reading as zero.
 ## Testing
 
 `VillainArcTests/Sync/VASyncContractTests.swift` instantiates the fleet's adopter contract suites:
-all record scenarios over VA's schema (with VA's seven declared joins driven through every arrival
-order) and all blob scenarios over the profile-photo adapter. The suites assert on the user's
-data, never the engine's bookkeeping. Run them with the full suite, or focused:
-`-only-testing:VillainArcTests/VASyncContractTests`.
+all record scenarios over VA's schema, with VA's seven declared joins driven through every arrival
+order. The suites assert on the user's data, never the engine's bookkeeping. Run them with the full
+suite, or focused: `-only-testing:VillainArcTests/VASyncContractTests`.
+
+There is no blob adapter beside it: the shared blob suite asserts an `AssetSource` column on an
+app's own synced table, and no Villain Arc row has one. What this app owns is the wiring it gives
+the account's store — the push gate, the barrier, the sign-out clear — and that is pinned against
+the real bootstrap in `VillainArcTests/Sync/AccountBlobWiringTests.swift`.

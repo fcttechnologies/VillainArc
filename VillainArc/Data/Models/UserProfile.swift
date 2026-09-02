@@ -26,24 +26,7 @@ import SwiftData
         get { fitnessLevelRawValue.flatMap(FitnessLevel.init(rawValue:)) }
         set { fitnessLevelRawValue = newValue?.rawValue }
     }
-    @Attribute(.externalStorage) var profileImageData: Data?
-    /// The photo's blob-layer reference (`AssetSource.storedText`): authored bytes travel through
-    /// `FCTBlobSync`, never inline on the record row. `profileImageData` stays the local render
-    /// cache every surface reads. Stored as text so this file compiles into targets that don't
-    /// link the blob layer; the typed projection lives with the sync conformances.
-    var photoAssetText: String?
-    /// True while the current `profileImageData` bytes have not been staged into the blob layer.
-    /// Set by `setPhoto(_:)`, cleared by the staging sweep.
-    var photoNeedsStaging: Bool = false
-
     init() {}
-
-    /// The one write path for photo bytes: assigns the cache and marks the blob layer's work.
-    /// A nil clears the photo; the staging sweep turns that into an asset detach + object delete.
-    func setPhoto(_ data: Data?) {
-        profileImageData = data
-        photoNeedsStaging = true
-    }
 
     var isComplete: Bool { firstMissingStep == nil }
 
