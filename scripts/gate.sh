@@ -22,8 +22,8 @@
 # names.
 #
 # Usage:  scripts/gate.sh
-# Env:    SIM_NAME  simulator device name (default "iPhone 17 Pro"). A concurrent lane points
-#                   this at its own simulator; two lanes on one device collide on boot and install.
+# Env:    SIM_NAME  simulator device name (default "iPhone 17 Pro") outside a lane; inside one the
+#                   leased device is the destination (gate-lib's lane_sim_destination).
 
 set -uo pipefail
 
@@ -33,7 +33,7 @@ source "../FCTFoundation/scripts/gate-lib.sh"
 phase_init
 
 export DEVELOPER_DIR="${DEVELOPER_DIR:-/Applications/Xcode-beta.app}"
-SIM_NAME="${SIM_NAME:-iPhone 17 Pro}"
+lane_sim_destination
 SHORTCUT_COUNT=10
 PHRASE_CATALOG="VillainArc/AppShortcuts.xcstrings"
 MIN_TESTS=523
@@ -106,7 +106,7 @@ collect_build() {
 
 # WAVE 1 — the Debug build the suite runs against. `build-for-testing`, not `build`: it produces
 # the same app artifact AND compiles the test bundles, so the test leg has nothing left to build.
-start_build ios build-for-testing Debug "platform=iOS Simulator,name=${SIM_NAME}"
+start_build ios build-for-testing Debug "${IOS_DEST}"
 collect_build ios
 mark "Debug build"
 
@@ -122,10 +122,10 @@ echo "==> Unit suite + Release builds"
 TEST_LOG="${LOGS}/unit-suite.log"
 leg_start unit-suite "${TEST_LOG}" \
   xcodebuild -project VillainArc.xcodeproj -scheme VillainArc \
-    -destination "platform=iOS Simulator,name=${SIM_NAME}" \
+    -destination "${IOS_DEST}" \
     -derivedDataPath "${DD}/ios" -parallel-testing-enabled NO \
     -allowProvisioningUpdates test-without-building
-start_build ios-release build   Release "platform=iOS Simulator,name=${SIM_NAME}" \
+start_build ios-release build   Release "${IOS_DEST}" \
   ONLY_ACTIVE_ARCH=YES ARCHS=arm64
 start_build archive     archive Release "generic/platform=iOS" \
   -archivePath "${DD}/VillainArc.xcarchive" CODE_SIGNING_ALLOWED=NO
