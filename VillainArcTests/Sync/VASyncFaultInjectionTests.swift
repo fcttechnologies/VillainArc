@@ -128,6 +128,8 @@ final class VASyncFaultHarness {
             stateFileURL: { directory.appendingPathComponent("syncstate.json") },
             blobStateFileURL: { directory.appendingPathComponent("blobstate.json") },
             blobCacheDirectory: { directory.appendingPathComponent("blob-cache") },
+            accountBlobStateFileURL: { directory.appendingPathComponent("account-blobstate.json") },
+            accountBlobCacheDirectory: { directory.appendingPathComponent("account-blob-cache") },
             makeTransport: { _ in
                 transport ?? VAFaultTransport(inner: FakeTransport(server: server), injector: injector)
             },

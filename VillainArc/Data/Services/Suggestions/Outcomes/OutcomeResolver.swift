@@ -1,3 +1,4 @@
+import FCTMetrics
 import Foundation
 import SwiftData
 
@@ -43,7 +44,11 @@ struct OutcomeResolver {
 
     // MARK: - Public Entry Point
 
-    @MainActor static func resolveOutcomes(for workout: WorkoutSession, context: ModelContext) async {
+    @MainActor static func resolveOutcomes(
+        for workout: WorkoutSession,
+        context: ModelContext,
+        outcomes: any SuggestionOutcomeReporting = DiagSuggestionOutcomes()
+    ) async {
         guard workout.workoutPlan != nil else { return }
 
         // Step 1: Gather eligible events
@@ -96,8 +101,8 @@ struct OutcomeResolver {
         // Step 5: Merge phase — apply outcome entries to each event.
         var processedEventIDs = Set<UUID>()
 
-        for group in groups {
-            applyOutcomeIfPossible(event: group.event, changes: group.changes, exercisePerf: group.exercisePerf, ruleResults: ruleResults, aiOutput: aiResults[group.event.id], sessionID: workout.id, processedIDs: &processedEventIDs)
+        for (index, group) in groups.enumerated() {
+            applyOutcomeIfPossible(event: group.event, changes: group.changes, exercisePerf: group.exercisePerf, ruleResults: ruleResults, aiOutput: aiResults[group.event.id], sessionID: workout.id, rank: index + 1, outcomes: outcomes, processedIDs: &processedEventIDs)
         }
 
         // Step 6: Persist
@@ -342,7 +347,7 @@ struct OutcomeResolver {
         return min(1.0, max(0.0, adjusted))
     }
 
-    private static func applyOutcomeIfPossible(event: SuggestionEvent, changes: [PrescriptionChange], exercisePerf: ExercisePerformance, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?, sessionID: UUID, processedIDs: inout Set<UUID>) {
+    private static func applyOutcomeIfPossible(event: SuggestionEvent, changes: [PrescriptionChange], exercisePerf: ExercisePerformance, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?, sessionID: UUID, rank: Int, outcomes: any SuggestionOutcomeReporting, processedIDs: inout Set<UUID>) {
         guard event.outcome == .pending, event.evaluatedAt == nil else { return }
         // Within-invocation dedup: prevents both the AI pass and the fallback pass from appending in the same call.
         guard processedIDs.insert(event.id).inserted else { return }
@@ -359,9 +364,7 @@ struct OutcomeResolver {
         let allEvaluations = existingEvaluations + [evaluation]
         if let earlyDecision = earlyPositiveFinalizationDecision(for: allEvaluations) {
             if case .finalize(let outcome, let reason) = earlyDecision {
-                event.outcome = outcome
-                event.outcomeReason = reason
-                event.evaluatedAt = Date()
+                finalize(event: event, outcome: outcome, reason: reason, rank: rank, outcomes: outcomes)
             }
             return
         }
@@ -376,9 +379,26 @@ struct OutcomeResolver {
             event.evaluatedAt = nil
             event.requiredEvaluationCount = max(event.requiredEvaluationCount, 3)
         case .finalize(let outcome, let reason):
-            event.outcome = outcome
-            event.outcomeReason = reason
-            event.evaluatedAt = Date()
+            finalize(event: event, outcome: outcome, reason: reason, rank: rank, outcomes: outcomes)
+        }
+    }
+
+    /// The one place a suggestion's verdict lands: the app's own `Outcome` on the event, and the
+    /// same verdict reported to the field as the fleet vocabulary spells it. `.insufficient`
+    /// resolves the event without reporting anything — the fleet has no value for "the evidence
+    /// could not judge it", and inventing one would read as a verdict the app never reached.
+    private static func finalize(
+        event: SuggestionEvent,
+        outcome: Outcome,
+        reason: String,
+        rank: Int,
+        outcomes: any SuggestionOutcomeReporting
+    ) {
+        event.outcome = outcome
+        event.outcomeReason = reason
+        event.evaluatedAt = Date()
+        if let reported = outcome.diagOutcome {
+            outcomes.record(reported, for: event, rank: rank)
         }
     }
 

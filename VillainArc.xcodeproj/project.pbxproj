@@ -10,6 +10,7 @@
 		0EFD2294144CA53AFC24080B /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = 57CA85F33D542E5A71727A42 /* FCTSync */; };
 		56CA555CA0317919EA0F84B9 /* FCTMetrics in Frameworks */ = {isa = PBXBuildFile; productRef = FEB01967AEAA81A937A68611 /* FCTMetrics */; };
 		422658CAFC14C82AE316D8AC /* FCTSupport in Frameworks */ = {isa = PBXBuildFile; productRef = F11105FC542AECB144717350 /* FCTSupport */; };
+		A1C0FF11E0A57A5701000011 /* FCTFeedback in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FF11E0A57A5701000010 /* FCTFeedback */; };
 		A1C0FF11E0A57A5701000001 /* FCTComponentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FF11E0A57A5701000002 /* FCTComponentsUI */; };
 		A1C0FF11E0A57A5701000003 /* FCTComponentsUI in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FF11E0A57A5701000004 /* FCTComponentsUI */; };
 		D4BC24D8C1D1EFBDBE4C8357 /* FCTAccount in Frameworks */ = {isa = PBXBuildFile; productRef = D8FA06B6B7B5CF17A2DD9909 /* FCTAccount */; };
@@ -391,6 +392,7 @@
 			files = (
 				0D9F69C9333C4442BFFD771E /* FCTAccountProfile in Frameworks */,
 				422658CAFC14C82AE316D8AC /* FCTSupport in Frameworks */,
+				A1C0FF11E0A57A5701000011 /* FCTFeedback in Frameworks */,
 				D4BC24D8C1D1EFBDBE4C8357 /* FCTAccount in Frameworks */,
 				45585E5A258EBE227EEDE0AF /* FCTServerSync in Frameworks */,
 				89568A4EEC63978F7CEF1F28 /* FCTBlobSync in Frameworks */,
@@ -559,6 +561,7 @@
 			name = VillainArc;
 			packageProductDependencies = (
 				F11105FC542AECB144717350 /* FCTSupport */,
+				A1C0FF11E0A57A5701000010 /* FCTFeedback */,
 				FDAB6AF02FC769540085E0F0 /* MuscleMap */,
 				254EA949EE4842D7AF0AE15A /* FCTIntelligence */,
 				B4373FF459A151B3B305FDAA /* FCTEntities */,
@@ -1348,6 +1351,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
 			productName = FCTSupport;
+		};
+		A1C0FF11E0A57A5701000010 /* FCTFeedback */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTFeedback;
 		};
 		A1C0FF11E0A57A5701000002 /* FCTComponentsUI */ = {
 			isa = XCSwiftPackageProductDependency;

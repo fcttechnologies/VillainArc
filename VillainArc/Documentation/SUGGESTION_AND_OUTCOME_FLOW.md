@@ -17,6 +17,7 @@ This document explains how VillainArc creates plan suggestions, where users revi
 - `Data/Services/Suggestions/ExerciseSuggestionSettings.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeResolver.swift`
 - `Data/Services/Suggestions/Outcomes/OutcomeRuleEngine.swift`
+- `Data/Services/Suggestions/Outcomes/SuggestionOutcomeReporting.swift`
 - `Data/Models/Plans/WorkoutPlan+Editing.swift`
 - `Views/Exercise/ExerciseSuggestionSettingsSheet.swift`
 
@@ -61,6 +62,28 @@ Decision state answers: what did the user choose to do with this suggestion?
 - `ignored`
 
 Outcome state answers: how did that decision work out in later workouts?
+
+### What the field report gets
+
+Both state machines stay the app's own. Alongside them, each answer is reported to
+`diag.algorithm_outcomes` against `VillainArcEngine.nextSet` through `SuggestionOutcomeReporting`
+(`Diag.outcome` in production) — the fleet-wide vocabulary, translated at the edge:
+
+| Where | Reported |
+| --- | --- |
+| `acceptGroup` | `accepted` |
+| `rejectGroup`, `skipSuggestions` | `dismissed` |
+| `OutcomeResolver` finalizing `good` | `accepted` |
+| … `tooAggressive` / `tooEasy` | `too_aggressive` / `too_easy` |
+| … `ignored` | `abandoned` |
+| … `insufficient` | nothing — "the evidence could not judge it" is a statement about the workout, not a verdict on the suggestion |
+
+Every row carries the generator (`rules` → `progression`, `ai` → `similarity`; a `user`-authored
+suggestion is not the engine's and reports nothing at all), the rank the group sat at in the list
+that was shown, and how long the suggestion had been standing (`createdAt` to now). A pending event
+is reported when it resolves and not before: nothing ages one out, so `unresolved` has no site —
+a pending event either meets a later workout that judges it, or its plan changes and it is deleted
+outright, which is an edit rather than a verdict.
 
 ## Where Suggestions Start
 

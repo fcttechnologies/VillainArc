@@ -75,8 +75,11 @@ parent's completion):
 `RootView` starts `VASync` with the one `AccountController` and resumes the session; the engine
 exists only while an account does:
 
-- `.enrolled` / `.resumed` → build the engine (state file + blob store beside the store in the App
-  Group), enroll marks-all-dirty on first sign-in, then cycle
+- `.enrolled` / `.resumed` → build the engine (state file + **two** blob stores beside the store in
+  the App Group: the app's own, and the account's `AccountBlobStore`, which holds the one avatar the
+  account has and shares this app's blob transport), enroll marks-all-dirty on first sign-in, then
+  cycle. Both stores are drained in the cycle, both are consulted by the push gate, both count into
+  the sign-out barrier, and both are cleared on sign-out and account switch.
 - `.needsReauthentication` → engine idles, nothing cleared; the sign-in gate takes the window back
   over intact data
 - `.signedOut` → barrier-gated clear: one last push while a token exists (`signOutPreflight`),

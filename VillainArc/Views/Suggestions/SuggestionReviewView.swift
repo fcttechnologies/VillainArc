@@ -4,8 +4,10 @@ import SwiftData
 
 struct SuggestionReviewView: View {
     let sections: [ExerciseSuggestionSection]
-    let onAcceptGroup: (SuggestionGroup) -> Void
-    let onRejectGroup: (SuggestionGroup) -> Void
+    /// The group, and where it sits in the list as shown — flattened across sections and 1-based,
+    /// which is the rank its outcome is reported at.
+    let onAcceptGroup: (SuggestionGroup, Int) -> Void
+    let onRejectGroup: (SuggestionGroup, Int) -> Void
     let onDeferGroup: ((SuggestionGroup) -> Void)?
     var showDecisionState: Bool = false
     var actionableDecisions: Set<Decision> = [.pending]
@@ -37,7 +39,7 @@ struct SuggestionReviewView: View {
                             .fontDesign(.rounded)
                         
                         ForEach(section.groups, id: \.id) { group in
-                            SuggestionGroupRow(group: group, onAccept: { onAcceptGroup(group) }, onReject: { onRejectGroup(group) }, onDefer: onDeferGroup != nil ? { onDeferGroup?(group) } : nil, showDecisionState: showDecisionState, actionableDecisions: actionableDecisions)
+                            SuggestionGroupRow(group: group, onAccept: { onAcceptGroup(group, rank(of: group)) }, onReject: { onRejectGroup(group, rank(of: group)) }, onDefer: onDeferGroup != nil ? { onDeferGroup?(group) } : nil, showDecisionState: showDecisionState, actionableDecisions: actionableDecisions)
                         }
                     }
                     .id(section.id)
@@ -45,6 +47,12 @@ struct SuggestionReviewView: View {
             }
             .modifier(SuggestionReviewBackgroundModifier(fromSheet: fromSheet))
         }
+    }
+
+    /// Where a group sits in the whole list the user is reading, sections flattened in render
+    /// order, 1-based.
+    private func rank(of group: SuggestionGroup) -> Int {
+        (sections.flatMap(\.groups).firstIndex { $0.id == group.id } ?? 0) + 1
     }
 }
 
@@ -296,9 +304,15 @@ func applyChange(_ change: PrescriptionChange, in event: SuggestionEvent, contex
     }
 }
 
-func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
+func acceptGroup(
+    _ group: SuggestionGroup,
+    rank: Int,
+    context: ModelContext,
+    outcomes: any SuggestionOutcomeReporting = DiagSuggestionOutcomes()
+) {
     group.event.decision = .accepted
     Diag.breadcrumb(VACrumb.suggestionDecided)
+    outcomes.record(.accepted, for: group.event, rank: rank)
     for change in group.changes {
         applyChange(change, in: group.event, context: context)
     }
@@ -307,11 +321,33 @@ func acceptGroup(_ group: SuggestionGroup, context: ModelContext) {
     AppLog.info("Suggestion group accepted. changes=\(group.changes.count)")
 }
 
-func rejectGroup(_ group: SuggestionGroup, context: ModelContext) {
+func rejectGroup(
+    _ group: SuggestionGroup,
+    rank: Int,
+    context: ModelContext,
+    outcomes: any SuggestionOutcomeReporting = DiagSuggestionOutcomes()
+) {
     group.event.decision = .rejected
     Diag.breadcrumb(VACrumb.suggestionDecided)
+    outcomes.record(.dismissed, for: group.event, rank: rank)
     saveContext(context: context)
     AppLog.info("Suggestion group rejected. changes=\(group.changes.count)")
+}
+
+/// Skipping the review answers every suggestion still open in it at once — each rejected, at the
+/// rank it was sitting at in the list being skipped.
+func skipSuggestions(
+    _ events: [SuggestionEvent],
+    context: ModelContext,
+    outcomes: any SuggestionOutcomeReporting = DiagSuggestionOutcomes()
+) {
+    for (index, event) in events.enumerated() where event.decision == .deferred || event.decision == .pending {
+        event.decision = .rejected
+        Diag.breadcrumb(VACrumb.suggestionDecided)
+        outcomes.record(.dismissed, for: event, rank: index + 1)
+    }
+    saveContext(context: context)
+    AppLog.info("Suggestion review skipped. events=\(events.count)")
 }
 
 func deferGroup(_ group: SuggestionGroup, context: ModelContext) {

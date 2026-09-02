@@ -303,6 +303,10 @@ The profile surface owns:
 - notifications
 - display units
 - support/legal links
+- the feature-request row, which presents the app's feedback board (`FCTFeedback`'s
+  `FeedbackBoardSheet` over `fct-technologies.com/villainarc/feedback/`, opened already signed in
+  with the account controller's credentials). The sheet hangs off the Form: `appGroupedListRow`
+  chrome cannot present one.
 - manual App Store review entry point
 
 ## Main Product Areas

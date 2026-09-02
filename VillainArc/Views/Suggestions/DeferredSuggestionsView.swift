@@ -1,4 +1,3 @@
-import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -10,6 +9,8 @@ struct DeferredSuggestionsView: View {
     @State private var sections: [ExerciseSuggestionSection] = []
     @State private var sessionEvents: [SuggestionEvent] = []
     @State private var isTransitioning = false
+    /// Where the review's own bulk actions report what became of each suggestion.
+    var outcomes: any SuggestionOutcomeReporting = DiagSuggestionOutcomes()
     
     var body: some View {
         NavigationStack {
@@ -24,13 +25,13 @@ struct DeferredSuggestionsView: View {
                             .foregroundStyle(.secondary)
                     }
                     
-                    SuggestionReviewView(sections: sections, onAcceptGroup: { changes in
+                    SuggestionReviewView(sections: sections, onAcceptGroup: { changes, rank in
                         guard !isTransitioning else { return }
-                        acceptGroup(changes, context: context)
+                        acceptGroup(changes, rank: rank, context: context)
                         refreshSections()
-                    }, onRejectGroup: { changes in
+                    }, onRejectGroup: { changes, rank in
                         guard !isTransitioning else { return }
-                        rejectGroup(changes, context: context)
+                        rejectGroup(changes, rank: rank, context: context)
                         refreshSections()
                     }, onDeferGroup: nil, showDecisionState: false, actionableDecisions: [.pending, .deferred])
                 }
@@ -118,19 +119,15 @@ struct DeferredSuggestionsView: View {
     private func skipAll() {
         guard !isTransitioning else { return }
         Haptics.selection()
-        for event in sessionEvents where event.decision == .deferred || event.decision == .pending {
-            event.decision = .rejected
-            Diag.breadcrumb(VACrumb.suggestionDecided)
-        }
-        saveContext(context: context)
+        skipSuggestions(sessionEvents, context: context, outcomes: outcomes)
         proceedToWorkout()
     }
     
     private func acceptAll() {
         guard !isTransitioning else { return }
         Haptics.selection()
-        for event in sessionEvents where event.decision == .pending || event.decision == .deferred {
-            acceptGroup(SuggestionGroup(event: event), context: context)
+        for (index, event) in sessionEvents.enumerated() where event.decision == .pending || event.decision == .deferred {
+            acceptGroup(SuggestionGroup(event: event), rank: index + 1, context: context, outcomes: outcomes)
         }
         proceedToWorkout()
     }

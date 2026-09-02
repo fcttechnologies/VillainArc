@@ -52,11 +52,11 @@ struct WorkoutPlanSuggestionsSheet: View {
                         if selectedTab == .toReview {
                             SuggestionReviewView(
                                 sections: toReviewSections,
-                                onAcceptGroup: { group in
-                                    acceptGroup(group, context: context)
+                                onAcceptGroup: { group, rank in
+                                    acceptGroup(group, rank: rank, context: context)
                                 },
-                                onRejectGroup: { group in
-                                    rejectGroup(group, context: context)
+                                onRejectGroup: { group, rank in
+                                    rejectGroup(group, rank: rank, context: context)
                                 },
                                 onDeferGroup: nil,
                                 showDecisionState: false,
@@ -67,8 +67,8 @@ struct WorkoutPlanSuggestionsSheet: View {
                         } else {
                             SuggestionReviewView(
                                 sections: awaitingOutcomeSections,
-                                onAcceptGroup: { _ in },
-                                onRejectGroup: { _ in },
+                                onAcceptGroup: { _, _ in },
+                                onRejectGroup: { _, _ in },
                                 onDeferGroup: nil,
                                 showDecisionState: true,
                                 actionableDecisions: [],

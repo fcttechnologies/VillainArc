@@ -1,4 +1,5 @@
 import FCTAccount
+import FCTAccountProfile
 import FCTBlobSync
 import FCTServerSync
 import FCTSync
@@ -17,6 +18,10 @@ struct VASyncConfiguration {
     var stateFileURL: () throws -> URL
     var blobStateFileURL: () throws -> URL
     var blobCacheDirectory: () throws -> URL
+    /// The account blob store's own state file and cache — its own, never the app store's: two
+    /// stores sharing one state file would each overwrite the other's queue.
+    var accountBlobStateFileURL: () throws -> URL
+    var accountBlobCacheDirectory: () throws -> URL
     var makeTransport: (any SyncAccount) -> any SyncTransport
     var makeBlobTransport: (any SyncAccount) -> any BlobTransport
     /// The change triggers the engine listens on. `LocalSaveTrigger` observes saves
@@ -35,6 +40,12 @@ struct VASyncConfiguration {
                 try SharedModelContainer.configuration.storeURL()
                     .deletingLastPathComponent()
                     .appendingPathComponent("blob-cache")
+            },
+            accountBlobStateFileURL: { try VASyncConfiguration.stateURL(suffix: "account-blobstate.json") },
+            accountBlobCacheDirectory: {
+                try SharedModelContainer.configuration.storeURL()
+                    .deletingLastPathComponent()
+                    .appendingPathComponent("account-blob-cache")
             },
             makeTransport: { account in
                 PostgRESTTransport(
@@ -97,6 +108,11 @@ final class VASync {
     /// Apple offers it exactly once, on the first authorization, and only `enrolled` and
     /// `switched` carry it — so it is kept off the event here, or it is lost for that Apple id.
     private(set) var appleFullName: PersonNameComponents?
+
+    /// The account's own blob store, beside the app's: same transport, its own state file and
+    /// cache. It holds the one avatar the account has, which every FCT app reads through
+    /// `AccountAvatar` and none keeps a copy of.
+    @ObservationIgnored private(set) var avatars: AccountBlobStore?
 
     @ObservationIgnored private var engine: SyncEngine?
     @ObservationIgnored private var blobs: BlobStore?
@@ -188,6 +204,7 @@ final class VASync {
             syncAgain = nil
             stageAuthoredAssets()
             if let blobs { _ = await blobs.sync() }
+            if let avatars { _ = await avatars.blobs.sync() }
             let result = await engine.sync(current)
             publish(result)
             scheduler.scheduleRetry(after: result)
@@ -365,12 +382,12 @@ final class VASync {
     /// there is no engine to ask — a count this device cannot take, which is never spelled as
     /// zero at the moment a clear is being decided.
     var unsyncedWork: OutboxCensus? {
-        engine.map { unsyncedWork(engine: $0, blobs: blobs) }
+        engine.map { unsyncedWork(engine: $0, blobs: blobs, avatars: avatars) }
     }
 
-    private func unsyncedWork(engine: SyncEngine, blobs: BlobStore?) -> OutboxCensus {
+    private func unsyncedWork(engine: SyncEngine, blobs: BlobStore?, avatars: AccountBlobStore?) -> OutboxCensus {
         var census = engine.state.counted
-        if let blobCensus = blobs?.counted {
+        for blobCensus in [blobs?.counted, avatars?.blobs.counted].compactMap({ $0 }) {
             census.retrying += blobCensus.retrying
             census.stuck += blobCensus.stuck
         }
@@ -400,7 +417,8 @@ final class VASync {
         // engine (a relaunch between the tap and the event).
         let engine = self.engine ?? makeDetachedEngine(container: container)
         let blobs = self.blobs ?? makeDetachedBlobStore()
-        let outstanding = engine.map { unsyncedWork(engine: $0, blobs: blobs) }
+        let avatars = self.avatars ?? makeDetachedAccountBlobStore()
+        let outstanding = engine.map { unsyncedWork(engine: $0, blobs: blobs, avatars: avatars) }
         stopEngine(releasing: false)
 
         do {
@@ -409,17 +427,20 @@ final class VASync {
             }
             try engine?.clearSyncedData()
             try blobs?.clearLocalData()
+            try avatars?.blobs.clearLocalData()
             clearLocalCaches()
             lastSyncedAt = nil
             counted = OutboxCensus()
             blobPendingCount = 0
             self.engine = nil
             self.blobs = nil
+            self.avatars = nil
             onLocalDataCleared?()
         } catch {
             keptOnSignOut = max(outstanding?.total ?? 0, engine?.state.counted.total ?? 0)
             self.engine = nil
             self.blobs = nil
+            self.avatars = nil
         }
     }
 
@@ -437,6 +458,7 @@ final class VASync {
 
         let stateFile: SyncStateFile
         let blobStore: BlobStore
+        let avatarStore: AccountBlobStore
         do {
             stateFile = SyncStateFile(url: try configuration.stateFileURL())
             blobStore = BlobStore(
@@ -445,6 +467,14 @@ final class VASync {
                 transport: configuration.makeBlobTransport(credentials),
                 stateFileURL: try configuration.blobStateFileURL(),
                 cacheDirectory: try configuration.blobCacheDirectory()
+            )
+            // The account's store shares this app's transport — one account, one JWT, one bucket —
+            // and nothing else.
+            avatarStore = AccountBlobStore(
+                account: credentials,
+                transport: configuration.makeBlobTransport(credentials),
+                stateFileURL: try configuration.accountBlobStateFileURL(),
+                cacheDirectory: try configuration.accountBlobCacheDirectory()
             )
         } catch {
             lastError = "\(error)"
@@ -461,11 +491,17 @@ final class VASync {
         )
         // The ordering rule's engine half: a record with a pending or failed upload stays held,
         // so no device ever pulls a profile whose photo the object store cannot serve.
-        engine.pushGate = { [weak blobStore] table, uuid in
-            blobStore?.isRecordPushable(table: table, uuid: uuid) ?? true
+        engine.pushGate = { [weak blobStore, weak avatarStore] table, uuid in
+            (blobStore?.isRecordPushable(table: table, uuid: uuid) ?? true)
+                && (avatarStore?.blobs.isRecordPushable(table: table, uuid: uuid) ?? true)
         }
         // The liveness half: a record the gate held is pushed the moment its upload lands.
         blobStore.onUploadsSettled = { [weak self] in
+            guard let self else { return }
+            self.engine?.resetBackoff()
+            self.requestAnotherCycle()
+        }
+        avatarStore.blobs.onUploadsSettled = { [weak self] in
             guard let self else { return }
             self.engine?.resetBackoff()
             self.requestAnotherCycle()
@@ -494,6 +530,7 @@ final class VASync {
         }
         self.engine = engine
         self.blobs = blobStore
+        self.avatars = avatarStore
         self.nudges = configuration.makeNudgeChannel(credentials)
 
         scheduler.observe(configuration.makeTriggers(container))
@@ -513,6 +550,7 @@ final class VASync {
         if releasing {
             engine = nil
             blobs = nil
+            avatars = nil
             nudges = nil
         }
     }
@@ -537,9 +575,12 @@ final class VASync {
         try? engine?.clearSyncedData(discardingUnsynced: true)
         let blobs = self.blobs ?? makeDetachedBlobStore()
         try? blobs?.clearLocalData(discardingUnsynced: true)
+        let avatars = self.avatars ?? makeDetachedAccountBlobStore()
+        try? avatars?.blobs.clearLocalData(discardingUnsynced: true)
         clearLocalCaches()
         self.engine = nil
         self.blobs = nil
+        self.avatars = nil
         lastSyncedAt = nil
         counted = OutboxCensus()
         blobPendingCount = 0
@@ -616,6 +657,18 @@ final class VASync {
         else { return nil }
         return BlobStore(
             appSlug: VASyncSchema.appSlug,
+            account: DetachedAccount(accountID: UUID()),
+            transport: UnreachableBlobTransport(),
+            stateFileURL: stateURL,
+            cacheDirectory: cacheURL
+        )
+    }
+
+    private func makeDetachedAccountBlobStore() -> AccountBlobStore? {
+        guard let stateURL = try? configuration.accountBlobStateFileURL(),
+              let cacheURL = try? configuration.accountBlobCacheDirectory()
+        else { return nil }
+        return AccountBlobStore(
             account: DetachedAccount(accountID: UUID()),
             transport: UnreachableBlobTransport(),
             stateFileURL: stateURL,

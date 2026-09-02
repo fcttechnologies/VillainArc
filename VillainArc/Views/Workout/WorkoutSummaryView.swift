@@ -190,12 +190,12 @@ struct WorkoutSummaryView: View {
                                 ProgressView("Generating suggestions...")
                                     .frame(maxWidth: .infinity, alignment: .center)
                             } else {
-                                SuggestionReviewView(sections: suggestionSections, onAcceptGroup: { changes in
+                                SuggestionReviewView(sections: suggestionSections, onAcceptGroup: { changes, rank in
                                     guard !isSaving else { return }
-                                    acceptGroup(changes, context: context)
-                                }, onRejectGroup: { changes in
+                                    acceptGroup(changes, rank: rank, context: context)
+                                }, onRejectGroup: { changes, rank in
                                     guard !isSaving else { return }
-                                    rejectGroup(changes, context: context)
+                                    rejectGroup(changes, rank: rank, context: context)
                                 }, onDeferGroup: { changes in
                                     guard !isSaving else { return }
                                     deferGroup(changes, context: context)

@@ -1769,7 +1769,7 @@ struct SuggestionSystemTests {
         let event = SuggestionEvent(category: .performance, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, trainingStyle: .straightSets, changes: [weightChange, repsChange])
         context.insert(event)
 
-        acceptGroup(SuggestionGroup(event: event), context: context)
+        acceptGroup(SuggestionGroup(event: event), rank: 1, context: context)
 
         #expect(event.decision == .accepted)
         #expect(setPrescription.targetWeight == 102.5)
@@ -1801,7 +1801,7 @@ struct SuggestionSystemTests {
         let event = SuggestionEvent(category: .repRangeConfiguration, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, trainingStyle: .straightSets, changes: [lowerChange, upperChange])
         context.insert(event)
 
-        acceptGroup(SuggestionGroup(event: event), context: context)
+        acceptGroup(SuggestionGroup(event: event), rank: 1, context: context)
 
         #expect(event.decision == .accepted)
         #expect(prescription.repRange?.lowerRange == 8)
@@ -1834,7 +1834,7 @@ struct SuggestionSystemTests {
         let event = SuggestionEvent(category: .structure, catalogID: prescription.catalogID, sessionFrom: nil, targetExercisePrescription: prescription, targetSetPrescription: setPrescription, triggerTargetSetID: setPrescription.id, trainingStyle: .straightSets, changes: [change])
         context.insert(event)
 
-        acceptGroup(SuggestionGroup(event: event), context: context)
+        acceptGroup(SuggestionGroup(event: event), rank: 1, context: context)
 
         #expect(event.decision == .accepted)
         #expect(setPrescription.type == .warmup)

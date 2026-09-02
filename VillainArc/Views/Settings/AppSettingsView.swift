@@ -1,5 +1,6 @@
 import FCTAccount
 import FCTAccountProfile
+import FCTFeedback
 import FCTMetrics
 import FCTOnboarding
 import FCTSupport
@@ -126,14 +127,21 @@ private struct AppSettingsFormView: View {
     @State private var subscriptionStore = SubscriptionStore.shared
     @State private var isRestoringSubscription = false
     @State private var restoreMessage: String?
+    @State private var isShowingFeedbackBoard = false
+    /// The account's avatar store lives on the sync bootstrap, beside the app's own blob store.
+    @State private var sync = VASync.shared
 
     var body: some View {
         Form {
             // Above the account block, which is where the fleet puts it. The session can end from
             // that block while this screen is still up, so the profile is built from the
             // credentials that exist rather than the ones that did.
-            if let credentials = VAAccount.controller.credentials {
-                AccountProfileSection(tint: .accentColor, trusted: AccountTrusted(account: credentials))
+            if let credentials = VAAccount.controller.credentials, let avatars = sync.avatars {
+                AccountProfileSection(
+                    tint: .accentColor,
+                    trusted: AccountTrusted(account: credentials),
+                    avatars: avatars
+                )
             }
 
             VAAccountSection()
@@ -249,6 +257,13 @@ private struct AppSettingsFormView: View {
         .scrollContentBackground(.hidden)
         .modifier(SettingsQuickActionInsetModifier(isEnabled: includeQuickActionInset))
         .sheetBackground()
+        // On the Form rather than on the row: `appGroupedListRow` chrome cannot present a sheet.
+        .sheet(isPresented: $isShowingFeedbackBoard) {
+            FeedbackBoardSheet(
+                board: FeedbackBoard(slug: "villainarc"),
+                credentials: VAAccount.controller.credentials
+            )
+        }
         .task {
             refreshLatestDiagnostic()
         }
@@ -440,7 +455,7 @@ private struct AppSettingsFormView: View {
 
             Button {
                 Haptics.selection()
-                openMailto(SupportContact.mailtoForFeatureRequest())
+                isShowingFeedbackBoard = true
             } label: {
                 Label("Request a Feature", systemImage: "lightbulb.max.fill")
             }
@@ -462,11 +477,6 @@ private struct AppSettingsFormView: View {
 
     private func openWriteReviewPage() {
         guard let url = URL(string: "https://apps.apple.com/app/id6759259627?action=write-review") else { return }
-        UIApplication.shared.open(url)
-    }
-
-    private func openMailto(_ url: URL?) {
-        guard let url else { return }
         UIApplication.shared.open(url)
     }
 
