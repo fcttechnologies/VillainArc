@@ -45,12 +45,12 @@ struct RootView: View {
                 await onboardingManager.startOnboarding()
             }
             .onChange(of: scenePhase) { _, phase in
-                guard phase == .active else {
-                    // The nudge rung is foreground-only: iOS suspends the socket anyway, and
-                    // releasing it here is what keeps the teardown ours.
-                    VASync.shared.backgrounded()
-                    return
-                }
+                // The nudge rung is foreground-only: iOS suspends the socket in the background, and
+                // releasing it here is what keeps the teardown ours. `.inactive` is not that: an
+                // app-switcher swipe or a Control Center pull passes through it with the app still
+                // in front, and dropping the socket there would cost a re-join for nothing.
+                if phase == .background { VASync.shared.backgrounded() }
+                guard phase == .active else { return }
                 Task {
                     await VAAccount.controller.resume()
                     await VAAccount.controller.refreshAppleCredentialState()
