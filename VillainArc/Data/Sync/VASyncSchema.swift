@@ -1,3 +1,4 @@
+import FCTAccountProfile
 import FCTBlobSync
 import FCTServerSync
 import Foundation
@@ -48,7 +49,7 @@ enum VASyncSchema {
     /// `suggestion_evaluation` after it.
     static let schema = SyncSchema(
         version: version,
-        tables: [
+        tables: AccountSchema.tables + [
             .of(AppSettings.self),
             .of(UserProfile.self),
             .of(ExercisePreference.self),

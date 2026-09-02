@@ -38,6 +38,9 @@
 		FD93E5F42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		FDAB6AF12FC769540085E0F0 /* MuscleMap in Frameworks */ = {isa = PBXBuildFile; productRef = FDAB6AF02FC769540085E0F0 /* MuscleMap */; };
 		FDACE00A2F7000000000000A /* VillainArcWatchApp.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = FDACE0012F70000000000001 /* VillainArcWatchApp.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		0D9F69C9333C4442BFFD771E /* FCTAccountProfile in Frameworks */ = {isa = PBXBuildFile; productRef = 4DFA0218535E4C26833BDE8F /* FCTAccountProfile */; };
+		0A3051DD2D114A44A2CEEE31 /* FCTAccountProfile in Frameworks */ = {isa = PBXBuildFile; productRef = 9EEA8D34579A4F0E97118B04 /* FCTAccountProfile */; };
+		9175825B677147B5947EDD54 /* FCTAccountProfile in Frameworks */ = {isa = PBXBuildFile; productRef = 46A67251246C45D298B6997B /* FCTAccountProfile */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -349,6 +352,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0A3051DD2D114A44A2CEEE31 /* FCTAccountProfile in Frameworks */,
 				340B1AD4210BC5758E00EA38 /* FCTAccount in Frameworks */,
 				DFDF33BB6D9E4855B7D487D2 /* FCTServerSync in Frameworks */,
 				B33E569A214B3C6F6ECC535D /* FCTBlobSync in Frameworks */,
@@ -371,6 +375,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9175825B677147B5947EDD54 /* FCTAccountProfile in Frameworks */,
 				56CA555CA0317919EA0F84B9 /* FCTMetrics in Frameworks */,
 				FD93E5E92F3051FD009569BB /* SwiftUI.framework in Frameworks */,
 				FD93E5E72F3051FD009569BB /* WidgetKit.framework in Frameworks */,
@@ -384,6 +389,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0D9F69C9333C4442BFFD771E /* FCTAccountProfile in Frameworks */,
 				422658CAFC14C82AE316D8AC /* FCTSupport in Frameworks */,
 				D4BC24D8C1D1EFBDBE4C8357 /* FCTAccount in Frameworks */,
 				45585E5A258EBE227EEDE0AF /* FCTServerSync in Frameworks */,
@@ -1447,6 +1453,21 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FDAB6AEF2FC769540085E0F0 /* XCRemoteSwiftPackageReference "MuscleMap" */;
 			productName = MuscleMap;
+		};
+		4DFA0218535E4C26833BDE8F /* FCTAccountProfile */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTAccountProfile;
+		};
+		9EEA8D34579A4F0E97118B04 /* FCTAccountProfile */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTAccountProfile;
+		};
+		46A67251246C45D298B6997B /* FCTAccountProfile */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTAccountProfile;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

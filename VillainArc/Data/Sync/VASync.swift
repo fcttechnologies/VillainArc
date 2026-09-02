@@ -93,6 +93,10 @@ final class VASync {
     private(set) var discardedOnSwitch: Int = 0
     /// Set when a sign-out found unpushed work and therefore kept the local data.
     private(set) var keptOnSignOut: Int = 0
+    /// The name Apple carried on the authorization, for the account onboarding to prefill from.
+    /// Apple offers it exactly once, on the first authorization, and only `enrolled` and
+    /// `switched` carry it — so it is kept off the event here, or it is lost for that Apple id.
+    private(set) var appleFullName: PersonNameComponents?
 
     @ObservationIgnored private var engine: SyncEngine?
     @ObservationIgnored private var blobs: BlobStore?
@@ -325,14 +329,16 @@ final class VASync {
 
     func handle(_ event: AccountEvent) async {
         switch event {
-        case .enrolled(let accountID, _):
+        case .enrolled(let accountID, let appleFullName):
+            self.appleFullName = appleFullName
             await startEngine(accountID: accountID, enrolling: true)
         case .resumed(let accountID):
             await startEngine(accountID: accountID, enrolling: false)
-        case .switched(_, let to, _):
+        case .switched(_, let to, let appleFullName):
             // A different account. Account A's rows must not silently become account B's, so this
             // clears local data — discarding whatever A never pushed, because A's credentials are
             // already gone and nothing can push it now.
+            self.appleFullName = appleFullName
             discardLocalData()
             await startEngine(accountID: to, enrolling: true)
             onLocalDataCleared?()
@@ -576,6 +582,13 @@ final class VASync {
         HealthSyncPreferences.resetAllAnchors()
         SharedModelContainer.sharedDefaults.removeObject(forKey: DataManager.exerciseCatalogVersionKey)
         SpotlightIndexer.deleteAll()
+    }
+
+    /// The engine's own state file, for the account onboarding gate — which reads what the engine
+    /// has pulled rather than what the store happens to hold. `nil` only when the App Group
+    /// container cannot be resolved, which is the same condition that leaves the engine unbuilt.
+    var stateFile: SyncStateFile? {
+        (try? configuration.stateFileURL()).map(SyncStateFile.init(url:))
     }
 
     private func makeDetachedEngine(container: ModelContainer) -> SyncEngine? {

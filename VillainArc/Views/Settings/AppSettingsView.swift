@@ -1,4 +1,5 @@
 import FCTAccount
+import FCTAccountProfile
 import FCTMetrics
 import FCTOnboarding
 import FCTSupport
@@ -128,6 +129,13 @@ private struct AppSettingsFormView: View {
 
     var body: some View {
         Form {
+            // Above the account block, which is where the fleet puts it. The session can end from
+            // that block while this screen is still up, so the profile is built from the
+            // credentials that exist rather than the ones that did.
+            if let credentials = VAAccount.controller.credentials {
+                AccountProfileSection(tint: .accentColor, trusted: AccountTrusted(account: credentials))
+            }
+
             VAAccountSection()
 
             Section {

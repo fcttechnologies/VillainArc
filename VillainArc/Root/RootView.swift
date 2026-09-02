@@ -1,6 +1,7 @@
 import SwiftUI
 import AppIntents
 import FCTAccount
+import FCTAccountProfile
 import FCTOnboarding
 import SwiftData
 
@@ -117,7 +118,7 @@ struct RootView: View {
     private var rootSurface: some View {
         switch onboardingManager.state {
         case .ready:
-            ContentView()
+            accountOnboardingGate
         case .welcome:
             AccountOnboardingFlow(
                 items: VAOnboardingCarousel.items,
@@ -146,6 +147,31 @@ struct RootView: View {
                         .interactiveDismissDisabled(true)
                         .presentationDragIndicator(.hidden)
                 }
+        }
+    }
+
+    /// The one FCT onboarding, between the session and the app. Villain Arc's own first-run
+    /// sequence already ran a restore by the time this renders, so the gate's wait is instant
+    /// there; a returning launch, which skips that restore, is what it actually waits for.
+    ///
+    /// The session can go away under a `.ready` state — an expiry, or a sign-out whose local clear
+    /// was refused — and `onChange(of:)` routes to the sign-in gate one update later. The backdrop
+    /// is that one update, rather than a force-unwrap of credentials that have already gone.
+    @ViewBuilder
+    private var accountOnboardingGate: some View {
+        if let credentials = VAAccount.controller.credentials, let stateFile = VASync.shared.stateFile {
+            AccountOnboardingGate(
+                tint: .accentColor,
+                completedIn: VASyncSchema.appSlug,
+                appleFullName: VASync.shared.appleFullName,
+                stateFile: stateFile,
+                sync: { _ = await VASync.shared.restoreAccountData() },
+                trusted: AccountTrusted(account: credentials)
+            ) {
+                ContentView()
+            }
+        } else {
+            Color.bg.ignoresSafeArea()
         }
     }
 

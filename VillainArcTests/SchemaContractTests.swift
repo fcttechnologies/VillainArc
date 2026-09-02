@@ -1,3 +1,4 @@
+import FCTAccountProfile
 import FCTSync
 import Foundation
 import SwiftData
@@ -13,7 +14,7 @@ struct SchemaContractTests {
     /// Update this count deliberately whenever an `@Model` is added or removed.
     @Test @MainActor
     func v1SchemaIncludesEveryActiveModel() {
-        #expect(VillainArcSchemaV1.models.count == 41)
+        #expect(VillainArcSchemaV1.models.count == 43)
     }
 
     /// The by-name half of the schema-membership tripwire, via `FCTSync.SchemaContract`: pins the
@@ -22,7 +23,7 @@ struct SchemaContractTests {
     /// additions, this catches which specific model went missing.
     @Test @MainActor
     func v1SchemaContainsEveryExpectedModelByName() {
-        let expected: [any PersistentModel.Type] = [
+        let expected: [any PersistentModel.Type] = AccountSchema.models + [
             WorkoutSession.self,
             HealthWorkout.self,
             WeightEntry.self,
@@ -65,7 +66,7 @@ struct SchemaContractTests {
             CardioRoutePoint.self,
             CardioMachineInterval.self
         ]
-        #expect(expected.count == 41)
+        #expect(expected.count == 43)
         let missing = SchemaContract.missingModelNames(in: VillainArcSchemaV1.self, requiring: expected)
         #expect(missing.isEmpty, "Models missing from VillainArcSchemaV1.models: \(missing)")
     }
