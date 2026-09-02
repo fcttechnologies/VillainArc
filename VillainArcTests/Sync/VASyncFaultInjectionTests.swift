@@ -82,11 +82,11 @@ nonisolated struct VAFaultTransport: SyncTransport {
 @MainActor
 final class VASyncFaultHarness {
     let sync: VASync
-    let server = FakeSyncServer()
-    let objects = FakeBlobObjectStore()
+    let server: FakeSyncServer
+    let objects: FakeBlobObjectStore
     let injector = VASyncFaultInjector()
     let container: ModelContainer
-    let accountID = UUID()
+    let accountID: UUID
 
     let storeURL: URL
     private let directory: URL
@@ -100,11 +100,19 @@ final class VASyncFaultHarness {
     ///     the wire's timing rather than the failures it can be made to raise.
     ///   - nudges: the Realtime rung. `nil` by default — a test process opens no socket — so the
     ///     suite that is *about* the rung passes one over a scripted socket.
+    ///   - server, objects, accountID: shared to make a second harness a second DEVICE on one
+    ///     account, which is the only way to give a device rows it genuinely has not read.
     init(
         triggers: [any HistoryChangeTrigger] = [],
         transport: (any SyncTransport)? = nil,
-        nudges: SyncNudgeChannel? = nil
+        nudges: SyncNudgeChannel? = nil,
+        server: FakeSyncServer = FakeSyncServer(),
+        objects: FakeBlobObjectStore = FakeBlobObjectStore(),
+        accountID: UUID = UUID()
     ) throws {
+        self.server = server
+        self.objects = objects
+        self.accountID = accountID
         let made = try TestStoreFactory.onDisk(VillainArcSchemaV1.self)
         container = made.container
         storeURL = made.url

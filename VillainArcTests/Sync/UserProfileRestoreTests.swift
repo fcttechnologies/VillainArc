@@ -1,3 +1,4 @@
+import FCTBlobSyncTesting
 import FCTServerSync
 import FCTServerSyncTesting
 import Foundation
@@ -104,6 +105,48 @@ struct VASyncRestoreTests {
         let harness = try VASyncFaultHarness()
 
         #expect(await harness.sync.restoreAccountData(waitingUpTo: .milliseconds(200)) == false)
+    }
+
+    /// **A push cycle is not a read, and the restore is answered only by a read.**
+    ///
+    /// A local save asks for a `.push`: it drains and sends, and pulls only if the reply says
+    /// another device has written since. A device whose own push *is* the account's high-water is
+    /// told nothing, so the cycle comes back `.idle` having fetched no row.
+    ///
+    /// The shape is the one that costs most — a first run that could not reach the account, then
+    /// one workout logged by hand — and the property that makes it safe is that `restoreAccountData`
+    /// asks a full cycle of its own every time. A clean push before it must not be mistakable for a
+    /// restore, or setup would open over a library still sitting on the server.
+    @Test @MainActor
+    func aCleanPushCycleIsNotMistakenForARestore() async throws {
+        let server = FakeSyncServer()
+        let objects = FakeBlobObjectStore()
+        let accountID = UUID()
+
+        // Another device on this account already has a session on the server.
+        let other = try VASyncFaultHarness(server: server, objects: objects, accountID: accountID)
+        try other.writeSession(notes: "seeded elsewhere")
+        await other.enroll()
+        try #require(await other.serverSessionCount() == 1, "the seeding device did reach the account")
+
+        // This device: same account, nothing local, and a first run that cannot reach it.
+        let harness = try VASyncFaultHarness(server: server, objects: objects, accountID: accountID)
+        await harness.injector.set(.unreachable)
+        await harness.enroll()
+        #expect(await harness.sync.restoreAccountData() == false,
+                "an unanswered question is never 'the account is empty'")
+
+        // The link is back, and the user logs a workout. That save is a reason to SEND, not to ask.
+        await harness.injector.set(nil)
+        try harness.writeSession(notes: "logged by hand")
+        await harness.sync.syncNow(.push)
+        try #require(harness.sync.status == .idle, "the push cycle itself completed cleanly")
+        #expect(harness.localSessionCount == 1,
+                "and the account's own session is still not on this device")
+
+        // The restore is answered by a pull of its own, not by the push that just succeeded.
+        #expect(await harness.sync.restoreAccountData())
+        #expect(harness.localSessionCount == 2, "the account's session came down with it")
     }
 
     /// Records the server judged and refused are a **push**-side fact that never clears on its own.
