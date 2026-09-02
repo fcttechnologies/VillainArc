@@ -79,6 +79,7 @@ private struct VASyncStatusRow: View {
         case .offline: return String(localized: "Waiting for network")
         case .failed: return String(localized: "Needs attention")
         case .resyncRequired: return String(localized: "Refresh needed")
+        case .merged: return String(localized: "Your account moved — sign in again")
         case .idle:
             if let last = sync.lastSyncedAt {
                 return String(localized: "Synced \(last.formatted(.relative(presentation: .named)))")

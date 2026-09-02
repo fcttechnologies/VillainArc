@@ -244,7 +244,7 @@ final class VASync {
         // account" are a failed restore.
         switch status {
         case .idle, .failed: return true
-        case .off, .syncing, .offline, .needsReauthentication, .resyncRequired: return false
+        case .off, .syncing, .offline, .needsReauthentication, .resyncRequired, .merged: return false
         }
     }
 
@@ -476,6 +476,13 @@ final class VASync {
         engine.onAccountDeleted = { [weak self] in
             guard let self, let controller = self.controller else { return }
             Task { await controller.handleAccountDeleted() }
+        }
+        // The twin, and the one that matters more: without it the record that makes the next
+        // sign-in a *resume* is never rewritten, and this app's own `.switched` handler clears the
+        // store the engine's re-home just kept.
+        engine.onAccountMerged = { [weak self] into in
+            guard let self, let controller = self.controller else { return }
+            Task { await controller.handleAccountMerged(into: into) }
         }
 
         if enrolling {
