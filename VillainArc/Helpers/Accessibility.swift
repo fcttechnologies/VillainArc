@@ -28,6 +28,7 @@ enum AccessibilityIdentifiers {
     static let profileSheetCloseButton = "profileSheetCloseButton"
     static let profileSheetSettingsButton = "profileSheetSettingsButton"
     static let profileSheetAvatar = "profileSheetAvatar"
+    static let muscleDistributionRangePicker = "muscleDistributionRangePicker"
     static let profileSheetName = "profileSheetName"
     static let profileSheetGenderRow = "profileSheetGenderRow"
     static let profileSheetHeightRow = "profileSheetHeightRow"

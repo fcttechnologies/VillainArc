@@ -1,5 +1,4 @@
 import FCTAccountProfile
-import MuscleMap
 import SwiftUI
 import SwiftData
 
@@ -23,45 +22,6 @@ private enum ProfileHeatmapCell {
     case day(ProfileCompletionDay)
     case future
     case blank
-}
-
-private extension Muscle {
-    var profileMuscleMapMuscles: [MuscleMap.Muscle] {
-        switch self {
-        case .chest: return [.chest]
-        case .back: return [.upperBack, .lowerBack]
-        case .shoulders: return [.deltoids]
-        case .biceps: return [.biceps]
-        case .triceps: return [.triceps]
-        case .abs: return [.abs]
-        case .glutes: return [.gluteal]
-        case .quads: return [.quadriceps]
-        case .hamstrings: return [.hamstring]
-        case .calves: return [.calves]
-        case .forearms: return [.forearm]
-        case .adductors: return [.adductors]
-        case .abductors: return []
-        case .upperChest: return [.upperChest]
-        case .lowerChest: return [.lowerChest]
-        case .midChest: return [.chest]
-        case .lats: return [.upperBack]
-        case .lowerBack: return [.lowerBack]
-        case .upperTraps: return [.upperTrapezius]
-        case .lowerTraps: return [.lowerTrapezius]
-        case .midTraps: return [.trapezius]
-        case .rhomboids: return [.rhomboids]
-        case .frontDelt: return [.frontDeltoid]
-        case .sideDelt: return [.deltoids]
-        case .rearDelt: return [.rearDeltoid]
-        case .rotatorCuff: return [.rotatorCuff]
-        case .longHeadBiceps, .shortHeadBiceps, .brachialis: return [.biceps]
-        case .longHeadTriceps, .lateralHeadTriceps, .medialHeadTriceps: return [.triceps]
-        case .wrists: return [.forearm]
-        case .upperAbs: return [.upperAbs]
-        case .lowerAbs: return [.lowerAbs]
-        case .obliques: return [.obliques]
-        }
-    }
 }
 
 struct ProfileSheetLauncherButton: View {
@@ -160,9 +120,7 @@ struct ProfileSheetView: View {
                     VStack(spacing: 28) {
                         profileSummary
                         trainingSummaryCard
-                        if !profileMuscleDistributionSlices.isEmpty {
-                            profileMuscleDistributionCard
-                        }
+                        MuscleDistributionCard()
                         workoutHeatmapCard
                         detailsCard
                     }
@@ -377,49 +335,6 @@ struct ProfileSheetView: View {
         .accessibilityIdentifier("profileSheetTrainingSummaryCard")
     }
 
-    private var profileMuscleDistributionCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Text("Muscle Distribution")
-                .font(.headline)
-
-            VStack(spacing: 14) {
-                HStack(spacing: 12) {
-                    profileMuscleMapBodyView(side: .front)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 210)
-
-                    profileMuscleMapBodyView(side: .back)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 210)
-                }
-
-                VStack(spacing: 10) {
-                    ForEach(profileMuscleDistributionSlices.prefix(5)) { slice in
-                        HStack(spacing: 10) {
-                            Circle()
-                                .fill(profileMuscleColor(for: slice.percentage))
-                                .frame(width: 10, height: 10)
-                                .accessibilityHidden(true)
-
-                            Text(slice.muscle.displayName)
-                                .font(.subheadline.weight(.semibold))
-
-                            Spacer()
-
-                            Text((slice.percentage / 100).formatted(.percent.precision(.fractionLength(0))))
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-            }
-            .padding(16)
-            .appCardStyle()
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("profileSheetMuscleMapCard")
-        }
-    }
-
     private var workoutHeatmapCard: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Complete Days")
@@ -582,57 +497,6 @@ struct ProfileSheetView: View {
 
     private var totalTrainingVolume: Double {
         completedWorkouts.reduce(0) { $0 + $1.totalVolume }
-    }
-
-    private var profileMuscleDistributionSlices: [MuscleDistributionSlice] {
-        var totalsByMuscle: [Muscle: Double] = [:]
-
-        for workout in completedWorkouts {
-            for slice in MuscleDistributionCalculator.slices(for: workout) {
-                totalsByMuscle[slice.muscle, default: 0] += slice.score
-            }
-        }
-
-        let totalScore = totalsByMuscle.values.reduce(0, +)
-        guard totalScore > 0 else { return [] }
-
-        return totalsByMuscle
-            .map { muscle, score in
-                MuscleDistributionSlice(muscle: muscle, score: score, percentage: (score / totalScore) * 100)
-            }
-            .sorted {
-                if $0.score == $1.score {
-                    return $0.muscle.displayName < $1.muscle.displayName
-                }
-                return $0.score > $1.score
-            }
-    }
-
-    private func profileMuscleMapBodyView(side: BodySide) -> BodyView {
-        var view = BodyView(gender: .male, side: side)
-        for slice in profileMuscleDistributionSlices {
-            for mapMuscle in slice.muscle.profileMuscleMapMuscles {
-                view = view.highlight(mapMuscle, color: profileMuscleColor(for: slice.percentage), opacity: profileMuscleOpacity(for: slice.percentage))
-            }
-        }
-        return view
-    }
-
-    private func profileMuscleColor(for percentage: Double) -> Color {
-        switch percentage {
-        case 35...:
-            return .red
-        case 20..<35:
-            return .orange
-        case 10..<20:
-            return .yellow
-        default:
-            return .blue
-        }
-    }
-
-    private func profileMuscleOpacity(for percentage: Double) -> Double {
-        min(max(percentage / 45, 0.28), 0.9)
     }
 
     private var profileCompletionDays: [ProfileCompletionDay] {

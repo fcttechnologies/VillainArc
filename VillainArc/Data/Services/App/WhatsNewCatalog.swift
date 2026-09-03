@@ -9,7 +9,7 @@ nonisolated struct WhatsNewFeature: Identifiable {
     let description: LocalizedStringResource
 }
 
-// A release's user-facing highlights, keyed by its marketing version ("1.4").
+// A release's user-facing highlights, keyed by its marketing version ("2.1").
 nonisolated struct WhatsNewRelease {
     let version: String
     let features: [WhatsNewFeature]
@@ -32,21 +32,26 @@ nonisolated struct WhatsNewPresentation: Identifiable {
 // sees all missed highlights in one sheet. A version with no entry (e.g. a minor
 // bug-fix build) contributes nothing and no sheet is shown.
 nonisolated enum WhatsNewCatalog {
-    // Per-version highlights, ascending. Start at 1.4 — the 1.3 pillars are the
-    // app's introduction and live in the onboarding carousel, so a user updating
-    // from 1.3 sees only what's new in 1.4.
+    // Per-version highlights, ascending, and every entry is a release that shipped.
+    //
+    // 2.0 is the baseline: it is the first release to run in this App Group, so no device can
+    // hold a stored version below it and the launch sheet never presents 2.0's own entry — the
+    // front door's carousel is what introduces the app to whoever arrives at it. The entry is
+    // here because this list is the record of what each shipped version changed, which is what
+    // the aggregation reads from 2.1 onward.
     static let releases: [WhatsNewRelease] = [
-        WhatsNewRelease(version: "1.4", features: [
-            WhatsNewFeature(icon: "text.magnifyingglass", iconColor: .indigo, title: "Ask Villain Arc", description: "Ask about your training and get answers from your own history. (Pro)"),
-            WhatsNewFeature(icon: "square.and.arrow.up", iconColor: .green, title: "Share Your Progress", description: "Share workout summaries and your muscle map."),
-            WhatsNewFeature(icon: "figure.run", iconColor: .orange, title: "Cardio Live Activity", description: "Choose the stats shown on your Lock Screen."),
-            WhatsNewFeature(icon: "pencil.and.list.clipboard", iconColor: .blue, title: "Edit Past Workouts", description: "Update notes on completed workouts.")
+        WhatsNewRelease(version: "2.0", features: [
+            WhatsNewFeature(icon: "hammer", iconColor: .orange, title: "Rebuilt From the Ground Up", description: "A faster launch, a cleaner store, and the foundation for what comes next."),
+            WhatsNewFeature(icon: "person.crop.circle.badge.checkmark", iconColor: .blue, title: "Your Free FCT Account", description: "Sign in once and your workouts, plans, splits, and cardio reach every device you use."),
+            WhatsNewFeature(icon: "applewatch", iconColor: .green, title: "Apple Watch Companion", description: "Rest timer, live session, and heart-rate stats on your wrist."),
+            WhatsNewFeature(icon: "globe", iconColor: .indigo, title: "Ten Languages", description: "Villain Arc now speaks ten languages, including yours."),
+            WhatsNewFeature(icon: "arrow.triangle.2.circlepath", iconColor: .gray, title: "A Fresh Start", description: "The store underneath the app changed, so workouts saved in Villain Arc 1.x do not carry over.")
         ])
     ]
 
     // Aggregated highlights of every release after `baseline`, up to and
-    // including `current`. Powers the version-skip case: a 1.3 → 1.5 jump pulls
-    // both 1.4 and 1.5 into one sheet.
+    // including `current`. Powers the version-skip case: a 2.0 → 2.2 jump pulls
+    // both 2.1 and 2.2 into one sheet.
     static func featuresIntroduced(after baseline: String, throughIncluding current: String) -> [WhatsNewFeature] {
         releases
             .filter {

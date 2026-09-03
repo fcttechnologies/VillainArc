@@ -1,3 +1,4 @@
+import FCTCore
 import Foundation
 
 struct MuscleDistributionSlice: Identifiable {
@@ -15,6 +16,34 @@ enum MuscleDistributionCalculator {
 
     static func slices(for plan: WorkoutPlan) -> [MuscleDistributionSlice] {
         buildSlices(for: plan.sortedExercises)
+    }
+
+    /// The distribution across several sessions: every session's exercises folded into one set of
+    /// totals, then shared out as percentages of that whole. Summing the per-session *percentages*
+    /// would weight a three-exercise session as heavily as a ten-exercise one, which is why the
+    /// fold is over raw exercises rather than over `slices(for:)` results.
+    static func slices(for sessions: [WorkoutSession]) -> [MuscleDistributionSlice] {
+        buildSlices(for: sessions.flatMap(\.sortedExercises))
+    }
+
+    /// The window a range asks for, as the date a fetch starts at. `nil` is all of history.
+    ///
+    /// Anchored to the start of the day rather than to the instant, so a range means the same
+    /// thing however far into the day it is read and a session logged this morning never drops out
+    /// of "past week" during the afternoon.
+    static func windowStart(
+        for range: ChartSeriesRange,
+        now: Date = .now,
+        calendar: Calendar = .current
+    ) -> Date? {
+        let today = calendar.startOfDay(for: now)
+        switch range {
+        case .week: return calendar.date(byAdding: .day, value: -6, to: today)
+        case .month: return calendar.date(byAdding: .month, value: -1, to: today)
+        case .sixMonths: return calendar.date(byAdding: .month, value: -6, to: today)
+        case .year: return calendar.date(byAdding: .year, value: -1, to: today)
+        case .all: return nil
+        }
     }
 
     private static func buildSlices<ExerciseType: MuscleDistributionExerciseProviding>(for exercises: [ExerciseType]) -> [MuscleDistributionSlice] {

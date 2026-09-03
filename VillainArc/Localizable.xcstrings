@@ -8990,6 +8990,134 @@
         }
       }
     },
+    "A faster launch, a cleaner store, and the foundation for what comes next." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein schnellerer Start, ein aufgeräumter Datenspeicher und die Grundlage für alles Weitere."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A faster launch, a cleaner store, and the foundation for what comes next."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un inicio más rápido, un almacén más limpio y la base de lo que viene."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un lancement plus rapide, un stockage plus propre et les fondations de la suite."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvio più rapido, archivio più pulito e le fondamenta per ciò che verrà."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "起動が速くなり、データの土台が整い、次の機能への基盤ができました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 빠른 실행, 더 깔끔한 저장소, 그리고 다음 기능을 위한 토대."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um início mais rápido, um armazenamento mais limpo e a base para o que vem a seguir."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Быстрый запуск, чистое хранилище и основа для всего, что будет дальше."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启动更快，数据结构更清晰，也为后续功能打下基础。"
+          }
+        }
+      }
+    },
+    "A Fresh Start" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Neuanfang"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A Fresh Start"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nuevo comienzo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nouveau départ"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nuovo inizio"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新しいスタート"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새로운 시작"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um novo começo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Начало с чистого листа"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全新的开始"
+          }
+        }
+      }
+    },
     "A repeating cycle not tied to calendar days" : {
       "localizations" : {
         "de" : {
@@ -15028,6 +15156,70 @@
         }
       }
     },
+    "Apple Watch Companion" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Watch App"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Watch Companion"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App para Apple Watch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Apple Watch"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App per Apple Watch"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Watchアプリ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Watch 앱"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App para Apple Watch"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Приложение для Apple Watch"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple Watch 应用"
+          }
+        }
+      }
+    },
     "Applies all pending suggestions and starts the workout." : {
       "localizations" : {
         "de" : {
@@ -15960,72 +16152,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "询问你的训练"
-          }
-        }
-      }
-    },
-    "Ask about your training and get answers from your own history. (Pro)" : {
-      "comment" : "Text and icon for a WhatsNewFeature that lets the user ask the app for advice on their training.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stelle Fragen zu deinem Training und erhalte Antworten aus deinem eigenen Verlauf. (Pro)"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask about your training and get answers from your own history. (Pro)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pregunta sobre tu entrenamiento y obtén respuestas de tu propio historial. (Pro)"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pose des questions sur ton entraînement et obtiens des réponses à partir de ton propre historique. (Pro)"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Chiedi del tuo allenamento e ottieni risposte dalla tua cronologia. (Pro)"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "トレーニングについて質問し、あなた自身の履歴から答えを得られます。(Pro)"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "내 훈련에 대해 물어보고 내 기록에서 답을 받아보세요. (Pro)"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pergunte sobre o seu treino e receba respostas do seu próprio histórico. (Pro)"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Спрашивайте о тренировках и получайте ответы по своей истории. (Pro)"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "询问你的训练，从自己的历史中获得答案。(Pro)"
           }
         }
       }
@@ -20448,72 +20574,6 @@
         }
       }
     },
-    "Cardio Live Activity" : {
-      "comment" : "Highlights the option to choose the stats shown on the Lock Screen.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cardio-Live-Aktivität"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cardio Live Activity"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actividad en Vivo de Cardio"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Activité en direct cardio"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Attività in tempo reale cardio"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "有酸素運動のLive Activity"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "유산소 실시간 활동"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Atividade ao Vivo de Cardio"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Live Activity для кардио"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "有氧实时活动"
-          }
-        }
-      }
-    },
     "Cardio Metrics" : {
       "localizations" : {
         "de" : {
@@ -21548,72 +21608,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择重量、身高、距离、能量和温度在应用中的显示方式。"
-          }
-        }
-      }
-    },
-    "Choose the stats shown on your Lock Screen." : {
-      "comment" : "Text describing the feature to choose the stats shown on the Lock Screen.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle die Statistiken, die auf deinem Sperrbildschirm angezeigt werden."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose the stats shown on your Lock Screen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elige las estadísticas que se muestran en tu pantalla bloqueada."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choisis les statistiques affichées sur ton écran verrouillé."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Scegli i dati mostrati sulla schermata di blocco."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ロック画面に表示するデータを選びます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "잠금 화면에 표시할 항목을 선택하세요."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Escolha as estatísticas exibidas na sua Tela Bloqueada."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Выберите показатели для экрана блокировки."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择在锁定屏幕上显示的数据。"
           }
         }
       }
@@ -33784,72 +33778,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "编辑动作"
-          }
-        }
-      }
-    },
-    "Edit Past Workouts" : {
-      "comment" : "Feature of the app that allows users to edit past workouts.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vergangene Workouts bearbeiten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Edit Past Workouts"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar entrenamientos anteriores"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifier les séances passées"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Modifica gli allenamenti passati"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "過去のワークアウトを編集"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "지난 운동 편집"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Editar treinos anteriores"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Редактирование прошлых тренировок"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "编辑过往训练"
           }
         }
       }
@@ -51809,6 +51737,70 @@
         }
       }
     },
+    "Log a workout, or widen the range, to see which muscles your training reaches." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zeichne ein Workout auf oder erweitere den Zeitraum, um zu sehen, welche Muskeln dein Training erreicht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log a workout, or widen the range, to see which muscles your training reaches."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra un entrenamiento o amplía el periodo para ver qué músculos alcanza tu entrenamiento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistre une séance ou élargis la période pour voir quels muscles ton entraînement sollicite."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registra un allenamento o amplia il periodo per vedere quali muscoli raggiunge il tuo allenamento."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ワークアウトを記録するか期間を広げると、トレーニングがどの部位に届いているかがわかります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "운동을 기록하거나 기간을 넓히면 훈련이 어떤 근육에 닿는지 볼 수 있습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Registre um treino ou amplie o período para ver quais músculos seu treino alcança."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Запиши тренировку или расширь период, чтобы увидеть, какие мышцы задействует твой тренинг."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "记录一次训练，或扩大时间范围，看看你的训练覆盖了哪些肌群。"
+          }
+        }
+      }
+    },
     "Log at least 2 entries for every weekday to unlock averages." : {
       "localizations" : {
         "de" : {
@@ -64962,6 +64954,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "没有训练分化"
+          }
+        }
+      }
+    },
+    "No workouts in this range" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Workouts in diesem Zeitraum"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No workouts in this range"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sin entrenamientos en este periodo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune séance sur cette période"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun allenamento in questo periodo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この期間のワークアウトはありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 기간에 운동이 없습니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum treino neste período"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет тренировок за этот период"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此时间范围内没有训练"
           }
         }
       }
@@ -78979,6 +79035,70 @@
         }
       }
     },
+    "Rebuilt From the Ground Up" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Von Grund auf neu gebaut"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rebuilt From the Ground Up"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconstruida desde cero"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconstruite de fond en comble"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricostruita da zero"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一から作り直しました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "완전히 새로 만들었습니다"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconstruído do zero"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Переписано с нуля"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "彻底重建"
+          }
+        }
+      }
+    },
     "Recent Cardio" : {
       "comment" : "A heading for the user's recent cardio sessions.",
       "isCommentAutoGenerated" : true,
@@ -83478,6 +83598,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "休息计时器已停止。"
+          }
+        }
+      }
+    },
+    "Rest timer, live session, and heart-rate stats on your wrist." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pausentimer, laufende Session und Herzfrequenz direkt am Handgelenk."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rest timer, live session, and heart-rate stats on your wrist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Temporizador de descanso, sesión en curso y frecuencia cardiaca en tu muñeca."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Minuteur de repos, séance en cours et fréquence cardiaque à ton poignet."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Timer di recupero, sessione in corso e frequenza cardiaca al polso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "インターバルタイマー、進行中のセッション、心拍数を手首で確認できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "휴식 타이머, 진행 중인 세션, 심박수를 손목에서 확인하세요."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cronômetro de descanso, sessão ao vivo e frequência cardíaca no seu pulso."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Таймер отдыха, текущая тренировка и пульс — прямо на запястье."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "组间计时、进行中的训练和心率，都在你的手腕上。"
           }
         }
       }
@@ -91064,138 +91248,6 @@
         }
       }
     },
-    "Share workout summaries and your muscle map." : {
-      "comment" : "Highlights a feature that allows users to share their workout summaries and muscle map.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teile Workout-Zusammenfassungen und deine Muskelkarte."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Share workout summaries and your muscle map."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comparte resúmenes de entrenamiento y tu mapa muscular."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partage des résumés de séance et ta carte musculaire."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Condividi i riepiloghi degli allenamenti e la tua mappa muscolare."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ワークアウトサマリーと部位マップを共有できます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "운동 요약과 근육 맵을 공유하세요."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Compartilhe resumos de treino e seu mapa muscular."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Делитесь итогами тренировок и картой мышц."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "分享训练总结和你的肌肉图。"
-          }
-        }
-      }
-    },
-    "Share Your Progress" : {
-      "comment" : "Feature description for sharing workout summaries and muscle map.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Teile deinen Fortschritt"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Share Your Progress"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Comparte tu progreso"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Partage ta progression"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Condividi i tuoi progressi"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "進捗を共有"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "내 변화 공유하기"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Compartilhe seu progresso"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Делитесь прогрессом"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "分享你的进步"
-          }
-        }
-      }
-    },
     "Shifts every day back by one." : {
       "localizations" : {
         "de" : {
@@ -96261,6 +96313,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "三角肌中束"
+          }
+        }
+      }
+    },
+    "Sign in once and your workouts, plans, splits, and cardio reach every device you use." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melde dich einmal an, und deine Workouts, Pläne, Splits und Cardio-Einheiten sind auf all deinen Geräten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sign in once and your workouts, plans, splits, and cardio reach every device you use."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia sesión una vez y tus entrenamientos, planes, splits y cardio llegan a todos tus dispositivos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecte-toi une fois et tes séances, plans, splits et sorties cardio te suivent sur tous tes appareils."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accedi una volta e i tuoi allenamenti, piani, split e sessioni cardio arrivano su ogni tuo dispositivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一度サインインすれば、ワークアウト、プラン、スプリット、カーディオがすべての端末に届きます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "한 번 로그인하면 운동, 플랜, 스플릿, 유산소 기록이 모든 기기에 전달됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faça login uma vez e seus treinos, planos, splits e cardio chegam a todos os seus dispositivos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Войди один раз — и твои тренировки, планы, сплиты и кардио будут на всех твоих устройствах."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录一次，你的训练、计划、分化和有氧记录就会同步到所有设备。"
           }
         }
       }
@@ -107548,6 +107664,70 @@
         }
       }
     },
+    "Ten Languages" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zehn Sprachen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ten Languages"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diez idiomas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dix langues"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieci lingue"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10の言語に対応"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "10개 언어"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dez idiomas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Десять языков"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "十种语言"
+          }
+        }
+      }
+    },
     "Terms" : {
       "localizations" : {
         "de" : {
@@ -107975,6 +108155,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "模型没有返回任何动作。请换一种描述再试。"
+          }
+        }
+      }
+    },
+    "The store underneath the app changed, so workouts saved in Villain Arc 1.x do not carry over." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Datenspeicher der App hat sich geändert, deshalb werden in Villain Arc 1.x gespeicherte Workouts nicht übernommen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The store underneath the app changed, so workouts saved in Villain Arc 1.x do not carry over."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El almacén de datos de la app ha cambiado, así que los entrenamientos guardados en Villain Arc 1.x no se conservan."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le stockage de l'app a changé : les séances enregistrées dans Villain Arc 1.x ne sont pas reprises."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'archivio dell'app è cambiato, quindi gli allenamenti salvati in Villain Arc 1.x non vengono trasferiti."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アプリのデータ構造が変わったため、Villain Arc 1.xで保存したワークアウトは引き継がれません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "앱의 저장소가 바뀌어 Villain Arc 1.x에 저장한 운동 기록은 이어지지 않습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O armazenamento do app mudou, então os treinos salvos no Villain Arc 1.x não são transferidos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Хранилище приложения изменилось, поэтому тренировки из Villain Arc 1.x не переносятся."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "应用底层的数据存储已更改，因此在 Villain Arc 1.x 中保存的训练不会保留。"
           }
         }
       }
@@ -115226,72 +115470,6 @@
         }
       }
     },
-    "Update notes on completed workouts." : {
-      "comment" : "Highlights a feature to edit notes on completed workouts.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktualisiere Notizen zu abgeschlossenen Workouts."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Update notes on completed workouts."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Actualiza las notas de entrenamientos completados."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mets à jour les notes des séances terminées."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aggiorna le note sugli allenamenti completati."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完了したワークアウトのメモを更新できます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "완료한 운동의 메모를 수정하세요."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Atualize as notas de treinos concluídos."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Обновляйте заметки в завершённых тренировках."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更新已完成训练的备注。"
-          }
-        }
-      }
-    },
     "Update Rest Timer?" : {
       "localizations" : {
         "de" : {
@@ -117474,6 +117652,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Villain Arc 首次设置需要 WiFi 来同步你的训练数据。"
+          }
+        }
+      }
+    },
+    "Villain Arc now speaks ten languages, including yours." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc spricht jetzt zehn Sprachen — deine ist dabei."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc now speaks ten languages, including yours."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc ya habla diez idiomas, incluido el tuyo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc parle désormais dix langues, dont la tienne."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc ora parla dieci lingue, compresa la tua."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arcは10の言語に対応しました。あなたの言語もそのひとつです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc가 이제 10개 언어를 지원합니다. 여러분의 언어도 포함됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Villain Arc agora fala dez idiomas, incluindo o seu."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc теперь говорит на десяти языках, включая твой."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Villain Arc 现已支持十种语言，其中就有你的语言。"
           }
         }
       }
@@ -131579,6 +131821,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的强度评分和说明会显示在这里。"
+          }
+        }
+      }
+    },
+    "Your Free FCT Account" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein kostenloses FCT-Konto"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Free FCT Account"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu cuenta FCT gratuita"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton compte FCT gratuit"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo account FCT gratuito"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無料のFCTアカウント"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무료 FCT 계정"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua conta FCT gratuita"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Твой бесплатный аккаунт FCT"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的免费 FCT 账户"
           }
         }
       }

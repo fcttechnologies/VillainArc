@@ -50,8 +50,11 @@ First launch opens on the intro carousel — `FCTOnboarding.AccountOnboardingFlo
 `VAOnboardingCarousel.items` (the app's pillars over its App Store artwork, in
 `Assets.xcassets/Onboarding`) and ending in the three-provider sign-in step. The carousel finishing
 never finishes onboarding: the flow completes only once a session exists, and the carousel cannot
-produce one. The front door is dark whatever the app's appearance setting says — a first launch has
-no setting yet.
+produce one. The front door follows the system appearance: `RootView` resolves
+`.preferredColorScheme` from `AppSettings`, and a first launch has no settings row yet, so it
+resolves to nil — which is exactly "whatever the device is set to". The carousel and the sign-in
+surface are both built against the adaptive palette, and a page may carry a `darkScreenshot`
+beside its `screenshot` where the app looks different in the dark.
 
 `OnboardingEntry.forLaunch` is the whole routing rule, and `OnboardingSequenceTests` pins it:
 

@@ -204,6 +204,22 @@ extension WorkoutSession {
     static var recent: FetchDescriptor<WorkoutSession> { completedSessions(limit: 1) }
     static var completedSession: FetchDescriptor<WorkoutSession> { completedSessions() }
 
+    /// Completed sessions from `start` onward — the windowed read behind any summary the user
+    /// picks a range for. `nil` is the whole history, so one call site covers every range
+    /// including "All" without a second descriptor or a branch at the caller.
+    static func completedSessions(since start: Date?) -> FetchDescriptor<WorkoutSession> {
+        let done = SessionStatus.done.rawValue
+        let predicate: Predicate<WorkoutSession>
+        if let start {
+            predicate = #Predicate<WorkoutSession> { $0.status == done && $0.isHidden == false && $0.startedAt >= start }
+        } else {
+            predicate = #Predicate<WorkoutSession> { $0.status == done && $0.isHidden == false }
+        }
+        var descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.startedAt, order: .reverse)])
+        descriptor.relationshipKeyPathsForPrefetching = [\.exercises]
+        return descriptor
+    }
+
     static func completedSessions(forWorkoutPlanID id: UUID) -> FetchDescriptor<WorkoutSession> {
         let done = SessionStatus.done.rawValue
         let predicate = #Predicate<WorkoutSession> { $0.status == done && $0.isHidden == false && $0.workoutPlan?.id == id }
