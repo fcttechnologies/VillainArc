@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct StartCardioSessionIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentStartCardioSession
+
     static let title: LocalizedStringResource = "Start Cardio Session"
     static let description = IntentDescription("Starts a cardio session of the chosen type.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
@@ -10,6 +14,7 @@ struct StartCardioSessionIntent: AppIntent {
     var kind: CardioKindAppEnum
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
 

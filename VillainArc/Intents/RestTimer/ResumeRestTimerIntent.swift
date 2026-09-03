@@ -1,13 +1,18 @@
 import AppIntents
-import SwiftUI
+import FCTMetrics
 import SwiftData
+import SwiftUI
 
 struct ResumeRestTimerIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentResumeRestTimer
+
     static let title: LocalizedStringResource = "Resume Rest Timer"
     static let description = IntentDescription("Resumes the paused rest timer.")
     static let supportedModes: IntentModes = .background
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let restTimer = RestTimerState.shared
 
         guard restTimer.isPaused, restTimer.pausedRemainingSeconds > 0 else {

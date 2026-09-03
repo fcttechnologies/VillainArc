@@ -1,9 +1,13 @@
 import AppIntents
+import FCTMetrics
 import Foundation
 import SwiftData
 import SwiftUI
 
 struct StartRestTimerIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentStartRestTimer
+
     static let title: LocalizedStringResource = "Start Rest Timer"
     static let description = IntentDescription("Starts a rest timer.")
     static let supportedModes: IntentModes = .background
@@ -13,6 +17,7 @@ struct StartRestTimerIntent: AppIntent {
     @Parameter(title: "Duration", defaultUnit: .seconds, supportsNegativeNumbers: false, requestValueDialog: IntentDialog("How long should the rest timer be?")) var duration: Measurement<UnitDuration>
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
 
         guard (try? context.fetch(WorkoutSession.incomplete).first) != nil else { throw RestTimerIntentError.noWorkoutSession }

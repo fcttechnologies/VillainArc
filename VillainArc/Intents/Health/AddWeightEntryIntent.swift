@@ -1,8 +1,12 @@
 import AppIntents
+import FCTMetrics
 import Foundation
 import SwiftData
 
 struct AddWeightEntryIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentAddWeightEntry
+
     static let title: LocalizedStringResource = "Add Weight Entry"
     static let description = IntentDescription("Logs a new weight entry for right now.")
     static let supportedModes: IntentModes = .background
@@ -17,6 +21,7 @@ struct AddWeightEntryIntent: AppIntent {
     private let goalAchievementToleranceKg = 0.1
 
     @MainActor func perform() async throws -> some IntentResult {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
 

@@ -38,10 +38,16 @@ Two placement rules, and they are the whole of the per-screen wiring:
   misses everything reached by a swipe, a toggle, a menu, or an App Intent.
 
 Where FCTFoundation owns the handler it takes the name instead: `AsyncButton`/`FCTPrimaryButton`
-take `crumb:`, `.diagTask(_:)` replaces `.task`, and an App Intent conforming to
-`ReportingAppIntent` writes `run()` instead of `perform()` and declares one `diagCrumb`. Each of
-those pairs the app's name with `ui.work_finished` on return, so **a name with no finish after it
-is work that was still running when the process died**.
+take `crumb:`, and `.diagTask(_:)` replaces `.task`. Each pairs the app's name with
+`ui.work_finished` on return, so **a name with no finish after it is work that was still running
+when the process died**.
+
+**Every App Intent carries a `static let diagCrumb` and drops it as the first line of `perform()`**,
+and `IntentCrumbCoverageTests` is what keeps the names distinct and namespaced. It is written by
+hand rather than through `FCTEntities.ReportingAppIntent`: that protocol supplies `perform()` from
+an extension and declares `run() -> Self.PerformResult`, and Swift does not infer `PerformResult`
+from a `run()` whose return type is opaque — which every intent in this app has, since they all
+return `some IntentResult & …`. Adopting it fails the conformance outright.
 
 Foundation reports its own surfaces with no wiring here at all: the store open, the sync push's
 history fetch, every model session and request, navigation, sign-in, both onboardings, the deletion

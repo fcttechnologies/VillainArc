@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct DeleteWorkoutPlanIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentDeleteWorkoutPlan
+
     static let title: LocalizedStringResource = "Delete Workout Plan"
     static let description = IntentDescription("Deletes a workout plan.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
@@ -10,6 +14,7 @@ struct DeleteWorkoutPlanIntent: AppIntent {
     @Parameter(title: "Workout Plan", requestValueDialog: IntentDialog("Which workout plan would you like to delete?")) var workoutPlan: WorkoutPlanEntity
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
 
         let workoutPlanID = workoutPlan.id

@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct AddHydrationEntryIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentAddHydrationEntry
+
     static let title: LocalizedStringResource = "Add Hydration Entry"
     static let description = IntentDescription("Logs a water intake entry using your current hydration unit.")
     static let supportedModes: IntentModes = .background
@@ -17,6 +21,7 @@ struct AddHydrationEntryIntent: AppIntent {
     var date: Date?
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
 

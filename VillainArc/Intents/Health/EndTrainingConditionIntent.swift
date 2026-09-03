@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct EndTrainingConditionIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentEndTrainingCondition
+
     static let title: LocalizedStringResource = "End Training Condition"
     static let description = IntentDescription("Ends your current training condition and returns you to training normally.")
     static let supportedModes: IntentModes = .background
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
 

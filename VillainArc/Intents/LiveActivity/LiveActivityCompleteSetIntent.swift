@@ -1,11 +1,16 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct LiveActivityCompleteSetIntent: LiveActivityIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentLiveActivityCompleteSet
+
     static let title: LocalizedStringResource = "Complete Set"
     static let isDiscoverable: Bool = false
 
     @MainActor func perform() async throws -> some IntentResult {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
 
         guard let workout = try? context.fetch(WorkoutSession.incomplete).first, let (_, set) = workout.activeExerciseAndSet() else { return .result() }

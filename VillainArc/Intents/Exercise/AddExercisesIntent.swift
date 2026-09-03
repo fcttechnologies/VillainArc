@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct AddExercisesIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentAddExercises
+
     static let title: LocalizedStringResource = "Add Exercises"
     static let description = IntentDescription("Adds exercises to the workout session or workout plan.")
     static let supportedModes: IntentModes = .background
@@ -10,6 +14,7 @@ struct AddExercisesIntent: AppIntent {
     @Parameter(title: "Exercises", requestValueDialog: IntentDialog("Which exercises?")) var exercises: [ExerciseEntity]
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
 
         guard !exercises.isEmpty else { return .result(dialog: IntentDialog(stringLiteral: String(localized: "No exercises selected."))) }

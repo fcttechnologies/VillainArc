@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct FinishWorkoutIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentFinishWorkout
+
     static let title: LocalizedStringResource = "Finish Workout"
     static let description = IntentDescription("Finishes the current workout session.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         guard let workoutSession = try? context.fetch(WorkoutSession.incomplete).first else { throw FinishWorkoutError.noWorkoutSession }
 

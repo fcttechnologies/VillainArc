@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct SaveWorkoutAsPlanIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentSaveWorkoutAsPlan
+
     static let title: LocalizedStringResource = "Save Workout as Plan"
     static let description = IntentDescription("Creates a completed workout plan from a completed workout.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
@@ -10,6 +14,7 @@ struct SaveWorkoutAsPlanIntent: AppIntent {
     @Parameter(title: "Workout", requestValueDialog: IntentDialog("Which workout would you like to save as a plan?")) var workout: WorkoutSessionEntity
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
 
         let workoutID = workout.id

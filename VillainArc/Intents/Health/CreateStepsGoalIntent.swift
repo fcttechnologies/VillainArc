@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct CreateStepsGoalIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentCreateStepsGoal
+
     static let title: LocalizedStringResource = "Create Steps Goal"
     static let description = IntentDescription("Creates or replaces your current steps goal.")
     static let supportedModes: IntentModes = .background
@@ -14,6 +18,7 @@ struct CreateStepsGoalIntent: AppIntent {
     var targetSteps: Int
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
 

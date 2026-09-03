@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct EditWorkoutPlanIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentEditWorkoutPlan
+
     static let title: LocalizedStringResource = "Edit Workout Plan"
     static let description = IntentDescription("Starts editing a workout plan using the plan editing flow.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
@@ -10,6 +14,7 @@ struct EditWorkoutPlanIntent: AppIntent {
     @Parameter(title: "Workout Plan", requestValueDialog: IntentDialog("Which workout plan would you like to edit?")) var workoutPlan: WorkoutPlanEntity
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 

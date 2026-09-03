@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct StartWorkoutWithPlanIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentStartWorkoutWithPlan
+
     static let title: LocalizedStringResource = "Start Workout with Plan"
     static let description = IntentDescription("Starts a workout session from a workout plan.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
@@ -10,6 +14,7 @@ struct StartWorkoutWithPlanIntent: AppIntent {
     @Parameter(title: "Workout Plan", requestValueDialog: IntentDialog("Which workout plan would you like to use?")) var workoutPlan: WorkoutPlanEntity
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
         if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutError.workoutPlanIsActive }

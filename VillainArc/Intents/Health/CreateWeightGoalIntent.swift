@@ -1,4 +1,5 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 enum WeightGoalIntentType: String, AppEnum {
@@ -26,6 +27,9 @@ enum WeightGoalIntentType: String, AppEnum {
 }
 
 struct CreateWeightGoalIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentCreateWeightGoal
+
     static let title: LocalizedStringResource = "Create Weight Goal"
     static let description = IntentDescription("Creates or replaces your current weight goal.")
     static let supportedModes: IntentModes = .background
@@ -42,6 +46,7 @@ struct CreateWeightGoalIntent: AppIntent {
     var targetWeight: Double
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
 

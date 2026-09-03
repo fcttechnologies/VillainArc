@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftUI
 
 struct RestTimerSnippetIntent: SnippetIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentRestTimerSnippet
+
     static let title: LocalizedStringResource = "Rest Timer"
     static let isDiscoverable: Bool = false
 
     @MainActor
     func perform() async throws -> some IntentResult & ShowsSnippetView {
+        Diag.breadcrumb(Self.diagCrumb)
         return .result {
             RestTimerSnippetView()
         }

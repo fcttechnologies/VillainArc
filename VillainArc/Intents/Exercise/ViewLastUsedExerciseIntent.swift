@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct ViewLastUsedExerciseIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentViewLastUsedExercise
+
     static let title: LocalizedStringResource = "View Last Used Exercise"
     static let description = IntentDescription("Shows the most recently used exercise that has recorded history.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
 

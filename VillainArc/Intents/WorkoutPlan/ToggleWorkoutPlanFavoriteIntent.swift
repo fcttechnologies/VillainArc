@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct ToggleWorkoutPlanFavoriteIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentToggleWorkoutPlanFavorite
+
     static let title: LocalizedStringResource = "Toggle Workout Plan Favorite"
     static let description = IntentDescription("Toggles favorite status for a workout plan.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
@@ -10,6 +14,7 @@ struct ToggleWorkoutPlanFavoriteIntent: AppIntent {
     @Parameter(title: "Workout Plan", requestValueDialog: IntentDialog("Which workout plan would you like to update?")) var workoutPlan: WorkoutPlanEntity
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
 
         let workoutPlanID = workoutPlan.id

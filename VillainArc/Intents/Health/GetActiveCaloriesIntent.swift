@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct GetActiveCaloriesIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentGetActiveCalories
+
     static let title: LocalizedStringResource = "Get Active Calories"
     static let description = IntentDescription("Tells you your active calories burned today.")
     static let supportedModes: IntentModes = .background
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = makeHealthIntentReadContext()
         let snapshot = try loadHealthDaySnapshot(for: .now, context: context)
 

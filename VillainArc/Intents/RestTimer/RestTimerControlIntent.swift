@@ -1,4 +1,5 @@
 import AppIntents
+import FCTMetrics
 
 enum RestTimerControlAction: String, AppEnum {
     static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Rest Timer Action")
@@ -10,6 +11,9 @@ enum RestTimerControlAction: String, AppEnum {
 }
 
 struct RestTimerControlIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentRestTimerControl
+
     static let title: LocalizedStringResource = "Rest Timer Control"
     static let isDiscoverable: Bool = false
     static let supportedModes: IntentModes = .background
@@ -23,6 +27,7 @@ struct RestTimerControlIntent: AppIntent {
     }
 
     @MainActor func perform() async throws -> some IntentResult {
+        Diag.breadcrumb(Self.diagCrumb)
         let restTimer = RestTimerState.shared
 
         switch action {

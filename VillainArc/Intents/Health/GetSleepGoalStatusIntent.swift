@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct GetSleepGoalStatusIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentGetSleepGoalStatus
+
     static let title: LocalizedStringResource = "Get Sleep Goal Status"
     static let description = IntentDescription("Tells you how your current sleep goal is going.")
     static let supportedModes: IntentModes = .background
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = makeHealthIntentReadContext()
         try SetupGuard.requireReady(context: context)
 

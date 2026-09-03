@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct ManageWorkoutSplitsIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentManageWorkoutSplits
+
     static let title: LocalizedStringResource = "Manage Workout Splits"
     static let description = IntentDescription("Opens your workout splits.")
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
 

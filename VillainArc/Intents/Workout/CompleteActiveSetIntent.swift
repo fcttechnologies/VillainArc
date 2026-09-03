@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct CompleteActiveSetIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentCompleteActiveSet
+
     static let title: LocalizedStringResource = "Complete Active Set"
     static let description = IntentDescription("Completes the next incomplete set in your workout session.")
     static let supportedModes: IntentModes = .background
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         guard let workout = try? context.fetch(WorkoutSession.incomplete).first else { return .result(dialog: "No workout session to update.") }
 

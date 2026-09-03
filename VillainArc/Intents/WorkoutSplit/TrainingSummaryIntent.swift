@@ -1,4 +1,5 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 enum TrainingDay: String, AppEnum {
@@ -60,6 +61,9 @@ enum TrainingDay: String, AppEnum {
 }
 
 struct TrainingSummaryIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentTrainingSummary
+
     static let title: LocalizedStringResource = "Training Summary"
     static let description = IntentDescription("Tells you what you're training on a specific day.")
     static let supportedModes: IntentModes = .background
@@ -68,6 +72,7 @@ struct TrainingSummaryIntent: AppIntent {
     @Parameter(title: "Day") var day: TrainingDay
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         guard let split = try? context.fetch(WorkoutSplit.active).first else { return .result(dialog: IntentDialog(stringLiteral: String(localized: "You don't have an active workout split."))) }
 

@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct StartTodaysWorkoutIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentStartTodaysWorkout
+
     static let title: LocalizedStringResource = "Start Today's Workout"
     static let description = IntentDescription("Starts today's workout from your active split.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
         guard let split = try? context.fetch(WorkoutSplit.active).first else { throw StartTodaysWorkoutError.noActiveSplit }

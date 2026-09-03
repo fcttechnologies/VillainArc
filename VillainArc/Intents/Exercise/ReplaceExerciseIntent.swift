@@ -1,7 +1,11 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct ReplaceExerciseIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentReplaceExercise
+
     static let title: LocalizedStringResource = "Replace Exercise"
     static let description = IntentDescription("Replaces the current exercise in the active workout with a different one.")
     static let supportedModes: IntentModes = .background
@@ -10,6 +14,7 @@ struct ReplaceExerciseIntent: AppIntent {
     @Parameter(title: "New Exercise", requestValueDialog: IntentDialog("Which exercise should replace it?")) var newExercise: ExerciseEntity
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
 
         guard let workout = try? context.fetch(WorkoutSession.incomplete).first else { return .result(dialog: "No active workout found.") }

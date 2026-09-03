@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct DeleteAllWorkoutsIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentDeleteAllWorkouts
+
     static let title: LocalizedStringResource = "Delete All Workouts"
     static let description = IntentDescription("Deletes all completed workouts.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         var descriptor = WorkoutSession.completedSession
         descriptor.relationshipKeyPathsForPrefetching = [\.exercises]

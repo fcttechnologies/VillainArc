@@ -1,12 +1,17 @@
 import AppIntents
+import FCTMetrics
 import SwiftData
 
 struct ViewLastWorkoutIntent: AppIntent {
+    /// What this intent's run travels under, so a crash with nobody watching names the intent.
+    static let diagCrumb: any DiagBreadcrumb = VACrumb.intentViewLastWorkout
+
     static let title: LocalizedStringResource = "View Last Workout"
     static let description = IntentDescription("Shows your most recent completed workout.")
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
+        Diag.breadcrumb(Self.diagCrumb)
         let context = SharedModelContainer.container.mainContext
         try SetupGuard.requireReady(context: context)
         guard let lastWorkoutSession = try context.fetch(WorkoutSession.recent).first else { throw ViewLastWorkoutError.noWorkoutsFound }
