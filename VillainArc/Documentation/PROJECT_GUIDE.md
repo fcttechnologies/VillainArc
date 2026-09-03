@@ -49,6 +49,12 @@ that matter are the ones that travel. A Mac build would carry the whole app's we
 context the product is never used in. This is a product decision, not an oversight or a backlog
 item — do not "fix" it by adding a Mac target.
 
+**The same reason holds for iPad in 2.0.** `TARGETED_DEVICE_FAMILY = 1` is deliberate: the phone
+in the hand and the watch on the wrist are the two surfaces training reaches for, and an iPad
+layout across ~90 screens plus a third screenshot set buys a context a lifter is not in. iPad is
+open for a later version, when real outcome data says where a bigger screen would earn its keep
+(progression analysis, plan editing); it is not part of the 2.0 bar.
+
 ### Process hardening
 
 `ENABLE_ENHANCED_SECURITY = YES` and `SWIFT_STRICT_MEMORY_SAFETY = YES` sit at the **project** level,
