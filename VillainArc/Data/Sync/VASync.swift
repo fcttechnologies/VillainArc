@@ -28,7 +28,11 @@ struct VASyncConfiguration {
     var makeTriggers: (ModelContainer) -> [any HistoryChangeTrigger]
     /// Rung 2 of the ping ladder, held only while the app is foregrounded. `nil` where there is no
     /// socket to open — a test process, and any device the channel cannot be built for.
-    var makeNudgeChannel: (any SyncAccount) -> SyncNudgeChannel?
+    ///
+    /// It takes the engine's own state file because that is where this install's device id lives,
+    /// and the id is what the admission door names a device by: without it a renewal could not
+    /// find its own lease row and a release would give back nothing.
+    var makeNudgeChannel: (any SyncAccount, SyncStateFile) -> SyncNudgeChannel?
 
     static var live: VASyncConfiguration {
         VASyncConfiguration(
@@ -54,11 +58,19 @@ struct VASyncConfiguration {
                 )
             },
             makeTriggers: { container in SyncScheduler.engineTriggers(container: container) },
-            makeNudgeChannel: { account in
+            makeNudgeChannel: { account, stateFile in
                 SyncNudgeChannel(
                     baseURL: AccountEnvironment.fct.baseURL,
                     publishableKey: AccountEnvironment.fct.publishableKey,
-                    account: account
+                    account: account,
+                    stateFile: stateFile,
+                    // The slot is asked for before the join, through the same door the records go
+                    // out of: one project, one account, one bearer.
+                    leasing: PostgRESTTransport(
+                        baseURL: AccountEnvironment.fct.baseURL,
+                        publishableKey: AccountEnvironment.fct.publishableKey,
+                        account: account
+                    )
                 )
             }
         )
@@ -303,6 +315,17 @@ final class VASync {
         refreshCounters()
     }
 
+    /// The merge's local half: these rows belong to another account now, under the same ids, so
+    /// the store changes owner and nothing is deleted. The engine rewrites its state file and
+    /// marks every row dirty, and LWW settles the rest exactly as two ordinary devices do.
+    func reHome(into account: UUID) {
+        do {
+            try engine?.reHome(into: account)
+        } catch {
+            AppLog.error("Account merge re-home failed", error: error)
+        }
+    }
+
     /// What signing out costs, in changes this device is still the only holder of. `nil` where
     /// there is no engine to ask — a count this device cannot take, which is never spelled as
     /// zero at the moment a clear is being decided.
@@ -437,7 +460,7 @@ final class VASync {
         }
         self.engine = engine
         self.avatars = avatarStore
-        self.nudges = configuration.makeNudgeChannel(credentials)
+        self.nudges = configuration.makeNudgeChannel(credentials, stateFile)
 
         scheduler.observe(configuration.makeTriggers(container))
         startNudges()

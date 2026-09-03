@@ -68,6 +68,18 @@ private nonisolated final class StubSocketFactory: SyncSocketFactory, @unchecked
         #"{"topic":"realtime:t","event":"broadcast","payload":{"type":"broadcast","event":"sync","payload":{"max_updated_seq":7}}}"#
 }
 
+/// An admission door that always grants. What a refusal, a poll grant or a lost renewal does is
+/// the channel's own property and is proven in `FCTServerSync`; what this suite needs is only for
+/// the join to be reached at all, which the live door — unreachable from a test process — would
+/// answer by polling instead.
+private nonisolated struct GrantingLeasing: SyncChannelLeasing {
+    func leaseChannelSlot(device: UUID) async throws -> SyncChannelLease {
+        .realtime(leaseSeconds: 600, pollSeconds: 30)
+    }
+
+    func releaseChannelSlot(device: UUID) async {}
+}
+
 /// The rungs into a cycle: what each one costs and what it asks for.
 ///
 /// The engine's own `push`/`full` split is `FCTServerSync`'s property. What belongs to this app is
@@ -118,11 +130,17 @@ struct VASyncCycleTests {
     @Test @MainActor
     func aNudgeSpendsAFullCycle() async throws {
         let sockets = StubSocketFactory()
+        let stateFile = SyncStateFile(
+            url: FileManager.default.temporaryDirectory
+                .appendingPathComponent("VANudge-\(UUID().uuidString).json")
+        )
         let channel = SyncNudgeChannel(
             baseURL: URL(string: "https://project.supabase.co")!,
             publishableKey: "pk",
             account: FakeAccount(accountID: UUID()),
-            sockets: sockets
+            stateFile: stateFile,
+            sockets: sockets,
+            leasing: GrantingLeasing()
         )
         let harness = try VASyncFaultHarness(nudges: channel)
         await harness.enroll()

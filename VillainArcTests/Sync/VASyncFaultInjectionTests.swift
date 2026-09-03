@@ -134,7 +134,7 @@ final class VASyncFaultHarness {
             },
             makeBlobTransport: { _ in FakeBlobTransport(store: objects) },
             makeTriggers: { _ in triggers },
-            makeNudgeChannel: { _ in nudges }
+            makeNudgeChannel: { _, _ in nudges }
         )
 
         sync = VASync(configuration: configuration)

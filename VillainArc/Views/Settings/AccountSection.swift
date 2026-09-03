@@ -14,22 +14,10 @@ struct VAAccountSection: View {
     @State private var subscriptionStore = SubscriptionStore.shared
 
     var body: some View {
+        let deletion = deletionDoor
         AccountSettingsSection(
             controller: VAAccount.controller,
-            appData: AppDataDeletion(
-                schema: VASyncSchema.appSlug,
-                appName: "Villain Arc",
-                barrier: DeletionBarrier {
-                    await VASync.shared.syncNow(.full)
-                    guard let census = await VASync.shared.unsyncedWork else {
-                        throw VAAccountSectionError.uncountable
-                    }
-                    return .counted(retrying: census.retrying, stuck: census.stuck)
-                },
-                eraseLocalData: {
-                    await VASync.shared.eraseAppDataLocally()
-                }
-            ),
+            appData: deletion,
             hasActiveSubscription: subscriptionStore.status.isPro,
             syncStatus: { VASyncStatusRow(sync: sync) },
             beforeSignOut: {
@@ -38,6 +26,34 @@ struct VAAccountSection: View {
                 // `nil` means no engine to ask; the engine's non-discarding clear still refuses
                 // on its own state file, so waving through cannot lose a write.
                 return true
+            }
+        )
+        // The repair for a person who ended up with two accounts. It shows only while signed in,
+        // and its screen is pushed, so it rides the settings `NavigationStack` this section is
+        // already inside. The barrier is the deletion doors' own — a merge refuses rather than
+        // offering the discard a deletion offers, since nothing is being destroyed.
+        AccountMergeSection(
+            controller: VAAccount.controller,
+            barrier: deletion.barrier,
+            reHome: { target in VASync.shared.reHome(into: target) }
+        )
+    }
+
+    /// The narrow deletion door and what it costs, built once: the merge section runs the same
+    /// barrier, and two barriers counting the same outbox are two chances to disagree about it.
+    private var deletionDoor: AppDataDeletion {
+        AppDataDeletion(
+            schema: VASyncSchema.appSlug,
+            appName: "Villain Arc",
+            barrier: DeletionBarrier {
+                await VASync.shared.syncNow(.full)
+                guard let census = await VASync.shared.unsyncedWork else {
+                    throw VAAccountSectionError.uncountable
+                }
+                return .counted(retrying: census.retrying, stuck: census.stuck)
+            },
+            eraseLocalData: {
+                await VASync.shared.eraseAppDataLocally()
             }
         )
     }
