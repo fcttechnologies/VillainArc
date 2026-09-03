@@ -47,7 +47,8 @@ struct OutcomeResolver {
     @MainActor static func resolveOutcomes(
         for workout: WorkoutSession,
         context: ModelContext,
-        outcomes: any SuggestionOutcomeReporting = DiagSuggestionOutcomes()
+        outcomes: any SuggestionOutcomeReporting = DiagSuggestionOutcomes(),
+        verdicts: any SuggestionVerdictReporting = DiagSuggestionVerdicts()
     ) async {
         guard workout.workoutPlan != nil else { return }
 
@@ -102,7 +103,7 @@ struct OutcomeResolver {
         var processedEventIDs = Set<UUID>()
 
         for (index, group) in groups.enumerated() {
-            applyOutcomeIfPossible(event: group.event, changes: group.changes, exercisePerf: group.exercisePerf, ruleResults: ruleResults, aiOutput: aiResults[group.event.id], sessionID: workout.id, rank: index + 1, outcomes: outcomes, processedIDs: &processedEventIDs)
+            applyOutcomeIfPossible(event: group.event, changes: group.changes, exercisePerf: group.exercisePerf, ruleResults: ruleResults, aiOutput: aiResults[group.event.id], sessionID: workout.id, rank: index + 1, outcomes: outcomes, verdicts: verdicts, processedIDs: &processedEventIDs)
         }
 
         // Step 6: Persist
@@ -347,7 +348,7 @@ struct OutcomeResolver {
         return min(1.0, max(0.0, adjusted))
     }
 
-    private static func applyOutcomeIfPossible(event: SuggestionEvent, changes: [PrescriptionChange], exercisePerf: ExercisePerformance, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?, sessionID: UUID, rank: Int, outcomes: any SuggestionOutcomeReporting, processedIDs: inout Set<UUID>) {
+    private static func applyOutcomeIfPossible(event: SuggestionEvent, changes: [PrescriptionChange], exercisePerf: ExercisePerformance, ruleResults: [UUID: OutcomeSignal?], aiOutput: AIOutcomeInferenceOutput?, sessionID: UUID, rank: Int, outcomes: any SuggestionOutcomeReporting, verdicts: any SuggestionVerdictReporting, processedIDs: inout Set<UUID>) {
         guard event.outcome == .pending, event.evaluatedAt == nil else { return }
         // Within-invocation dedup: prevents both the AI pass and the fallback pass from appending in the same call.
         guard processedIDs.insert(event.id).inserted else { return }
@@ -364,7 +365,7 @@ struct OutcomeResolver {
         let allEvaluations = existingEvaluations + [evaluation]
         if let earlyDecision = earlyPositiveFinalizationDecision(for: allEvaluations) {
             if case .finalize(let outcome, let reason) = earlyDecision {
-                finalize(event: event, outcome: outcome, reason: reason, rank: rank, outcomes: outcomes)
+                finalize(event: event, outcome: outcome, reason: reason, rank: rank, outcomes: outcomes, verdicts: verdicts)
             }
             return
         }
@@ -379,20 +380,28 @@ struct OutcomeResolver {
             event.evaluatedAt = nil
             event.requiredEvaluationCount = max(event.requiredEvaluationCount, 3)
         case .finalize(let outcome, let reason):
-            finalize(event: event, outcome: outcome, reason: reason, rank: rank, outcomes: outcomes)
+            finalize(event: event, outcome: outcome, reason: reason, rank: rank, outcomes: outcomes, verdicts: verdicts)
         }
     }
 
-    /// The one place a suggestion's verdict lands: the app's own `Outcome` on the event, and the
-    /// same verdict reported to the field as the fleet vocabulary spells it. `.insufficient`
-    /// resolves the event without reporting anything — the fleet has no value for "the evidence
-    /// could not judge it", and inventing one would read as a verdict the app never reached.
+    /// The one place a suggestion's verdict lands: the app's own `Outcome` on the event, the same
+    /// verdict reported to the field as the fleet vocabulary spells it, and the verdict
+    /// distribution the engine is tuned from.
+    ///
+    /// The two reports carry different halves on purpose. The **outcome row** is one row per
+    /// suggestion in a server-guarded vocabulary, so `.insufficient` reports nothing there — the
+    /// fleet has no value for "the evidence could not judge it", and inventing one would read as a
+    /// verdict the app never reached. The **verdict counters** are the app's own names on a column
+    /// with no vocabulary, so every graded verdict counts there, `.insufficient` included: an
+    /// engine whose evidence keeps failing to decide is exactly the finding the distribution
+    /// exists to surface, and a distribution that omits it reads as cleaner than it is.
     private static func finalize(
         event: SuggestionEvent,
         outcome: Outcome,
         reason: String,
         rank: Int,
-        outcomes: any SuggestionOutcomeReporting
+        outcomes: any SuggestionOutcomeReporting,
+        verdicts: any SuggestionVerdictReporting
     ) {
         event.outcome = outcome
         event.outcomeReason = reason
@@ -400,6 +409,7 @@ struct OutcomeResolver {
         if let reported = outcome.diagOutcome {
             outcomes.record(reported, for: event, rank: rank)
         }
+        verdicts.record(verdict: outcome, category: event.category, confidence: event.suggestionConfidence)
     }
 
     private static func earlyPositiveFinalizationDecision(for evaluations: [SuggestionEvaluation]) -> FinalizationDecision? {
