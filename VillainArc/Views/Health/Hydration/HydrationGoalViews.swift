@@ -127,7 +127,9 @@ struct HydrationGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                ContentUnavailableView("No Hydration Goals", systemImage: "target", description: Text("Your saved and previous hydration goals will appear here."))
+                AccountEmptyState {
+                    ContentUnavailableView("No Hydration Goals", systemImage: "target", description: Text("Your saved and previous hydration goals will appear here."))
+                }
             }
         }
     }

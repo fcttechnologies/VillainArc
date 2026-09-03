@@ -92,9 +92,11 @@ struct WorkoutSplitListView: View {
             .sheetBackground()
             .overlay {
                 if visibleSplits.isEmpty {
-                    ContentUnavailableView("No Splits", systemImage: "calendar.badge.plus", description: Text("Create a workout split to plan your training routine.")
-                    )
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitEmptyState)
+                    AccountEmptyState {
+                        ContentUnavailableView("No Splits", systemImage: "calendar.badge.plus", description: Text("Create a workout split to plan your training routine.")
+                        )
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitEmptyState)
+                    }
                 }
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitList)

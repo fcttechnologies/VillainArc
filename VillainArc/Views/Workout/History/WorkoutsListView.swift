@@ -173,8 +173,10 @@ struct WorkoutsListView: View {
         }
         .overlay(alignment: .center) {
             if items.isEmpty {
-                ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Your workout history will appear here."))
-                    .accessibilityIdentifier(AccessibilityIdentifiers.workoutsEmptyState)
+                AccountEmptyState {
+                    ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Your workout history will appear here."))
+                        .accessibilityIdentifier(AccessibilityIdentifiers.workoutsEmptyState)
+                }
             }
         }
     }

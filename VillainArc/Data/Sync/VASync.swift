@@ -104,6 +104,15 @@ final class VASync {
     /// Staged uploads and refused uploads of the account's avatar — the blob half of "what has not
     /// reached the account".
     private(set) var blobPendingCount: Int = 0
+    /// **Whether this device has ever read the whole of the signed-in account.** An empty surface
+    /// that is a claim about the *account* — "no workouts yet", "no plans yet" — consults this
+    /// before it says so: on the first launch after a reinstall the rows are on the server and
+    /// have simply not arrived, which the person reading it sees as their training history being
+    /// gone. Durable, so a relaunch answers it before any cycle runs.
+    ///
+    /// Device-sourced surfaces are not account claims and never read it: the Apple Health mirrors
+    /// come from HealthKit on this phone, so their emptiness is true the moment it is rendered.
+    private(set) var hasRestoredAccountData = false
     private(set) var lastError: String?
     /// Set when a sign-out or switch discarded local changes the server never saw.
     private(set) var discardedOnSwitch: Int = 0
@@ -378,6 +387,7 @@ final class VASync {
             lastSyncedAt = nil
             counted = OutboxCensus()
             blobPendingCount = 0
+            hasRestoredAccountData = false
             self.engine = nil
             self.avatars = nil
             onLocalDataCleared?()
@@ -461,6 +471,9 @@ final class VASync {
         self.engine = engine
         self.avatars = avatarStore
         self.nudges = configuration.makeNudgeChannel(credentials, stateFile)
+        // Before the first cycle of this launch: the marker outlives the process, so a returning
+        // user is never shown a restore they already completed.
+        hasRestoredAccountData = engine.hasCompletedFirstPull
 
         scheduler.observe(configuration.makeTriggers(container))
         startNudges()
@@ -509,6 +522,7 @@ final class VASync {
         lastSyncedAt = nil
         counted = OutboxCensus()
         blobPendingCount = 0
+        hasRestoredAccountData = false
     }
 
     /// The non-synced residue a departing account leaves behind, and the other half of the store's
@@ -606,6 +620,7 @@ final class VASync {
     }
 
     private func refreshCounters() {
+        hasRestoredAccountData = engine?.hasCompletedFirstPull ?? false
         guard let state = engine?.state else { return }
         lastSyncedAt = state.lastSyncedAt
         counted = state.counted

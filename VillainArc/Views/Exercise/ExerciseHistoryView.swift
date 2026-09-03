@@ -71,9 +71,11 @@ struct ExerciseHistoryView: View {
         .quickActionContentBottomInset()
         .overlay {
             if performances.isEmpty {
-                ContentUnavailableView("No Exercise History", systemImage: "clock.arrow.circlepath", description: Text("Complete this exercise in a workout to see every performance here."))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryEmptyState)
+                AccountEmptyState {
+                    ContentUnavailableView("No Exercise History", systemImage: "clock.arrow.circlepath", description: Text("Complete this exercise in a workout to see every performance here."))
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseHistoryEmptyState)
+                }
             }
         }
         .modifier(ExerciseHistoryBackgroundModifier(showSheetBackground: showSheetBackground))

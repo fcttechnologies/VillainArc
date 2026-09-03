@@ -58,7 +58,9 @@ struct WeightGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                ContentUnavailableView("No Weight Goals", systemImage: "target", description: Text("Your saved and previous weight goals will appear here."))
+                AccountEmptyState {
+                    ContentUnavailableView("No Weight Goals", systemImage: "target", description: Text("Your saved and previous weight goals will appear here."))
+                }
             }
         }
     }

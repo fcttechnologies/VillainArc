@@ -742,6 +742,10 @@ private struct SleepHistoryMainSection: View {
     
     @ViewBuilder
     private func emptyStateView() -> some View {
+        // Device-sourced, so this is not an account claim and never waits on a first pull: the
+        // Apple Health mirror is read from HealthKit on this phone and never travels on the wire,
+        // so its emptiness is already true at the moment it renders. The goals set over these
+        // metrics do sync, and those empty states are wrapped in `AccountEmptyState`.
         if entries.isEmpty {
             ContentUnavailableView {
                 Label(AccessibilityText.healthHistoryNoHealthDataTitle, systemImage: "heart.text.square")

@@ -13,10 +13,12 @@ struct RecentWorkoutPlanSectionView: View {
             }
 
             if recentWorkoutPlan.isEmpty {
-                ContentUnavailableView("No Workout Plans Created", systemImage: "list.clipboard", description: Text("Tap the \(Image(systemName: "plus")) button to create a workout plan."))
-                    .frame(maxWidth: .infinity)
-                    .appCardStyle()
-                    .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutPlanEmptyState)
+                AccountEmptyState {
+                    ContentUnavailableView("No Workout Plans Created", systemImage: "list.clipboard", description: Text("Tap the \(Image(systemName: "plus")) button to create a workout plan."))
+                        .frame(maxWidth: .infinity)
+                        .appCardStyle()
+                        .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutPlanEmptyState)
+                }
             } else if let plan = recentWorkoutPlan.first {
                 WorkoutPlanRowView(workoutPlan: plan)
                     .accessibilityHint(AccessibilityText.recentWorkoutPlanRowHint)

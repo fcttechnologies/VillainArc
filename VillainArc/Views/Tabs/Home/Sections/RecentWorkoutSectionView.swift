@@ -30,10 +30,12 @@ struct RecentWorkoutSectionView: View {
             }
 
             if recentItem == nil {
-                ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Tap the \(Image(systemName: "plus")) button to start your first workout."))
-                    .frame(maxWidth: .infinity)
-                    .appCardStyle()
-                    .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutEmptyState)
+                AccountEmptyState {
+                    ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Tap the \(Image(systemName: "plus")) button to start your first workout."))
+                        .frame(maxWidth: .infinity)
+                        .appCardStyle()
+                        .accessibilityIdentifier(AccessibilityIdentifiers.recentWorkoutEmptyState)
+                }
             } else if let recentItem {
                 switch recentItem.source {
                 case .session(let workout):

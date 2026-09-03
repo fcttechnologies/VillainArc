@@ -2,15 +2,10 @@ import Foundation
 import SwiftData
 
 enum AccessibilityIdentifiers {
-    // MARK: - Subscription / Paywall
-    static let paywallRoot = "paywallRoot"
-    static let paywallCloseButton = "paywallCloseButton"
-    static let paywallMonthlyOption = "paywallMonthlyOption"
-    static let paywallYearlyOption = "paywallYearlyOption"
-    static let paywallSubscribeButton = "paywallSubscribeButton"
-    static let paywallRestoreButton = "paywallRestoreButton"
-    static let paywallRedeemOfferCodeButton = "paywallRedeemOfferCodeButton"
-    static let paywallPlansLoading = "paywallPlansLoading"
+    // MARK: - Subscription
+    //
+    // The paywall itself is `FCTStoreKit`'s `SubscriptionPaywallView`; what this app still owns is
+    // the route into it from Settings, and the locked row that offers it.
     static let settingsSubscriptionRow = "settingsSubscriptionRow"
     static let settingsSubscriptionGetProButton = "settingsSubscriptionGetProButton"
     static let settingsSubscriptionManageButton = "settingsSubscriptionManageButton"
@@ -201,6 +196,8 @@ enum AccessibilityIdentifiers {
     static let workoutsDoneEditingButton = "workoutsDoneEditingButton"
     static let workoutsEditButton = "workoutsEditButton"
     static let workoutsEmptyState = "workoutsEmptyState"
+    /// Shown in place of any account-claim empty state until the first pull lands.
+    static let accountRestoringState = "accountRestoringState"
     static let healthWorkoutRow = "healthWorkoutRow"
 
     // MARK: - WorkoutPlansListView

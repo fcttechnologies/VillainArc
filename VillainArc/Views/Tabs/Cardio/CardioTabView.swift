@@ -163,9 +163,11 @@ struct CardioTabView: View {
                         startCardioSection
 
                         if mergedHistory.isEmpty {
-                            ContentUnavailableView("No Cardio Yet", systemImage: "figure.run", description: Text("Outdoor routes and treadmill sessions will show up here."))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 24)
+                            AccountEmptyState {
+                                ContentUnavailableView("No Cardio Yet", systemImage: "figure.run", description: Text("Outdoor routes and treadmill sessions will show up here."))
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 24)
+                            }
                         } else {
                             recentHistorySection
                         }

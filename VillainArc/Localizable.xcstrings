@@ -792,6 +792,71 @@
         }
       }
     },
+    "Restoring Your Data" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Daten werden wiederhergestellt"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restoring Your Data"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurando tus datos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restauration de tes données"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ripristino dei tuoi dati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "データを復元中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "데이터 복원 중"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Restaurando seus dados"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Восстановление твоих данных"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在恢复你的数据"
+          }
+        }
+      }
+    },
     "Sign in again to sync" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -1308,6 +1373,71 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重量、次数和休息一目了然，上次的记录就在旁边。"
+          }
+        }
+      }
+    },
+    "Your account is syncing to this device. Everything you've logged will appear here as it arrives." : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein Konto wird mit diesem Gerät synchronisiert. Alles, was du erfasst hast, erscheint hier, sobald es ankommt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your account is syncing to this device. Everything you've logged will appear here as it arrives."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu cuenta se está sincronizando con este dispositivo. Todo lo que has registrado aparecerá aquí a medida que llegue."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ton compte se synchronise avec cet appareil. Tout ce que tu as enregistré apparaîtra ici au fur et à mesure."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo account si sta sincronizzando con questo dispositivo. Tutto ciò che hai registrato apparirà qui man mano che arriva."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アカウントをこのデバイスに同期しています。記録したものは順次ここに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "계정을 이 기기에 동기화하는 중입니다. 기록한 내용이 도착하는 대로 여기에 표시됩니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua conta está sincronizando com este dispositivo. Tudo o que você registrou aparecerá aqui conforme chegar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Твой аккаунт синхронизируется с этим устройством. Всё, что ты записал, появится здесь по мере поступления."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在将你的账户同步到此设备。你记录的内容会陆续显示在这里。"
           }
         }
       }

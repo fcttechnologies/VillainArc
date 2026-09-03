@@ -42,7 +42,9 @@ struct SleepGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                ContentUnavailableView("No Sleep Goals", systemImage: "target", description: Text("Your saved and previous sleep goals will appear here."))
+                AccountEmptyState {
+                    ContentUnavailableView("No Sleep Goals", systemImage: "target", description: Text("Your saved and previous sleep goals will appear here."))
+                }
             }
         }
     }

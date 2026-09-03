@@ -74,11 +74,13 @@ struct TrainingConditionHistoryView: View {
     @ViewBuilder
     private var historySection: some View {
         if endedPeriods.isEmpty {
-            ContentUnavailableView("No Condition History", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90", description: Text("Ended or replaced conditions will appear here."))
-                .frame(maxWidth: .infinity)
-                .padding()
-                .appCardStyle()
-                .listRowSeparator(.hidden)
+            AccountEmptyState {
+                ContentUnavailableView("No Condition History", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90", description: Text("Ended or replaced conditions will appear here."))
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .appCardStyle()
+                    .listRowSeparator(.hidden)
+            }
         } else {
             ForEach(endedPeriods) { period in
                 TrainingConditionHistoryRow(period: period, isActive: false)
