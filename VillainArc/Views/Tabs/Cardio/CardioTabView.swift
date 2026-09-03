@@ -1,6 +1,7 @@
 import AppIntents
 import CoreLocation
 import SwiftData
+import FCTMetrics
 import SwiftUI
 import HealthKit
 
@@ -214,6 +215,7 @@ struct CardioTabView: View {
             }
         }
         .id(router.cardioTabResetToken)
+        .diagScreen(VACrumb.cardioTab)
     }
 
     private var startCardioSection: some View {

@@ -1,4 +1,5 @@
 import SwiftData
+import FCTMetrics
 import SwiftUI
 
 struct HomeTabView: View {
@@ -61,6 +62,7 @@ struct HomeTabView: View {
             }
         }
         .id(router.homeTabResetToken)
+        .diagScreen(VACrumb.homeTab)
     }
 }
 

@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import Charts
@@ -52,6 +53,7 @@ struct HealthWorkoutDetailView: View {
                 }
             }
         }
+        .diagScreen(VACrumb.healthWorkoutDetail)
         .task(id: workout.healthWorkoutUUID) {
             await loader.loadIfNeeded(distanceUnit: distanceUnit, estimatedMaxHeartRate: estimatedMaxHeartRate)
         }

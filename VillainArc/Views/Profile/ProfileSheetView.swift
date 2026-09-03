@@ -1,4 +1,5 @@
 import FCTAccountProfile
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -130,6 +131,7 @@ struct ProfileSheetView: View {
             .quickActionContentBottomInset()
             .scrollIndicators(.hidden)
             .appBackground()
+            .diagScreen(VACrumb.profileTab)
             .sheet(isPresented: $showAppSettings) {
                 AppSettingsView(initialDestination: settingsDestination)
                     .presentationBackground(Color.sheetBg)

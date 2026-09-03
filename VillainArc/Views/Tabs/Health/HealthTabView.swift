@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 struct HealthTabView: View {
@@ -88,6 +89,7 @@ struct HealthTabView: View {
             }
         }
         .id(router.healthTabResetToken)
+        .diagScreen(VACrumb.healthTab)
     }
 }
 
