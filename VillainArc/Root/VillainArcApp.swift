@@ -1,5 +1,6 @@
 import FCTComponentsUI
 import FCTMetrics
+import FCTStoreKit
 #if DEBUG
 import FCTScreenshotStudio
 #endif
@@ -49,7 +50,13 @@ struct VillainArcApp: App {
             try? Tips.configure([.datastoreLocation(.applicationDefault)])
             Task { await CardioFavoriteTip.appLaunched.donate() }
         }
-        SubscriptionStore.shared.start()
+        VAPro.store.start()
+        #if DEBUG
+        // The Screenshot Studio's entitlement toggle, read once at launch. It writes a
+        // `UserDefaults` flag the store cannot observe, so flipping it mid-session takes effect on
+        // the next launch — which is what a capture run does anyway.
+        VAPro.store.debugForcePro = DebugSubscriptionOverride.forcePro
+        #endif
     }
 
     var body: some Scene {

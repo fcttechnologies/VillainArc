@@ -1,5 +1,6 @@
 import FCTAccount
 import FCTServerSync
+import FCTStoreKit
 import SwiftUI
 
 /// The FCT account block in Settings: identity, sync status, sign-out, and the two deletion
@@ -11,14 +12,14 @@ import SwiftUI
 /// this one, never a copy of the rule.
 struct VAAccountSection: View {
     @State private var sync = VASync.shared
-    @State private var subscriptionStore = SubscriptionStore.shared
+    @State private var subscriptionStore = VAPro.store
 
     var body: some View {
         let deletion = deletionDoor
         AccountSettingsSection(
             controller: VAAccount.controller,
             appData: deletion,
-            hasActiveSubscription: subscriptionStore.status.isPro,
+            hasActiveSubscription: subscriptionStore.isPro,
             syncStatus: { VASyncStatusRow(sync: sync) },
             beforeSignOut: {
                 let census = await VASync.shared.signOutPreflight()

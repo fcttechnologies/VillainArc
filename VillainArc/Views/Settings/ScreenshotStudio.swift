@@ -1,5 +1,6 @@
 #if DEBUG
 import FCTScreenshotStudio
+import FCTStoreKit
 import SwiftData
 import SwiftUI
 
@@ -43,7 +44,7 @@ enum ScreenshotStudioCatalog {
             AnyView(NavigationStack { SleepTimingInsightsView() })
         },
         ScreenshotStudioScene(id: "paywall", title: "Pro Paywall", detail: "Subscription review shot", symbol: "crown.fill") {
-            AnyView(PaywallView(triggeringFeature: .aiPlanGeneration))
+            AnyView(SubscriptionPaywallView(feature: PremiumFeature.aiPlanGeneration, store: VAPro.store, presenter: VAPro.presenter, branding: VAPro.branding))
         },
     ]
 }

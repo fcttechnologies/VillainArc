@@ -182,7 +182,9 @@ if ! leg_wait unit-suite; then
   fail "unit suite failed (log: ${TEST_LOG})"
 fi
 check_warnings "${TEST_LOG}" "unit suite"
-TEST_COUNT="$(sed -n 's/.*Test run with \([0-9]*\) tests.*/\1/p' "${TEST_LOG}" | tail -1)"
+# `tests\?` because swift-testing writes the singular for one test, which a narrowed `--only` run
+# routinely is — and an unread count is reported as "the suite may not have run".
+TEST_COUNT="$(sed -n 's/.*Test run with \([0-9]*\) tests\{0,1\}[ .].*/\1/p' "${TEST_LOG}" | tail -1)"
 [ -n "${TEST_COUNT}" ] || fail "could not read a test count from ${TEST_LOG} — the suite may not have run"
 # The floor is about the WHOLE suite still being compiled and listed, so a deliberately narrowed
 # run is not measured against it — four tests out of `--only` is the point, not a regression.

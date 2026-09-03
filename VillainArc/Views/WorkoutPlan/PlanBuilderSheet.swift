@@ -1,3 +1,4 @@
+import FCTStoreKit
 import SwiftUI
 import SwiftData
 
@@ -38,7 +39,7 @@ struct PlanBuilderSheet: View {
                     Section {
                         Button {
                             Haptics.selection()
-                            SubscriptionGate.require(.aiPlanGeneration) {
+                            VAPro.gate.require(.aiPlanGeneration) {
                                 showAIPrompt = true
                             }
                         } label: {
@@ -56,7 +57,7 @@ struct PlanBuilderSheet: View {
                                         .multilineTextAlignment(.leading)
                                 }
                                 Spacer()
-                                if !SubscriptionGate.isPro {
+                                if !VAPro.gate.isPro {
                                     Image(systemName: "lock.fill")
                                         .foregroundStyle(.purple)
                                         .accessibilityHidden(true)
@@ -73,7 +74,7 @@ struct PlanBuilderSheet: View {
 
                         Button {
                             Haptics.selection()
-                            SubscriptionGate.require(.aiPlanGeneration) {
+                            VAPro.gate.require(.aiPlanGeneration) {
                                 showImportPrompt = true
                             }
                         } label: {
@@ -91,7 +92,7 @@ struct PlanBuilderSheet: View {
                                         .multilineTextAlignment(.leading)
                                 }
                                 Spacer()
-                                if !SubscriptionGate.isPro {
+                                if !VAPro.gate.isPro {
                                     Image(systemName: "lock.fill")
                                         .foregroundStyle(.purple)
                                         .accessibilityHidden(true)

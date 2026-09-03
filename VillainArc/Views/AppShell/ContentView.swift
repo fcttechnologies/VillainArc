@@ -1,4 +1,5 @@
 import FCTComponentsUI
+import FCTStoreKit
 import SwiftUI
 import SwiftData
 import TipKit
@@ -7,7 +8,7 @@ struct ContentView: View {
     @Environment(\.showToast) private var showToast
     @State private var router = AppRouter.shared
     @State private var isMorphingTabBarExpanded = false
-    @State private var paywallPresenter = PaywallPresenter.shared
+    @State private var paywallPresenter = VAPro.presenter
     @Namespace private var animation
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     
@@ -157,7 +158,7 @@ struct ContentView: View {
             .presentationBackground(Color.sheetBg)
         }
         .fullScreenCover(item: $paywallPresenter.trigger) { feature in
-            PaywallView(triggeringFeature: feature)
+            SubscriptionPaywallView(feature: feature, store: VAPro.store, presenter: VAPro.presenter, branding: VAPro.branding)
         }
     }
     

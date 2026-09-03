@@ -1,3 +1,4 @@
+import FCTStoreKit
 import SwiftUI
 
 struct HealthTrendsSectionCard: View {
@@ -5,7 +6,7 @@ struct HealthTrendsSectionCard: View {
 
     var body: some View {
         Button {
-            SubscriptionGate.require(.healthTrends) {
+            VAPro.gate.require(.healthTrends) {
                 router.push(to: .healthTrends)
                 Task { await IntentDonations.donateShowHealthTrends() }
             }
@@ -27,7 +28,7 @@ struct HealthTrendsSectionCard: View {
                         .lineLimit(1)
                 }
                 Spacer()
-                if !SubscriptionGate.isPro {
+                if !VAPro.gate.isPro {
                     Image(systemName: "lock.fill")
                         .font(.caption)
                         .foregroundStyle(.purple)

@@ -1,3 +1,4 @@
+import FCTStoreKit
 import SwiftUI
 import SwiftData
 
@@ -40,7 +41,7 @@ struct ReplaceExerciseView: View {
     }
 
     private var showAILockedTeaser: Bool {
-        AIExerciseReplacementSuggester.isAvailable && !SubscriptionGate.isPro
+        AIExerciseReplacementSuggester.isAvailable && !VAPro.gate.isPro
     }
 
     var body: some View {
@@ -159,7 +160,7 @@ struct ReplaceExerciseView: View {
     private var aiLockedTeaser: some View {
         Button {
             Haptics.selection()
-            PaywallPresenter.shared.present(for: .aiExerciseReplacement)
+            VAPro.presenter.present(for: .aiExerciseReplacement)
         } label: {
             HStack(spacing: 12) {
                 Image(systemName: "sparkles")
@@ -193,7 +194,7 @@ struct ReplaceExerciseView: View {
 
     @MainActor
     private func loadAISuggestionsIfNeeded() async {
-        guard SubscriptionGate.isPro, AIExerciseReplacementSuggester.isAvailable, !aiSuggestionsLoaded, !aiSuggestionsLoading else { return }
+        guard VAPro.gate.isPro, AIExerciseReplacementSuggester.isAvailable, !aiSuggestionsLoaded, !aiSuggestionsLoading else { return }
         aiSuggestionsLoading = true
 
         let currentCatalogItem = ExerciseCatalog.all.first { $0.id == currentCatalogID }

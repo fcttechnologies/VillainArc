@@ -25,6 +25,8 @@
 		0F00ACC4201BC44A3D451123 /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = D9589A0FAF7667BC425CCA9A /* FCTSync */; };
 		7B3C1A9E4D25F0816AC3E5D9 /* FCTOnboarding in Frameworks */ = {isa = PBXBuildFile; productRef = 6E92D4C10FA37B58E2416D0A /* FCTOnboarding */; };
 		9C41E7A20B5D48F1A6E30001 /* FCTScreenshotStudio in Frameworks */ = {isa = PBXBuildFile; productRef = 9C41E7A20B5D48F1A6E30002 /* FCTScreenshotStudio */; };
+		A1C0FF11E0A57A5701000021 /* FCTStoreKit in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FF11E0A57A5701000020 /* FCTStoreKit */; };
+		A1C0FF11E0A57A5701000023 /* FCTStoreKitTesting in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FF11E0A57A5701000022 /* FCTStoreKitTesting */; };
 		354CA66B2F535701005622B1 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 354CA66A2F535701005622B1 /* README.md */; };
 		38F5B4EA9DF12A08A0B96B49 /* FCTEntities in Frameworks */ = {isa = PBXBuildFile; productRef = B4373FF459A151B3B305FDAA /* FCTEntities */; };
 		8E388E3FF8AA1FB43DC8C1CB /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = C5EC413C794E0ED7DF5B6881 /* FCTSync */; };
@@ -359,6 +361,7 @@
 				B33E569A214B3C6F6ECC535D /* FCTBlobSync in Frameworks */,
 				196E9675A290A7AC27404DC8 /* FCTServerSyncTesting in Frameworks */,
 				DB9514D7555E43B23B1723BC /* FCTBlobSyncTesting in Frameworks */,
+				A1C0FF11E0A57A5701000023 /* FCTStoreKitTesting in Frameworks */,
 				DB5153E291329ED28DE3BE58 /* FCTEntities in Frameworks */,
 				0EFD2294144CA53AFC24080B /* FCTSync in Frameworks */,
 			);
@@ -403,6 +406,7 @@
 				0F00ACC4201BC44A3D451123 /* FCTSync in Frameworks */,
 				7B3C1A9E4D25F0816AC3E5D9 /* FCTOnboarding in Frameworks */,
 				9C41E7A20B5D48F1A6E30001 /* FCTScreenshotStudio in Frameworks */,
+				A1C0FF11E0A57A5701000021 /* FCTStoreKit in Frameworks */,
 				A1C0FF11E0A57A5701000001 /* FCTComponentsUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -487,6 +491,7 @@
 			packageProductDependencies = (
 				C382025D55A14347E9C351BD /* FCTEntities */,
 				57CA85F33D542E5A71727A42 /* FCTSync */,
+				A1C0FF11E0A57A5701000022 /* FCTStoreKitTesting */,
 			);
 			productName = VillainArcTests;
 			productReference = FD68245C2F33A712009F6D98 /* VillainArcTests.xctest */;
@@ -568,6 +573,7 @@
 				D9589A0FAF7667BC425CCA9A /* FCTSync */,
 				6E92D4C10FA37B58E2416D0A /* FCTOnboarding */,
 				9C41E7A20B5D48F1A6E30002 /* FCTScreenshotStudio */,
+				A1C0FF11E0A57A5701000020 /* FCTStoreKit */,
 				A1C0FF11E0A57A5701000002 /* FCTComponentsUI */,
 			);
 			productName = VillainArc;
@@ -1460,6 +1466,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
 			productName = FCTScreenshotStudio;
+		};
+		A1C0FF11E0A57A5701000020 /* FCTStoreKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTStoreKit;
+		};
+		A1C0FF11E0A57A5701000022 /* FCTStoreKitTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTStoreKitTesting;
 		};
 		FDAB6AF02FC769540085E0F0 /* MuscleMap */ = {
 			isa = XCSwiftPackageProductDependency;

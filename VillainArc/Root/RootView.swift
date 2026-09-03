@@ -46,6 +46,9 @@ struct RootView: View {
                     Task { await onboardingManager.startOnboarding() }
                 }
                 await VAAccount.controller.resume()
+                // The store's server half needs the session that `resume()` just restored: the
+                // claim posted here is what carries a purchase made before anyone signed in.
+                await VAPro.accountChanged(to: VAAccount.controller.credentials)
                 await onboardingManager.startOnboarding()
             }
             .onChange(of: scenePhase) { _, phase in
@@ -62,6 +65,9 @@ struct RootView: View {
                 }
             }
             .onChange(of: VAAccount.controller.state) { _, newState in
+                // A sign-in binds the entitlement client and reads the account's row; a sign-out
+                // releases it and keeps whatever this device's own Apple ID bought.
+                Task { await VAPro.accountChanged(to: VAAccount.controller.credentials) }
                 // Losing the session closes the app behind the gate, whatever caused it: an
                 // involuntary expiry, or a sign-out whose local clear was refused because this
                 // device still holds unpushed work. One sign-in reopens it — nothing local is

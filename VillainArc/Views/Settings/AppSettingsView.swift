@@ -4,6 +4,7 @@ import FCTBlobSync
 import FCTFeedback
 import FCTMetrics
 import FCTOnboarding
+import FCTStoreKit
 import FCTSupport
 import SwiftUI
 #if DEBUG
@@ -125,7 +126,7 @@ private struct AppSettingsFormView: View {
     let includeQuickActionInset: Bool
     @Binding var presentedLegalDestination: SettingsLegalDestination?
     @State private var latestDiagnostic: DiagnosticDescriptor?
-    @State private var subscriptionStore = SubscriptionStore.shared
+    @State private var subscriptionStore = VAPro.store
     @State private var isRestoringSubscription = false
     @State private var restoreMessage: String?
     @State private var isShowingFeedbackBoard = false
@@ -287,7 +288,7 @@ private struct AppSettingsFormView: View {
                     .appGroupedListRow(position: .top)
                 Button {
                     Haptics.selection()
-                    UIApplication.shared.open(SubscriptionStore.manageSubscriptionsURL)
+                    UIApplication.shared.open(PaywallBranding.manageSubscriptionsURL)
                 } label: {
                     Label("Manage Subscription", systemImage: "creditcard")
                 }
@@ -297,7 +298,7 @@ private struct AppSettingsFormView: View {
             } else {
                 Button {
                     Haptics.selection()
-                    PaywallPresenter.shared.present(for: .aiPlanGeneration)
+                    VAPro.presenter.present(for: .aiPlanGeneration)
                 } label: {
                     HStack(spacing: 12) {
                         Image(systemName: "sparkles")
@@ -402,10 +403,10 @@ private struct AppSettingsFormView: View {
     }
 
     private func planName(for productID: String) -> String {
-        switch productID {
-        case SubscriptionStore.monthlyProductID: return String(localized: "Monthly")
-        case SubscriptionStore.yearlyProductID: return String(localized: "Yearly")
-        default: return String(localized: "Pro")
+        switch VAPro.catalog.tier(of: productID) {
+        case .monthly: return String(localized: "Monthly")
+        case .yearly: return String(localized: "Yearly")
+        case .lifetime, nil: return String(localized: "Pro")
         }
     }
 

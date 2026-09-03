@@ -1,4 +1,5 @@
 import FCTMetrics
+import FCTStoreKit
 import SwiftUI
 
 struct HealthTabView: View {
@@ -62,22 +63,22 @@ struct HealthTabView: View {
                 case .wristTemperatureHistory:
                     HealthWristTemperatureHistoryView()
                 case .healthTrends:
-                    if SubscriptionGate.isPro {
+                    if VAPro.gate.isPro {
                         HealthTrendsView()
                     } else {
-                        PremiumLockedView(feature: .healthTrends)
+                        VAPro.lockedView(.healthTrends)
                     }
                 case .sleepTimingInsights:
-                    if SubscriptionGate.isPro {
+                    if VAPro.gate.isPro {
                         SleepTimingInsightsView()
                     } else {
-                        PremiumLockedView(feature: .sleepTimingInsights)
+                        VAPro.lockedView(.sleepTimingInsights)
                     }
                 case .correlationInsights:
-                    if SubscriptionGate.isPro {
+                    if VAPro.gate.isPro {
                         CorrelationInsightsView()
                     } else {
-                        PremiumLockedView(feature: .correlationInsights)
+                        VAPro.lockedView(.correlationInsights)
                     }
                 case .allWeightEntriesList:
                     AllWeightEntriesListView()
