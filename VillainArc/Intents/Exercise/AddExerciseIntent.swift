@@ -14,27 +14,29 @@ struct AddExerciseIntent: AppIntent {
     @Parameter(title: "Exercise", requestValueDialog: IntentDialog("Which exercise?")) var exercise: ExerciseEntity
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
 
-        let exerciseID = exercise.id
-        guard let resolvedExercise = try? context.fetch(Exercise.withCatalogID(exerciseID)).first else { return .result(dialog: "Exercise not found.") }
+            let exerciseID = exercise.id
+            guard let resolvedExercise = try? context.fetch(Exercise.withCatalogID(exerciseID)).first else { return .result(dialog: "Exercise not found.") }
 
-        if let workout = try? context.fetch(WorkoutSession.incomplete).first {
-            workout.addExercise(resolvedExercise)
-            resolvedExercise.updateLastAddedAt()
-            saveContext(context: context)
-            WorkoutActivityManager.update(for: workout)
-            return .result(dialog: "Added \(resolvedExercise.name) to your workout.")
+            if let workout = try? context.fetch(WorkoutSession.incomplete).first {
+                workout.addExercise(resolvedExercise)
+                resolvedExercise.updateLastAddedAt()
+                saveContext(context: context)
+                WorkoutActivityManager.update(for: workout)
+                return .result(dialog: "Added \(resolvedExercise.name) to your workout.")
+            }
+
+            if let workoutPlan = try? context.fetch(WorkoutPlan.incomplete).first {
+                workoutPlan.addExercise(resolvedExercise)
+                resolvedExercise.updateLastAddedAt()
+                saveContext(context: context)
+                return .result(dialog: "Added \(resolvedExercise.name) to your template.")
+            }
+
+            return .result(dialog: "No active workout or workout plan found.")
         }
-
-        if let workoutPlan = try? context.fetch(WorkoutPlan.incomplete).first {
-            workoutPlan.addExercise(resolvedExercise)
-            resolvedExercise.updateLastAddedAt()
-            saveContext(context: context)
-            return .result(dialog: "Added \(resolvedExercise.name) to your template.")
-        }
-
-        return .result(dialog: "No active workout or workout plan found.")
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

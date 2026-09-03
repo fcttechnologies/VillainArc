@@ -11,9 +11,11 @@ struct GetWeightIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        let snapshot = try loadHealthDaySnapshot(for: .now, context: context)
-        return .result(dialog: IntentDialog(stringLiteral: healthMetricDialog(for: .weight, snapshot: snapshot)))
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            let snapshot = try loadHealthDaySnapshot(for: .now, context: context)
+            return .result(dialog: IntentDialog(stringLiteral: healthMetricDialog(for: .weight, snapshot: snapshot)))
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

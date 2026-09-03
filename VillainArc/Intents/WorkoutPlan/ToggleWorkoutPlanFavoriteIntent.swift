@@ -14,25 +14,27 @@ struct ToggleWorkoutPlanFavoriteIntent: AppIntent {
     @Parameter(title: "Workout Plan", requestValueDialog: IntentDialog("Which workout plan would you like to update?")) var workoutPlan: WorkoutPlanEntity
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
 
-        let workoutPlanID = workoutPlan.id
-        let predicate = #Predicate<WorkoutPlan> { $0.id == workoutPlanID }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
+            let workoutPlanID = workoutPlan.id
+            let predicate = #Predicate<WorkoutPlan> { $0.id == workoutPlanID }
+            var descriptor = FetchDescriptor(predicate: predicate)
+            descriptor.fetchLimit = 1
 
-        guard let storedPlan = try context.fetch(descriptor).first else { throw ToggleWorkoutPlanFavoriteIntentError.workoutPlanNotFound }
-        guard storedPlan.completed else { throw ToggleWorkoutPlanFavoriteIntentError.workoutPlanIncomplete }
+            guard let storedPlan = try context.fetch(descriptor).first else { throw ToggleWorkoutPlanFavoriteIntentError.workoutPlanNotFound }
+            guard storedPlan.completed else { throw ToggleWorkoutPlanFavoriteIntentError.workoutPlanIncomplete }
 
-        let willBeFavorite = !storedPlan.favorite
-        storedPlan.favorite = willBeFavorite
-        saveContext(context: context)
-        if willBeFavorite {
-            return .result(dialog: "Workout plan marked as favorite.")
-        } else {
-            return .result(dialog: "Workout plan removed from favorites.")
+            let willBeFavorite = !storedPlan.favorite
+            storedPlan.favorite = willBeFavorite
+            saveContext(context: context)
+            if willBeFavorite {
+                return .result(dialog: "Workout plan marked as favorite.")
+            } else {
+                return .result(dialog: "Workout plan removed from favorites.")
+            }
         }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

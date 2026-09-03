@@ -11,18 +11,20 @@ struct ViewLastUsedExerciseIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        guard let history = try context.fetch(ExerciseHistory.recentCompleted(limit: 1)).first else { throw ViewLastUsedExerciseError.noExerciseHistoryFound }
+            guard let history = try context.fetch(ExerciseHistory.recentCompleted(limit: 1)).first else { throw ViewLastUsedExerciseError.noExerciseHistoryFound }
 
-        let storedExercise = try context.fetch(Exercise.withCatalogID(history.catalogID)).first
-        guard let storedExercise else { throw ViewLastUsedExerciseError.noExerciseHistoryFound }
+            let storedExercise = try context.fetch(Exercise.withCatalogID(history.catalogID)).first
+            guard let storedExercise else { throw ViewLastUsedExerciseError.noExerciseHistoryFound }
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.navigate(to: .exerciseDetail(storedExercise.catalogID))
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.navigate(to: .exerciseDetail(storedExercise.catalogID))
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

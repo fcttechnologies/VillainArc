@@ -14,24 +14,26 @@ struct SaveWorkoutAsPlanIntent: AppIntent {
     @Parameter(title: "Workout", requestValueDialog: IntentDialog("Which workout would you like to save as a plan?")) var workout: WorkoutSessionEntity
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
 
-        let workoutID = workout.id
-        guard let storedWorkout = try context.fetch(WorkoutSession.byIDForSaveAsPlan(workoutID)).first else { throw SaveWorkoutAsPlanError.workoutNotFound }
-        // First validation: don't create duplicates when the workout is already linked.
-        guard storedWorkout.workoutPlan == nil else { throw SaveWorkoutAsPlanError.workoutAlreadyHasPlan }
-        guard storedWorkout.status == SessionStatus.done.rawValue else { throw SaveWorkoutAsPlanError.workoutIncomplete }
+            let workoutID = workout.id
+            guard let storedWorkout = try context.fetch(WorkoutSession.byIDForSaveAsPlan(workoutID)).first else { throw SaveWorkoutAsPlanError.workoutNotFound }
+            // First validation: don't create duplicates when the workout is already linked.
+            guard storedWorkout.workoutPlan == nil else { throw SaveWorkoutAsPlanError.workoutAlreadyHasPlan }
+            guard storedWorkout.status == SessionStatus.done.rawValue else { throw SaveWorkoutAsPlanError.workoutIncomplete }
 
-        let plan = WorkoutPlan(from: storedWorkout, completed: true)
-        context.insert(plan)
-        storedWorkout.workoutPlan = plan
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutPlan: plan)
+            let plan = WorkoutPlan(from: storedWorkout, completed: true)
+            context.insert(plan)
+            storedWorkout.workoutPlan = plan
+            saveContext(context: context)
+            SpotlightIndexer.index(workoutPlan: plan)
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.navigate(to: .workoutPlanDetail(plan, false))
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.navigate(to: .workoutPlanDetail(plan, false))
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

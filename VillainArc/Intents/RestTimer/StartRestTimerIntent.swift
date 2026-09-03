@@ -17,19 +17,21 @@ struct StartRestTimerIntent: AppIntent {
     @Parameter(title: "Duration", defaultUnit: .seconds, supportsNegativeNumbers: false, requestValueDialog: IntentDialog("How long should the rest timer be?")) var duration: Measurement<UnitDuration>
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
+        func run() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
+            let context = SharedModelContainer.container.mainContext
 
-        guard (try? context.fetch(WorkoutSession.incomplete).first) != nil else { throw RestTimerIntentError.noWorkoutSession }
+            guard (try? context.fetch(WorkoutSession.incomplete).first) != nil else { throw RestTimerIntentError.noWorkoutSession }
 
-        let durationSeconds = Int(duration.converted(to: .seconds).value.rounded())
-        guard durationSeconds > 0 else { throw RestTimerIntentError.invalidDuration }
+            let durationSeconds = Int(duration.converted(to: .seconds).value.rounded())
+            guard durationSeconds > 0 else { throw RestTimerIntentError.invalidDuration }
 
-        let clampedSeconds = min(durationSeconds, Self.maximumRestSeconds)
-        RestTimerState.shared.start(seconds: clampedSeconds)
-        RestTimeHistory.record(seconds: clampedSeconds, context: context)
-        saveContext(context: context)
+            let clampedSeconds = min(durationSeconds, Self.maximumRestSeconds)
+            RestTimerState.shared.start(seconds: clampedSeconds)
+            RestTimeHistory.record(seconds: clampedSeconds, context: context)
+            saveContext(context: context)
 
-        return .result(dialog: "Rest timer started for \(secondsToTime(clampedSeconds)).", snippetIntent: RestTimerSnippetIntent())
+            return .result(dialog: "Rest timer started for \(secondsToTime(clampedSeconds)).", snippetIntent: RestTimerSnippetIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

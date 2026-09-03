@@ -46,39 +46,41 @@ struct CreateWeightGoalIntent: AppIntent {
     var targetWeight: Double
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        let settings = AppSettingsSnapshot(settings: try context.fetch(AppSettings.single).first)
-        let targetWeightKg = settings.weightUnit.toKg(targetWeight)
-        guard targetWeightKg > 0 else {
-            return .result(dialog: "Your target weight needs to be more than 0.")
-        }
-
-        let startWeightKg = (try? context.fetch(WeightEntry.latest).first?.weight) ?? targetWeightKg
-        let modelGoalType = goalType.modelValue
-        if let validationMessage = validationMessage(for: modelGoalType, startWeightKg: startWeightKg, targetWeightKg: targetWeightKg) {
-            return .result(dialog: IntentDialog(stringLiteral: validationMessage))
-        }
-
-        let goalStartDate = Date()
-        if let activeGoal = try context.fetch(WeightGoal.active).first {
-            if Calendar.autoupdatingCurrent.isDate(activeGoal.startedAt, inSameDayAs: goalStartDate) {
-                context.delete(activeGoal)
-            } else {
-                activeGoal.endedAt = goalStartDate
-                activeGoal.endReason = .replaced
+            let settings = AppSettingsSnapshot(settings: try context.fetch(AppSettings.single).first)
+            let targetWeightKg = settings.weightUnit.toKg(targetWeight)
+            guard targetWeightKg > 0 else {
+                return .result(dialog: "Your target weight needs to be more than 0.")
             }
+
+            let startWeightKg = (try? context.fetch(WeightEntry.latest).first?.weight) ?? targetWeightKg
+            let modelGoalType = goalType.modelValue
+            if let validationMessage = validationMessage(for: modelGoalType, startWeightKg: startWeightKg, targetWeightKg: targetWeightKg) {
+                return .result(dialog: IntentDialog(stringLiteral: validationMessage))
+            }
+
+            let goalStartDate = Date()
+            if let activeGoal = try context.fetch(WeightGoal.active).first {
+                if Calendar.autoupdatingCurrent.isDate(activeGoal.startedAt, inSameDayAs: goalStartDate) {
+                    context.delete(activeGoal)
+                } else {
+                    activeGoal.endedAt = goalStartDate
+                    activeGoal.endReason = .replaced
+                }
+            }
+
+            let goal = WeightGoal(type: modelGoalType, startWeight: startWeightKg, targetWeight: targetWeightKg, targetDate: nil, targetRatePerWeek: nil)
+            goal.startedAt = goalStartDate
+            context.insert(goal)
+            saveContext(context: context)
+            HealthMetricWidgetReloader.reloadWeight()
+
+            return .result(dialog: "Your \(modelGoalType.title.lowercased()) goal target is now \(formattedWeightText(targetWeightKg, unit: settings.weightUnit)).")
         }
-
-        let goal = WeightGoal(type: modelGoalType, startWeight: startWeightKg, targetWeight: targetWeightKg, targetDate: nil, targetRatePerWeek: nil)
-        goal.startedAt = goalStartDate
-        context.insert(goal)
-        saveContext(context: context)
-        HealthMetricWidgetReloader.reloadWeight()
-
-        return .result(dialog: "Your \(modelGoalType.title.lowercased()) goal target is now \(formattedWeightText(targetWeightKg, unit: settings.weightUnit)).")
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 
     private func validationMessage(for type: WeightGoalType, startWeightKg: Double, targetWeightKg: Double) -> String? {

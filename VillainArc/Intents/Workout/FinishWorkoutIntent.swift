@@ -11,71 +11,73 @@ struct FinishWorkoutIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        guard let workoutSession = try? context.fetch(WorkoutSession.incomplete).first else { throw FinishWorkoutError.noWorkoutSession }
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            guard let workoutSession = try? context.fetch(WorkoutSession.incomplete).first else { throw FinishWorkoutError.noWorkoutSession }
 
-        guard workoutSession.statusValue == .active else { throw FinishWorkoutError.noActiveWorkout }
-        guard !(workoutSession.exercises?.isEmpty ?? false) else { throw FinishWorkoutError.noExercises }
+            guard workoutSession.statusValue == .active else { throw FinishWorkoutError.noActiveWorkout }
+            guard !(workoutSession.exercises?.isEmpty ?? false) else { throw FinishWorkoutError.noExercises }
 
-        let shouldPromptForPostWorkoutEffort = (try? context.fetch(AppSettings.single).first)?.promptForPostWorkoutEffort ?? true
+            let shouldPromptForPostWorkoutEffort = (try? context.fetch(AppSettings.single).first)?.promptForPostWorkoutEffort ?? true
 
-        if shouldPromptForPostWorkoutEffort {
-            AppRouter.shared.presentFinishWorkoutFlow(for: workoutSession)
+            if shouldPromptForPostWorkoutEffort {
+                AppRouter.shared.presentFinishWorkoutFlow(for: workoutSession)
+                return .result(opensIntent: OpenAppIntent())
+            }
+
+            let summary = workoutSession.unfinishedSetSummary
+            let finishAction: WorkoutFinishAction
+            switch summary.caseType {
+            case .none: finishAction = .finish
+            case .emptyAndLogged:
+                let markOption = IntentChoiceOption(title: "Mark logged sets as complete", style: .default)
+                let deleteOption = IntentChoiceOption(title: "Delete all unfinished sets", style: .destructive)
+                let choice = try await requestChoice(between: [markOption, deleteOption, .cancel], dialog: IntentDialog(emptyAndLoggedDialog(loggedCount: summary.loggedCount, emptyCount: summary.emptyCount)))
+                switch choice.style {
+                case .default: finishAction = .markLoggedComplete
+                case .destructive: finishAction = .deleteUnfinished
+                default: throw FinishWorkoutError.cancelled
+                }
+            case .loggedOnly:
+                let markOption = IntentChoiceOption(title: "Mark as complete", style: .default)
+                let deleteOption = IntentChoiceOption(title: "Delete these sets", style: .destructive)
+                let choice = try await requestChoice(between: [markOption, deleteOption, .cancel], dialog: IntentDialog(loggedOnlyDialog(loggedCount: summary.loggedCount)))
+                switch choice.style {
+                case .default: finishAction = .markLoggedComplete
+                case .destructive: finishAction = .deleteUnfinished
+                default: throw FinishWorkoutError.cancelled
+                }
+            case .emptyOnly:
+                let deleteOption = IntentChoiceOption(title: "Delete empty sets", style: .destructive)
+                let choice = try await requestChoice(between: [deleteOption, .cancel], dialog: IntentDialog(emptyOnlyDialog(emptyCount: summary.emptyCount)))
+                switch choice.style {
+                case .destructive: finishAction = .deleteEmpty
+                default: throw FinishWorkoutError.cancelled
+                }
+            }
+
+            let shouldPrewarmSuggestions = workoutSession.workoutPlan != nil
+            let result = workoutSession.finish(action: finishAction, context: context)
+            switch result {
+            case .finished:
+                let weightUnit = AppSettingsSnapshot(settings: (try? context.fetch(AppSettings.single))?.first).weightUnit
+                workoutSession.convertSetWeightsToKg(from: weightUnit)
+                RestTimerState.shared.stop()
+                saveContext(context: context)
+                await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workoutSession, context: context)
+                WorkoutActivityManager.end()
+                if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmup() }
+            case .workoutDeleted:
+                RestTimerState.shared.stop()
+                HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
+                saveContext(context: context)
+                AppRouter.shared.activeWorkoutSession = nil
+                WorkoutActivityManager.end()
+                throw FinishWorkoutError.workoutDeleted
+            }
             return .result(opensIntent: OpenAppIntent())
         }
-
-        let summary = workoutSession.unfinishedSetSummary
-        let finishAction: WorkoutFinishAction
-        switch summary.caseType {
-        case .none: finishAction = .finish
-        case .emptyAndLogged:
-            let markOption = IntentChoiceOption(title: "Mark logged sets as complete", style: .default)
-            let deleteOption = IntentChoiceOption(title: "Delete all unfinished sets", style: .destructive)
-            let choice = try await requestChoice(between: [markOption, deleteOption, .cancel], dialog: IntentDialog(emptyAndLoggedDialog(loggedCount: summary.loggedCount, emptyCount: summary.emptyCount)))
-            switch choice.style {
-            case .default: finishAction = .markLoggedComplete
-            case .destructive: finishAction = .deleteUnfinished
-            default: throw FinishWorkoutError.cancelled
-            }
-        case .loggedOnly:
-            let markOption = IntentChoiceOption(title: "Mark as complete", style: .default)
-            let deleteOption = IntentChoiceOption(title: "Delete these sets", style: .destructive)
-            let choice = try await requestChoice(between: [markOption, deleteOption, .cancel], dialog: IntentDialog(loggedOnlyDialog(loggedCount: summary.loggedCount)))
-            switch choice.style {
-            case .default: finishAction = .markLoggedComplete
-            case .destructive: finishAction = .deleteUnfinished
-            default: throw FinishWorkoutError.cancelled
-            }
-        case .emptyOnly:
-            let deleteOption = IntentChoiceOption(title: "Delete empty sets", style: .destructive)
-            let choice = try await requestChoice(between: [deleteOption, .cancel], dialog: IntentDialog(emptyOnlyDialog(emptyCount: summary.emptyCount)))
-            switch choice.style {
-            case .destructive: finishAction = .deleteEmpty
-            default: throw FinishWorkoutError.cancelled
-            }
-        }
-
-        let shouldPrewarmSuggestions = workoutSession.workoutPlan != nil
-        let result = workoutSession.finish(action: finishAction, context: context)
-        switch result {
-        case .finished:
-            let weightUnit = AppSettingsSnapshot(settings: (try? context.fetch(AppSettings.single))?.first).weightUnit
-            workoutSession.convertSetWeightsToKg(from: weightUnit)
-            RestTimerState.shared.stop()
-            saveContext(context: context)
-            await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workoutSession, context: context)
-            WorkoutActivityManager.end()
-            if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmup() }
-        case .workoutDeleted:
-            RestTimerState.shared.stop()
-            HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)
-            saveContext(context: context)
-            AppRouter.shared.activeWorkoutSession = nil
-            WorkoutActivityManager.end()
-            throw FinishWorkoutError.workoutDeleted
-        }
-        return .result(opensIntent: OpenAppIntent())
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

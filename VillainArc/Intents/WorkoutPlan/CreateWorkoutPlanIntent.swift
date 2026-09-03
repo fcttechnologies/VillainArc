@@ -11,13 +11,15 @@ struct CreateWorkoutPlanIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
-        if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartWorkoutPlanError.workoutIsActive }
-        if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutPlanError.workoutPlanIsActive }
-        AppRouter.shared.createWorkoutPlan()
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
+            if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartWorkoutPlanError.workoutIsActive }
+            if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutPlanError.workoutPlanIsActive }
+            AppRouter.shared.createWorkoutPlan()
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

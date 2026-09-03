@@ -14,20 +14,22 @@ struct OpenCardioSessionIntent: AppIntent {
     @Parameter(title: "Cardio Session", requestValueDialog: IntentDialog("Which cardio session would you like to open?")) var cardioSession: CardioSessionEntity
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        let sessionID = cardioSession.id
-        let predicate = #Predicate<CardioSession> { $0.id == sessionID }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
-        guard let storedSession = try context.fetch(descriptor).first else { throw OpenCardioSessionError.sessionNotFound }
-        guard storedSession.statusValue == .done else { throw OpenCardioSessionError.sessionIncomplete }
+            let sessionID = cardioSession.id
+            let predicate = #Predicate<CardioSession> { $0.id == sessionID }
+            var descriptor = FetchDescriptor(predicate: predicate)
+            descriptor.fetchLimit = 1
+            guard let storedSession = try context.fetch(descriptor).first else { throw OpenCardioSessionError.sessionNotFound }
+            guard storedSession.statusValue == .done else { throw OpenCardioSessionError.sessionIncomplete }
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.navigate(to: AppRouter.detailDestination(for: storedSession))
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.navigate(to: AppRouter.detailDestination(for: storedSession))
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

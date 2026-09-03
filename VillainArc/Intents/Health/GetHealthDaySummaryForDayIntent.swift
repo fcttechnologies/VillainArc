@@ -17,9 +17,11 @@ struct GetHealthDaySummaryForDayIntent: AppIntent {
     @Parameter(title: "Date") var date: Date
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        let snapshot = try loadHealthDaySnapshot(for: date, context: context)
-        return .result(dialog: IntentDialog(stringLiteral: healthDaySummaryDialog(for: snapshot)))
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            let snapshot = try loadHealthDaySnapshot(for: date, context: context)
+            return .result(dialog: IntentDialog(stringLiteral: healthDaySummaryDialog(for: snapshot)))
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

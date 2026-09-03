@@ -14,21 +14,23 @@ struct ShowExerciseHistoryIntent: AppIntent {
     @Parameter(title: "Exercise", requestValueDialog: IntentDialog("Which exercise history would you like to open?")) var exercise: ExerciseEntity
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        let catalogID = exercise.id
-        guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else { throw ShowExerciseHistoryError.exerciseNotFound }
-        guard (try? context.fetch(ExerciseHistory.forCatalogID(catalogID)).first) != nil else { throw ShowExerciseHistoryError.noExerciseHistoryFound }
+            let catalogID = exercise.id
+            guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else { throw ShowExerciseHistoryError.exerciseNotFound }
+            guard (try? context.fetch(ExerciseHistory.forCatalogID(catalogID)).first) != nil else { throw ShowExerciseHistoryError.noExerciseHistoryFound }
 
-        var descriptor = ExercisePerformance.matching(catalogID: catalogID)
-        descriptor.fetchLimit = 1
-        guard (try? context.fetch(descriptor).first) != nil else { throw ShowExerciseHistoryError.noExerciseHistoryFound }
+            var descriptor = ExercisePerformance.matching(catalogID: catalogID)
+            descriptor.fetchLimit = 1
+            guard (try? context.fetch(descriptor).first) != nil else { throw ShowExerciseHistoryError.noExerciseHistoryFound }
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.navigate(to: .exerciseHistory(storedExercise.catalogID))
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.navigate(to: .exerciseHistory(storedExercise.catalogID))
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

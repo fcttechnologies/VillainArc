@@ -14,16 +14,18 @@ struct OpenExerciseIntent: AppIntent {
     @Parameter(title: "Exercise", requestValueDialog: IntentDialog("Which exercise would you like to open?")) var exercise: ExerciseEntity
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        let catalogID = exercise.id
-        guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else { throw OpenExerciseError.exerciseNotFound }
+            let catalogID = exercise.id
+            guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else { throw OpenExerciseError.exerciseNotFound }
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.navigate(to: .exerciseDetail(storedExercise.catalogID))
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.navigate(to: .exerciseDetail(storedExercise.catalogID))
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

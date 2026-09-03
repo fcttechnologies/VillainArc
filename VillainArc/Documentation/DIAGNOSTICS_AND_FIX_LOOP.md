@@ -42,12 +42,28 @@ take `crumb:`, and `.diagTask(_:)` replaces `.task`. Each pairs the app's name w
 `ui.work_finished` on return, so **a name with no finish after it is work that was still running
 when the process died**.
 
-**Every App Intent carries a `static let diagCrumb` and drops it as the first line of `perform()`**,
-and `IntentCrumbCoverageTests` is what keeps the names distinct and namespaced. It is written by
-hand rather than through `FCTEntities.ReportingAppIntent`: that protocol supplies `perform()` from
-an extension and declares `run() -> Self.PerformResult`, and Swift does not infer `PerformResult`
-from a `run()` whose return type is opaque — which every intent in this app has, since they all
-return `some IntentResult & …`. Adopting it fails the conformance outright.
+**Every App Intent carries a `static let diagCrumb` and hands its body to `Diag.intent(_:_:)`**,
+which records that name and then brackets the run with `intent.started` and
+`intent.returned`/`.threw`. `IntentCrumbCoverageTests` keeps the names distinct and namespaced, and
+sweeps the sources so an intent added without the bracket fails there rather than going quiet.
+
+The body sits in a nested `run()` repeating `perform()`'s signature:
+
+```swift
+@MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
+    func run() async throws -> some IntentResult & ProvidesDialog {
+        …
+        return .result(dialog: "…")
+    }
+    return try await Diag.intent(Self.diagCrumb, run)
+}
+```
+
+The repeated signature is not ceremony. Every intent here returns an **opaque** type, and an opaque
+return type is resolved *from* the return expression — so handing the body straight to the bracket
+as a closure makes that resolution circular, and `.result(…)` inside it has no contextual base
+(`cannot infer contextual base in reference to member 'result'`). The nested function resolves its
+own opaque type first, and `perform()` returns that.
 
 Foundation reports its own surfaces with no wiring here at all: the store open, the sync push's
 history fetch, every model session and request, navigation, sign-in, both onboardings, the deletion

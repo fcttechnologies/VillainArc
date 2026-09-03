@@ -11,22 +11,24 @@ struct OpenTodaysPlanIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        guard let split = try? context.fetch(WorkoutSplit.active).first else { throw OpenTodaysPlanError.noActiveSplit }
-        guard !(split.days?.isEmpty ?? true) else { throw OpenTodaysPlanError.noDaysInSplit }
+            guard let split = try? context.fetch(WorkoutSplit.active).first else { throw OpenTodaysPlanError.noActiveSplit }
+            guard !(split.days?.isEmpty ?? true) else { throw OpenTodaysPlanError.noDaysInSplit }
 
-        let resolution = SplitScheduleResolver.resolve(split, context: context)
-        guard let todaysDay = resolution.splitDay else { throw OpenTodaysPlanError.noDayForToday }
-        guard !resolution.isPaused else { throw OpenTodaysPlanError.trainingIsPaused }
-        guard !todaysDay.isRestDay else { throw OpenTodaysPlanError.todayIsRestDay }
-        guard let workoutPlan = resolution.workoutPlan else { throw OpenTodaysPlanError.noWorkoutPlanForToday }
+            let resolution = SplitScheduleResolver.resolve(split, context: context)
+            guard let todaysDay = resolution.splitDay else { throw OpenTodaysPlanError.noDayForToday }
+            guard !resolution.isPaused else { throw OpenTodaysPlanError.trainingIsPaused }
+            guard !todaysDay.isRestDay else { throw OpenTodaysPlanError.todayIsRestDay }
+            guard let workoutPlan = resolution.workoutPlan else { throw OpenTodaysPlanError.noWorkoutPlanForToday }
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.navigate(to: .workoutPlanDetail(workoutPlan, true))
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.navigate(to: .workoutPlanDetail(workoutPlan, true))
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

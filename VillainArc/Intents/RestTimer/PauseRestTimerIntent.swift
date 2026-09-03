@@ -12,15 +12,17 @@ struct PauseRestTimerIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let restTimer = RestTimerState.shared
+        func run() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetIntent {
+            let restTimer = RestTimerState.shared
 
-        guard restTimer.isRunning else {
-            if restTimer.isPaused { throw RestTimerIntentError.alreadyPaused }
-            throw RestTimerIntentError.noRunningTimer
+            guard restTimer.isRunning else {
+                if restTimer.isPaused { throw RestTimerIntentError.alreadyPaused }
+                throw RestTimerIntentError.noRunningTimer
+            }
+
+            restTimer.pause()
+            return .result(dialog: "Rest timer paused.", snippetIntent: RestTimerSnippetIntent())
         }
-
-        restTimer.pause()
-        return .result(dialog: "Rest timer paused.", snippetIntent: RestTimerSnippetIntent())
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

@@ -11,11 +11,13 @@ struct OpenSettingsIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        AppRouter.shared.presentSettingsFromSystem()
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.presentSettingsFromSystem()
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

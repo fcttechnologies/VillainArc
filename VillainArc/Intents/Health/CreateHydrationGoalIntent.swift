@@ -18,33 +18,35 @@ struct CreateHydrationGoalIntent: AppIntent {
     var targetVolume: Double
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        let settings = AppSettingsSnapshot(settings: try context.fetch(AppSettings.single).first)
-        let targetML = settings.hydrationUnit.toML(targetVolume)
-        guard targetML > 0 else {
-            return .result(dialog: "Your hydration goal needs to be more than 0.")
-        }
-
-        let calendar = Calendar.autoupdatingCurrent
-        let todayStart = calendar.startOfDay(for: .now)
-
-        if let activeGoal = try context.fetch(HydrationGoal.active).first {
-            if activeGoal.startedOnDay == todayStart {
-                context.delete(activeGoal)
-            } else {
-                activeGoal.endedOnDay = calendar.date(byAdding: .day, value: -1, to: todayStart) ?? todayStart
+            let settings = AppSettingsSnapshot(settings: try context.fetch(AppSettings.single).first)
+            let targetML = settings.hydrationUnit.toML(targetVolume)
+            guard targetML > 0 else {
+                return .result(dialog: "Your hydration goal needs to be more than 0.")
             }
+
+            let calendar = Calendar.autoupdatingCurrent
+            let todayStart = calendar.startOfDay(for: .now)
+
+            if let activeGoal = try context.fetch(HydrationGoal.active).first {
+                if activeGoal.startedOnDay == todayStart {
+                    context.delete(activeGoal)
+                } else {
+                    activeGoal.endedOnDay = calendar.date(byAdding: .day, value: -1, to: todayStart) ?? todayStart
+                }
+            }
+
+            let goal = HydrationGoal(startedOnDay: todayStart, targetML: targetML)
+            context.insert(goal)
+            try? HydrationDay.reconcileAll(context: context)
+            saveContext(context: context)
+            HealthMetricWidgetReloader.reloadHydration()
+
+            return .result(dialog: "Your hydration goal is now \(settings.hydrationUnit.display(targetML)).")
         }
-
-        let goal = HydrationGoal(startedOnDay: todayStart, targetML: targetML)
-        context.insert(goal)
-        try? HydrationDay.reconcileAll(context: context)
-        saveContext(context: context)
-        HealthMetricWidgetReloader.reloadHydration()
-
-        return .result(dialog: "Your hydration goal is now \(settings.hydrationUnit.display(targetML)).")
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

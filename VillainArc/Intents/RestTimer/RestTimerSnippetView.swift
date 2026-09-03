@@ -11,10 +11,12 @@ struct RestTimerSnippetIntent: SnippetIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult & ShowsSnippetView {
-        Diag.breadcrumb(Self.diagCrumb)
-        return .result {
-            RestTimerSnippetView()
+        func run() async throws -> some IntentResult & ShowsSnippetView {
+            return .result {
+                RestTimerSnippetView()
+            }
         }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

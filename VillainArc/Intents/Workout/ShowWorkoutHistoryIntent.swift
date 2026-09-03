@@ -11,15 +11,17 @@ struct ShowWorkoutHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        guard (try? context.fetch(WorkoutSession.recent).first) != nil else { throw ShowWorkoutHistoryError.noWorkoutsFound }
+            guard (try? context.fetch(WorkoutSession.recent).first) != nil else { throw ShowWorkoutHistoryError.noWorkoutsFound }
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.navigate(to: .workoutSessionsList)
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.navigate(to: .workoutSessionsList)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

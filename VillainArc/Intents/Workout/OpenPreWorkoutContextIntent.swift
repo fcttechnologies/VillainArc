@@ -11,12 +11,14 @@ struct OpenPreWorkoutContextIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        guard let workout = try? context.fetch(WorkoutSession.incomplete).first, workout.statusValue == .active else { throw ActiveWorkoutIntentError.noActiveWorkout }
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            guard let workout = try? context.fetch(WorkoutSession.incomplete).first, workout.statusValue == .active else { throw ActiveWorkoutIntentError.noActiveWorkout }
 
-        AppRouter.shared.resumeWorkoutSession(workout)
-        AppRouter.shared.presentWorkoutSheet(.preWorkoutContext)
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.resumeWorkoutSession(workout)
+            AppRouter.shared.presentWorkoutSheet(.preWorkoutContext)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

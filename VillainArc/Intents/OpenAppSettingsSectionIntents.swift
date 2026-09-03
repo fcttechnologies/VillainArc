@@ -11,9 +11,11 @@ struct OpenWorkoutPreferencesIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openAppSettings(destination: .workouts)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openAppSettings(destination: .workouts)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -26,9 +28,11 @@ struct OpenAppleHealthSettingsIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openAppSettings(destination: .appleHealth)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openAppSettings(destination: .appleHealth)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -41,9 +45,11 @@ struct OpenNotificationSettingsIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openAppSettings(destination: .notifications)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openAppSettings(destination: .notifications)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -56,9 +62,11 @@ struct OpenUnitSettingsIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openAppSettings(destination: .units)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openAppSettings(destination: .units)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

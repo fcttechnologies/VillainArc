@@ -49,6 +49,21 @@ that matter are the ones that travel. A Mac build would carry the whole app's we
 context the product is never used in. This is a product decision, not an oversight or a backlog
 item — do not "fix" it by adding a Mac target.
 
+### Process hardening
+
+`ENABLE_ENHANCED_SECURITY = YES` and `SWIFT_STRICT_MEMORY_SAFETY = YES` sit at the **project** level,
+so every target inherits them — app, widget, intents extension, watch app, and the test bundle,
+which reports its own unsafe sites. Strict memory safety is warnings-as-errors through the gate, so
+every unsafe construct in this app is spelled `unsafe` at its expression with the invariant the
+compiler cannot check written beside it, and a security review can list them by grep.
+
+`ENABLE_POINTER_AUTHENTICATION = NO` is the one part of the cascade that is off. Pointer
+authentication builds the app **arm64e**, and the local SwiftPM products this app links —
+FCTFoundation and MuscleMap — build arm64 only, so the arm64e slice resolves none of them
+(`Unable to resolve module dependency: 'FCTEntities'`). It is Apple's documented per-setting opt-out
+and the rest of Enhanced Security stays on. **Only the device archive reads this**: the simulator
+legs pin `ARCHS=arm64`, so a green simulator build says nothing about it.
+
 ## App Shell
 
 After onboarding is ready, `Views/AppShell/ContentView.swift` owns:

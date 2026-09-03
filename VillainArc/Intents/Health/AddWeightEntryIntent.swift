@@ -21,32 +21,34 @@ struct AddWeightEntryIntent: AppIntent {
     private let goalAchievementToleranceKg = 0.1
 
     @MainActor func perform() async throws -> some IntentResult {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        let settings = AppSettingsSnapshot(settings: try context.fetch(AppSettings.single).first)
-        let weightInKg = settings.weightUnit.toKg(weight)
-        guard weightInKg > 0 else {
-            return .result(dialog: "Your weight entry needs to be more than 0.")
+            let settings = AppSettingsSnapshot(settings: try context.fetch(AppSettings.single).first)
+            let weightInKg = settings.weightUnit.toKg(weight)
+            guard weightInKg > 0 else {
+                return .result(dialog: "Your weight entry needs to be more than 0.")
+            }
+
+            let entry = WeightEntry(date: .now, weight: weightInKg)
+            let activeGoal = try context.fetch(WeightGoal.active).first
+            let reachedGoal = activeGoal.map { $0.contains(entry.date) && $0.reachesTarget(with: entry.weight, toleranceKg: goalAchievementToleranceKg) } == true
+
+            context.insert(entry)
+            saveContext(context: context)
+            HealthMetricWidgetReloader.reloadWeight()
+
+            await HealthExportCoordinator.shared.exportIfEligible(weightEntryID: entry.id)
+
+            let weightText = formattedWeightText(entry.weight, unit: settings.weightUnit)
+            if reachedGoal, let activeGoal {
+                AppRouter.shared.presentWeightGoalCompletion(for: activeGoal, trigger: .achievedByEntry, triggeringEntry: entry, referenceDate: entry.date)
+                return .result(opensIntent: OpenAppIntent(), dialog: "Logged \(weightText). You also reached your \(activeGoal.type.title.lowercased()) goal.")
+            }
+
+            return .result(dialog: "Logged \(weightText).")
         }
-
-        let entry = WeightEntry(date: .now, weight: weightInKg)
-        let activeGoal = try context.fetch(WeightGoal.active).first
-        let reachedGoal = activeGoal.map { $0.contains(entry.date) && $0.reachesTarget(with: entry.weight, toleranceKg: goalAchievementToleranceKg) } == true
-
-        context.insert(entry)
-        saveContext(context: context)
-        HealthMetricWidgetReloader.reloadWeight()
-
-        await HealthExportCoordinator.shared.exportIfEligible(weightEntryID: entry.id)
-
-        let weightText = formattedWeightText(entry.weight, unit: settings.weightUnit)
-        if reachedGoal, let activeGoal {
-            AppRouter.shared.presentWeightGoalCompletion(for: activeGoal, trigger: .achievedByEntry, triggeringEntry: entry, referenceDate: entry.date)
-            return .result(opensIntent: OpenAppIntent(), dialog: "Logged \(weightText). You also reached your \(activeGoal.type.title.lowercased()) goal.")
-        }
-
-        return .result(dialog: "Logged \(weightText).")
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

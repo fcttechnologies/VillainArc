@@ -10,9 +10,11 @@ struct ShowHydrationHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openHealthDestination(.hydrationHistory)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openHealthDestination(.hydrationHistory)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -25,9 +27,11 @@ struct ShowHydrationGoalHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openHealthDestination(.hydrationGoalHistory)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openHealthDestination(.hydrationGoalHistory)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -40,9 +44,11 @@ struct ShowHeartRateHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openHealthDestination(.heartRateHistory)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openHealthDestination(.heartRateHistory)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -55,9 +61,11 @@ struct ShowRestingHeartRateHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openHealthDestination(.restingHeartRateHistory)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openHealthDestination(.restingHeartRateHistory)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -70,9 +78,11 @@ struct ShowWalkingHeartRateHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openHealthDestination(.walkingHeartRateHistory)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openHealthDestination(.walkingHeartRateHistory)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -85,9 +95,11 @@ struct ShowHeartRateVariabilityHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openHealthDestination(.heartRateVariabilityHistory)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openHealthDestination(.heartRateVariabilityHistory)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -100,9 +112,11 @@ struct ShowRespiratoryRateHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openHealthDestination(.respiratoryRateHistory)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openHealthDestination(.respiratoryRateHistory)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -115,8 +129,10 @@ struct ShowWristTemperatureHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openHealthDestination(.wristTemperatureHistory)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openHealthDestination(.wristTemperatureHistory)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

@@ -21,36 +21,38 @@ struct AddHydrationEntryIntent: AppIntent {
     var date: Date?
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        let settings = AppSettingsSnapshot(settings: try context.fetch(AppSettings.single).first)
-        let volumeML = settings.hydrationUnit.toML(volume)
-        guard volumeML > 0 else {
-            return .result(dialog: "Your water entry needs to be more than 0.")
+            let settings = AppSettingsSnapshot(settings: try context.fetch(AppSettings.single).first)
+            let volumeML = settings.hydrationUnit.toML(volume)
+            guard volumeML > 0 else {
+                return .result(dialog: "Your water entry needs to be more than 0.")
+            }
+
+            let entryDate = date ?? .now
+            let entry = HydrationEntry(date: entryDate, volume: volumeML)
+            context.insert(entry)
+            let hydrationGoalNotification = try? HydrationDay.reconcile(for: entryDate, context: context)
+            saveContext(context: context)
+            HealthMetricWidgetReloader.reloadHydration()
+
+            if let hydrationGoalNotification,
+               hydrationGoalNotification.didCompleteGoal,
+               let targetML = hydrationGoalNotification.day.goalTargetML {
+                await NotificationCoordinator.deliverHydrationGoal(HydrationGoalNotification(date: hydrationGoalNotification.day.date, totalVolume: hydrationGoalNotification.day.totalVolume, targetML: targetML))
+            }
+            await HealthExportCoordinator.shared.exportIfEligible(hydrationEntryID: entry.id)
+
+            let volumeText = settings.hydrationUnit.display(volumeML)
+            if hydrationGoalNotification?.didCompleteGoal == true,
+               let targetML = hydrationGoalNotification?.day.goalTargetML {
+                return .result(dialog: "Logged \(volumeText) of water. You also reached your \(settings.hydrationUnit.display(targetML)) hydration goal.")
+            }
+
+            return .result(dialog: "Logged \(volumeText) of water.")
         }
-
-        let entryDate = date ?? .now
-        let entry = HydrationEntry(date: entryDate, volume: volumeML)
-        context.insert(entry)
-        let hydrationGoalNotification = try? HydrationDay.reconcile(for: entryDate, context: context)
-        saveContext(context: context)
-        HealthMetricWidgetReloader.reloadHydration()
-
-        if let hydrationGoalNotification,
-           hydrationGoalNotification.didCompleteGoal,
-           let targetML = hydrationGoalNotification.day.goalTargetML {
-            await NotificationCoordinator.deliverHydrationGoal(HydrationGoalNotification(date: hydrationGoalNotification.day.date, totalVolume: hydrationGoalNotification.day.totalVolume, targetML: targetML))
-        }
-        await HealthExportCoordinator.shared.exportIfEligible(hydrationEntryID: entry.id)
-
-        let volumeText = settings.hydrationUnit.display(volumeML)
-        if hydrationGoalNotification?.didCompleteGoal == true,
-           let targetML = hydrationGoalNotification?.day.goalTargetML {
-            return .result(dialog: "Logged \(volumeText) of water. You also reached your \(settings.hydrationUnit.display(targetML)) hydration goal.")
-        }
-
-        return .result(dialog: "Logged \(volumeText) of water.")
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

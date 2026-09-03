@@ -11,13 +11,15 @@ struct ViewLastWorkoutIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
-        guard let lastWorkoutSession = try context.fetch(WorkoutSession.recent).first else { throw ViewLastWorkoutError.noWorkoutsFound }
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.navigate(to: .workoutSessionDetail(lastWorkoutSession))
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
+            guard let lastWorkoutSession = try context.fetch(WorkoutSession.recent).first else { throw ViewLastWorkoutError.noWorkoutsFound }
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.navigate(to: .workoutSessionDetail(lastWorkoutSession))
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

@@ -11,16 +11,18 @@ struct EndTrainingConditionIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        guard let activeCondition = try context.fetch(TrainingConditionPeriod.activeNow).first else {
-            return .result(dialog: "You're already training normally.")
+            guard let activeCondition = try context.fetch(TrainingConditionPeriod.activeNow).first else {
+                return .result(dialog: "You're already training normally.")
+            }
+
+            let conditionTitle = activeCondition.kind.title
+            try TrainingConditionStore.endActiveCondition(activeCondition, on: .now, context: context)
+            return .result(dialog: "Ended your \(conditionTitle.lowercased()) status. You're back to training normally.")
         }
-
-        let conditionTitle = activeCondition.kind.title
-        try TrainingConditionStore.endActiveCondition(activeCondition, on: .now, context: context)
-        return .result(dialog: "Ended your \(conditionTitle.lowercased()) status. You're back to training normally.")
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

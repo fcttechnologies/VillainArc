@@ -17,9 +17,11 @@ struct GetHeartRateForDayIntent: AppIntent {
     @Parameter(title: "Date") var date: Date
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        return .result(dialog: IntentDialog(stringLiteral: try heartRateDialog(for: date, context: context)))
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            return .result(dialog: IntentDialog(stringLiteral: try heartRateDialog(for: date, context: context)))
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -38,9 +40,11 @@ struct GetRespiratoryRateForDayIntent: AppIntent {
     @Parameter(title: "Date") var date: Date
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        return .result(dialog: IntentDialog(stringLiteral: try respiratoryRateDialog(for: date, context: context)))
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            return .result(dialog: IntentDialog(stringLiteral: try respiratoryRateDialog(for: date, context: context)))
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -59,9 +63,11 @@ struct GetWristTemperatureForDayIntent: AppIntent {
     @Parameter(title: "Date") var date: Date
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        return .result(dialog: IntentDialog(stringLiteral: try wristTemperatureDialog(for: date, context: context)))
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            return .result(dialog: IntentDialog(stringLiteral: try wristTemperatureDialog(for: date, context: context)))
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 
@@ -80,8 +86,10 @@ struct GetHydrationForDayIntent: AppIntent {
     @Parameter(title: "Date") var date: Date
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        return .result(dialog: IntentDialog(stringLiteral: try hydrationDialog(for: date, context: context)))
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            return .result(dialog: IntentDialog(stringLiteral: try hydrationDialog(for: date, context: context)))
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

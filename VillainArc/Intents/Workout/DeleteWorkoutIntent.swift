@@ -14,23 +14,25 @@ struct DeleteWorkoutIntent: AppIntent {
     @Parameter(title: "Workout", requestValueDialog: IntentDialog("Which workout would you like to delete?")) var workout: WorkoutSessionEntity
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
 
-        let workoutID = workout.id
-        let predicate = #Predicate<WorkoutSession> { $0.id == workoutID }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
+            let workoutID = workout.id
+            let predicate = #Predicate<WorkoutSession> { $0.id == workoutID }
+            var descriptor = FetchDescriptor(predicate: predicate)
+            descriptor.fetchLimit = 1
 
-        guard let storedWorkout = try context.fetch(descriptor).first else { throw DeleteWorkoutIntentError.workoutNotFound }
-        guard storedWorkout.status == SessionStatus.done.rawValue else { throw DeleteWorkoutIntentError.workoutIncomplete }
+            guard let storedWorkout = try context.fetch(descriptor).first else { throw DeleteWorkoutIntentError.workoutNotFound }
+            guard storedWorkout.status == SessionStatus.done.rawValue else { throw DeleteWorkoutIntentError.workoutIncomplete }
 
-        let choice = try await requestChoice(between: [IntentChoiceOption(title: "Delete Workout", style: .destructive), .cancel], dialog: IntentDialog("Delete \"\(storedWorkout.title)\"? This action cannot be undone."))
+            let choice = try await requestChoice(between: [IntentChoiceOption(title: "Delete Workout", style: .destructive), .cancel], dialog: IntentDialog("Delete \"\(storedWorkout.title)\"? This action cannot be undone."))
 
-        guard choice.style == .destructive else { throw DeleteWorkoutIntentError.cancelled }
+            guard choice.style == .destructive else { throw DeleteWorkoutIntentError.cancelled }
 
-        WorkoutDeletionCoordinator.deleteCompletedWorkouts([storedWorkout], context: context)
-        return .result(dialog: "Workout deleted.")
+            WorkoutDeletionCoordinator.deleteCompletedWorkouts([storedWorkout], context: context)
+            return .result(dialog: "Workout deleted.")
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

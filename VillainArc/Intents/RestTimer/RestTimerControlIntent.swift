@@ -27,28 +27,30 @@ struct RestTimerControlIntent: AppIntent {
     }
 
     @MainActor func perform() async throws -> some IntentResult {
-        Diag.breadcrumb(Self.diagCrumb)
-        let restTimer = RestTimerState.shared
+        func run() async throws -> some IntentResult {
+            let restTimer = RestTimerState.shared
 
-        switch action {
-        case .pause:
-            guard restTimer.isRunning else {
-                if restTimer.isPaused { throw RestTimerIntentError.alreadyPaused }
-                throw RestTimerIntentError.noRunningTimer
+            switch action {
+            case .pause:
+                guard restTimer.isRunning else {
+                    if restTimer.isPaused { throw RestTimerIntentError.alreadyPaused }
+                    throw RestTimerIntentError.noRunningTimer
+                }
+                restTimer.pause()
+            case .resume:
+                guard restTimer.isPaused, restTimer.pausedRemainingSeconds > 0 else {
+                    if restTimer.isRunning { throw RestTimerIntentError.alreadyRunning }
+                    throw RestTimerIntentError.noPausedTimer
+                }
+                restTimer.resume()
+            case .stop:
+                guard restTimer.isActive else { throw RestTimerIntentError.noActiveTimer }
+                restTimer.stop()
             }
-            restTimer.pause()
-        case .resume:
-            guard restTimer.isPaused, restTimer.pausedRemainingSeconds > 0 else {
-                if restTimer.isRunning { throw RestTimerIntentError.alreadyRunning }
-                throw RestTimerIntentError.noPausedTimer
-            }
-            restTimer.resume()
-        case .stop:
-            guard restTimer.isActive else { throw RestTimerIntentError.noActiveTimer }
-            restTimer.stop()
+
+            RestTimerSnippetIntent.reload()
+            return .result()
         }
-
-        RestTimerSnippetIntent.reload()
-        return .result()
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

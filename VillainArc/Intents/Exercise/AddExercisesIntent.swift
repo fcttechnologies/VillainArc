@@ -14,22 +14,24 @@ struct AddExercisesIntent: AppIntent {
     @Parameter(title: "Exercises", requestValueDialog: IntentDialog("Which exercises?")) var exercises: [ExerciseEntity]
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
 
-        guard !exercises.isEmpty else { return .result(dialog: IntentDialog(stringLiteral: String(localized: "No exercises selected."))) }
+            guard !exercises.isEmpty else { return .result(dialog: IntentDialog(stringLiteral: String(localized: "No exercises selected."))) }
 
-        if let workout = try? context.fetch(WorkoutSession.incomplete).first {
-            let dialog = addExercises(to: workout, context: context)
-            return .result(dialog: dialog)
+            if let workout = try? context.fetch(WorkoutSession.incomplete).first {
+                let dialog = addExercises(to: workout, context: context)
+                return .result(dialog: dialog)
+            }
+
+            if let workoutPlan = try? context.fetch(WorkoutPlan.incomplete).first {
+                let dialog = addExercises(to: workoutPlan, context: context)
+                return .result(dialog: dialog)
+            }
+
+            return .result(dialog: IntentDialog(stringLiteral: String(localized: "No current workout session or workout plan found.")))
         }
-
-        if let workoutPlan = try? context.fetch(WorkoutPlan.incomplete).first {
-            let dialog = addExercises(to: workoutPlan, context: context)
-            return .result(dialog: dialog)
-        }
-
-        return .result(dialog: IntentDialog(stringLiteral: String(localized: "No current workout session or workout plan found.")))
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 
     @MainActor private func addExercises(to workout: WorkoutSession, context: ModelContext) -> IntentDialog {

@@ -10,8 +10,10 @@ struct ShowCaloriesBurnedHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        try openHealthDestination(.energyHistory)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            try openHealthDestination(.energyHistory)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

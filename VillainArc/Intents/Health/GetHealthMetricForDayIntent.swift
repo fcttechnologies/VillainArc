@@ -18,9 +18,11 @@ struct GetHealthMetricForDayIntent: AppIntent {
     @Parameter(title: "Date") var date: Date
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        let snapshot = try loadHealthDaySnapshot(for: date, context: context)
-        return .result(dialog: IntentDialog(stringLiteral: healthMetricDialog(for: metric, snapshot: snapshot)))
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            let snapshot = try loadHealthDaySnapshot(for: date, context: context)
+            return .result(dialog: IntentDialog(stringLiteral: healthMetricDialog(for: metric, snapshot: snapshot)))
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

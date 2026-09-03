@@ -11,13 +11,15 @@ struct ShowCardioHistoryIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.popToRoot(tab: .cardio)
-        AppRouter.shared.tabSelection = .cardio
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.popToRoot(tab: .cardio)
+            AppRouter.shared.tabSelection = .cardio
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

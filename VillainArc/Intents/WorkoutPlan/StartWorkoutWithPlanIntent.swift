@@ -14,16 +14,18 @@ struct StartWorkoutWithPlanIntent: AppIntent {
     @Parameter(title: "Workout Plan", requestValueDialog: IntentDialog("Which workout plan would you like to use?")) var workoutPlan: WorkoutPlanEntity
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
-        if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutError.workoutPlanIsActive }
-        if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartWorkoutError.workoutIsActive }
-        let workoutPlanID = workoutPlan.id
-        guard let storedPlan = try context.fetch(WorkoutPlan.byIDForSessionStart(workoutPlanID)).first else { throw StartWorkoutWithPlanError.workoutPlanNotFound }
-        guard storedPlan.completed else { throw StartWorkoutWithPlanError.workoutPlanIncomplete }
-        AppRouter.shared.startWorkoutSession(from: storedPlan)
-        return .result(opensIntent: OpenAppIntent())
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
+            if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutError.workoutPlanIsActive }
+            if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartWorkoutError.workoutIsActive }
+            let workoutPlanID = workoutPlan.id
+            guard let storedPlan = try context.fetch(WorkoutPlan.byIDForSessionStart(workoutPlanID)).first else { throw StartWorkoutWithPlanError.workoutPlanNotFound }
+            guard storedPlan.completed else { throw StartWorkoutWithPlanError.workoutPlanIncomplete }
+            AppRouter.shared.startWorkoutSession(from: storedPlan)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

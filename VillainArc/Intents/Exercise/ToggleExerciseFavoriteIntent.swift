@@ -14,20 +14,22 @@ struct ToggleExerciseFavoriteIntent: AppIntent {
     @Parameter(title: "Exercise", requestValueDialog: IntentDialog("Which exercise would you like to update?")) var exercise: ExerciseEntity
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
 
-        let catalogID = exercise.id
-        guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else { throw ToggleExerciseFavoriteIntentError.exerciseNotFound }
+            let catalogID = exercise.id
+            guard let storedExercise = try context.fetch(Exercise.withCatalogID(catalogID)).first else { throw ToggleExerciseFavoriteIntentError.exerciseNotFound }
 
-        storedExercise.toggleFavorite()
-        saveContext(context: context)
+            storedExercise.toggleFavorite()
+            saveContext(context: context)
 
-        if storedExercise.favorite {
-            return .result(dialog: "Exercise marked as favorite.")
-        } else {
-            return .result(dialog: "Exercise removed from favorites.")
+            if storedExercise.favorite {
+                return .result(dialog: "Exercise marked as favorite.")
+            } else {
+                return .result(dialog: "Exercise removed from favorites.")
+            }
         }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

@@ -11,17 +11,19 @@ struct OpenActiveWorkoutPlanIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        if AppRouter.shared.activeWorkoutPlan != nil {
-            AppRouter.shared.presentActiveWorkoutPlanIfPossible()
+        func run() async throws -> some IntentResult & OpensIntent {
+            if AppRouter.shared.activeWorkoutPlan != nil {
+                AppRouter.shared.presentActiveWorkoutPlanIfPossible()
+                return .result(opensIntent: OpenAppIntent())
+            }
+
+            let context = SharedModelContainer.container.mainContext
+            guard let plan = try? context.fetch(WorkoutPlan.resumableIncomplete).first else { throw ActiveWorkoutPlanIntentError.noActivePlan }
+
+            AppRouter.shared.resumeWorkoutPlanCreation(plan)
             return .result(opensIntent: OpenAppIntent())
         }
-
-        let context = SharedModelContainer.container.mainContext
-        guard let plan = try? context.fetch(WorkoutPlan.resumableIncomplete).first else { throw ActiveWorkoutPlanIntentError.noActivePlan }
-
-        AppRouter.shared.resumeWorkoutPlanCreation(plan)
-        return .result(opensIntent: OpenAppIntent())
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

@@ -11,20 +11,22 @@ struct ManageWorkoutSplitsIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        var descriptor = FetchDescriptor<WorkoutSplit>()
-        descriptor.fetchLimit = 1
-        guard (try? context.fetch(descriptor).first) != nil else { throw ManageWorkoutSplitsError.noSplitsFound }
+            var descriptor = FetchDescriptor<WorkoutSplit>()
+            descriptor.fetchLimit = 1
+            guard (try? context.fetch(descriptor).first) != nil else { throw ManageWorkoutSplitsError.noSplitsFound }
 
-        if let activeSplit = try? context.fetch(WorkoutSplit.active).first { activeSplit.refreshRotationIfNeeded(context: context) }
+            if let activeSplit = try? context.fetch(WorkoutSplit.active).first { activeSplit.refreshRotationIfNeeded(context: context) }
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.activeSplitSheet = .list
-        AppRouter.shared.navigate(to: .workoutSplit(autoPresentBuilder: false))
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.activeSplitSheet = .list
+            AppRouter.shared.navigate(to: .workoutSplit(autoPresentBuilder: false))
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

@@ -11,12 +11,14 @@ struct CancelWorkoutIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        guard let workoutSession = try? context.fetch(WorkoutSession.incomplete).first else { return .result(dialog: "No current workout session to cancel.") }
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
+            guard let workoutSession = try? context.fetch(WorkoutSession.incomplete).first else { return .result(dialog: "No current workout session to cancel.") }
 
-        AppRouter.shared.cancelWorkoutSession(workoutSession)
+            AppRouter.shared.cancelWorkoutSession(workoutSession)
 
-        return .result(dialog: "Workout cancelled.")
+            return .result(dialog: "Workout cancelled.")
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

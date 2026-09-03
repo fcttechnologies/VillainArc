@@ -196,8 +196,9 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
     // MARK: Actions — App Intents
 
     /// One case per intent, so a crash inside a headless invocation names which intent was
-    /// running. `ReportingAppIntent` crumbs `intent.started` / `.returned` / `.threw` around it,
-    /// and `IntentCrumbCoverageTests` pins that every intent in the app has a case here.
+    /// running. Each intent's `perform()` hands its body to `Diag.intent(_:_:)`, which records the
+    /// name below and then `intent.started` / `.returned` / `.threw` around the run;
+    /// `IntentCrumbCoverageTests` pins that every intent in the app does it and has a case here.
 
     case intentCancelCardioSession = "intent.cancel_cardio_session"
     case intentFinishCardioSession = "intent.finish_cardio_session"

@@ -11,22 +11,24 @@ struct GetTrainingConditionIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            try SetupGuard.requireReady(context: context)
 
-        guard let condition = try context.fetch(TrainingConditionPeriod.activeNow).first else {
-            return .result(dialog: "You're training normally.")
-        }
+            guard let condition = try context.fetch(TrainingConditionPeriod.activeNow).first else {
+                return .result(dialog: "You're training normally.")
+            }
 
-        var parts = [condition.kind.title, condition.trainingImpact.title]
-        if let endDay = TrainingConditionStore.displayedEndDay(for: condition.endDate) {
-            parts.append("ending \(formattedRecentDay(endDay))")
-        }
-        if condition.kind.usesAffectedMuscles, condition.hasAffectedMuscles {
-            parts.append("affecting \(ListFormatter.localizedString(byJoining: condition.sortedAffectedMuscles.map(\.displayName)))")
-        }
+            var parts = [condition.kind.title, condition.trainingImpact.title]
+            if let endDay = TrainingConditionStore.displayedEndDay(for: condition.endDate) {
+                parts.append("ending \(formattedRecentDay(endDay))")
+            }
+            if condition.kind.usesAffectedMuscles, condition.hasAffectedMuscles {
+                parts.append("affecting \(ListFormatter.localizedString(byJoining: condition.sortedAffectedMuscles.map(\.displayName)))")
+            }
 
-        return .result(dialog: "Your current training condition is \(parts.joined(separator: ", ")).")
+            return .result(dialog: "Your current training condition is \(parts.joined(separator: ", ")).")
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

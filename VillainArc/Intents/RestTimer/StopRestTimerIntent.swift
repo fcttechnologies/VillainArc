@@ -12,12 +12,14 @@ struct StopRestTimerIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let restTimer = RestTimerState.shared
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let restTimer = RestTimerState.shared
 
-        guard restTimer.isActive else { throw RestTimerIntentError.noActiveTimer }
+            guard restTimer.isActive else { throw RestTimerIntentError.noActiveTimer }
 
-        restTimer.stop()
-        return .result(dialog: "Rest timer stopped.")
+            restTimer.stop()
+            return .result(dialog: "Rest timer stopped.")
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

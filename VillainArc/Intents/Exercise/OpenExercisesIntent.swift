@@ -11,17 +11,19 @@ struct OpenExercisesIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        var descriptor = Exercise.all
-        descriptor.fetchLimit = 1
-        guard (try? context.fetch(descriptor).first) != nil else { throw OpenExercisesError.noExercisesAvailable }
+            var descriptor = Exercise.all
+            descriptor.fetchLimit = 1
+            guard (try? context.fetch(descriptor).first) != nil else { throw OpenExercisesError.noExercisesAvailable }
 
-        AppRouter.shared.collapseActiveFlowPresentations()
-        AppRouter.shared.navigate(to: .exercisesList)
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.collapseActiveFlowPresentations()
+            AppRouter.shared.navigate(to: .exercisesList)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

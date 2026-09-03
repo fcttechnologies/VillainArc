@@ -11,23 +11,25 @@ struct StartTodaysWorkoutIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground(.dynamic)
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
-        guard let split = try? context.fetch(WorkoutSplit.active).first else { throw StartTodaysWorkoutError.noActiveSplit }
-        guard !(split.days?.isEmpty ?? true) else { throw StartTodaysWorkoutError.noDaysInSplit }
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
+            guard let split = try? context.fetch(WorkoutSplit.active).first else { throw StartTodaysWorkoutError.noActiveSplit }
+            guard !(split.days?.isEmpty ?? true) else { throw StartTodaysWorkoutError.noDaysInSplit }
 
-        if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutError.workoutPlanIsActive }
-        if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartWorkoutError.workoutIsActive }
+            if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartWorkoutError.workoutPlanIsActive }
+            if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartWorkoutError.workoutIsActive }
 
-        let resolution = SplitScheduleResolver.resolve(split, context: context)
-        guard let todaysDay = resolution.splitDay else { throw StartTodaysWorkoutError.noDayForToday }
-        guard !resolution.isPaused else { throw StartTodaysWorkoutError.trainingIsPaused }
-        guard !todaysDay.isRestDay else { throw StartTodaysWorkoutError.todayIsRestDay }
-        guard let workoutPlan = resolution.workoutPlan else { throw StartTodaysWorkoutError.noWorkoutPlanForToday }
+            let resolution = SplitScheduleResolver.resolve(split, context: context)
+            guard let todaysDay = resolution.splitDay else { throw StartTodaysWorkoutError.noDayForToday }
+            guard !resolution.isPaused else { throw StartTodaysWorkoutError.trainingIsPaused }
+            guard !todaysDay.isRestDay else { throw StartTodaysWorkoutError.todayIsRestDay }
+            guard let workoutPlan = resolution.workoutPlan else { throw StartTodaysWorkoutError.noWorkoutPlanForToday }
 
-        AppRouter.shared.startWorkoutSession(from: workoutPlan)
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.startWorkoutSession(from: workoutPlan)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

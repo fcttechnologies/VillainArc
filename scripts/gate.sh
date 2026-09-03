@@ -192,6 +192,12 @@ if [ ${#ONLY_TESTING[@]} -eq 0 ] && [ -n "${TEST_COUNT}" ]; then
   [ "${TEST_COUNT}" -ge "${MIN_TESTS}" ] \
     || fail "only ${TEST_COUNT} tests ran, expected at least ${MIN_TESTS} — tests stopped being compiled or listed"
 fi
+# A narrowed run has its own floor of one. A `-only-testing:` spec that matches nothing — a
+# swift-testing function name where the suite name was wanted — executes zero tests and otherwise
+# reports a green that answers no question at all.
+if [ ${#ONLY_TESTING[@]} -gt 0 ] && [ "${TEST_COUNT:-0}" -eq 0 ]; then
+  fail "the --only spec matched no tests, so nothing ran (a swift-testing spec is Target/SuiteName)"
+fi
 
 if [ "${FAST}" -eq 1 ]; then
   mark "unit suite"

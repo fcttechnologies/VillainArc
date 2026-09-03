@@ -14,16 +14,18 @@ struct StartCardioSessionIntent: AppIntent {
     var kind: CardioKindAppEnum
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartCardioSessionError.workoutIsActive }
-        if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartCardioSessionError.workoutPlanIsActive }
-        if (try? context.fetch(CardioSession.incomplete).first) != nil { throw StartCardioSessionError.cardioIsActive }
+            if (try? context.fetch(WorkoutSession.incomplete).first) != nil { throw StartCardioSessionError.workoutIsActive }
+            if (try? context.fetch(WorkoutPlan.incomplete).first) != nil { throw StartCardioSessionError.workoutPlanIsActive }
+            if (try? context.fetch(CardioSession.incomplete).first) != nil { throw StartCardioSessionError.cardioIsActive }
 
-        AppRouter.shared.requestCardioSession(type: kind.sessionType)
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.requestCardioSession(type: kind.sessionType)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

@@ -11,14 +11,16 @@ struct FinishCardioSessionIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        guard let cardioSession = try? context.fetch(CardioSession.incomplete).first else {
-            return .result(dialog: "No current cardio session to finish.")
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
+            guard let cardioSession = try? context.fetch(CardioSession.incomplete).first else {
+                return .result(dialog: "No current cardio session to finish.")
+            }
+
+            AppRouter.shared.finishCardioSession(cardioSession)
+
+            return .result(dialog: "Cardio session finished.")
         }
-
-        AppRouter.shared.finishCardioSession(cardioSession)
-
-        return .result(dialog: "Cardio session finished.")
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

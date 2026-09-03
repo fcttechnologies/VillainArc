@@ -14,19 +14,21 @@ struct EditWorkoutPlanIntent: AppIntent {
     @Parameter(title: "Workout Plan", requestValueDialog: IntentDialog("Which workout plan would you like to edit?")) var workoutPlan: WorkoutPlanEntity
 
     @MainActor func perform() async throws -> some IntentResult & OpensIntent {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReadyAndNoActiveFlow(context: context)
+        func run() async throws -> some IntentResult & OpensIntent {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReadyAndNoActiveFlow(context: context)
 
-        let workoutPlanID = workoutPlan.id
-        let predicate = #Predicate<WorkoutPlan> { $0.id == workoutPlanID }
-        var descriptor = FetchDescriptor(predicate: predicate)
-        descriptor.fetchLimit = 1
-        guard let storedPlan = try context.fetch(descriptor).first else { throw EditWorkoutPlanError.workoutPlanNotFound }
-        guard storedPlan.completed && !storedPlan.isEditing else { throw EditWorkoutPlanError.workoutPlanIncomplete }
+            let workoutPlanID = workoutPlan.id
+            let predicate = #Predicate<WorkoutPlan> { $0.id == workoutPlanID }
+            var descriptor = FetchDescriptor(predicate: predicate)
+            descriptor.fetchLimit = 1
+            guard let storedPlan = try context.fetch(descriptor).first else { throw EditWorkoutPlanError.workoutPlanNotFound }
+            guard storedPlan.completed && !storedPlan.isEditing else { throw EditWorkoutPlanError.workoutPlanIncomplete }
 
-        AppRouter.shared.editWorkoutPlan(storedPlan)
-        return .result(opensIntent: OpenAppIntent())
+            AppRouter.shared.editWorkoutPlan(storedPlan)
+            return .result(opensIntent: OpenAppIntent())
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }
 

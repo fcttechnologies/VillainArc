@@ -9,7 +9,9 @@ struct OpenAppIntent: AppIntent {
     static let supportedModes: IntentModes = .foreground
     
     func perform() async throws -> some IntentResult {
-        Diag.breadcrumb(Self.diagCrumb)
-        return .result()
+        func run() async throws -> some IntentResult {
+            return .result()
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

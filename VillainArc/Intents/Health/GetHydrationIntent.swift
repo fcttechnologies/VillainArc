@@ -11,8 +11,10 @@ struct GetHydrationIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        return .result(dialog: IntentDialog(stringLiteral: try hydrationDialog(for: .now, context: context)))
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            return .result(dialog: IntentDialog(stringLiteral: try hydrationDialog(for: .now, context: context)))
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

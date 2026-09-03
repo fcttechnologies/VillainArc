@@ -11,14 +11,16 @@ struct GetActiveCaloriesIntent: AppIntent {
     static let supportedModes: IntentModes = .background
 
     nonisolated func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = makeHealthIntentReadContext()
-        let snapshot = try loadHealthDaySnapshot(for: .now, context: context)
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = makeHealthIntentReadContext()
+            let snapshot = try loadHealthDaySnapshot(for: .now, context: context)
 
-        guard let activeEnergy = snapshot.activeEnergyKilocalories else {
-            return .result(dialog: "You don't have active calories data for today.")
+            guard let activeEnergy = snapshot.activeEnergyKilocalories else {
+                return .result(dialog: "You don't have active calories data for today.")
+            }
+
+            return .result(dialog: "Today you've burned \(formattedEnergyText(activeEnergy, unit: snapshot.settings.energyUnit)) active.")
         }
-
-        return .result(dialog: "Today you've burned \(formattedEnergyText(activeEnergy, unit: snapshot.settings.energyUnit)) active.")
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

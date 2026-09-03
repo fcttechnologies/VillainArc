@@ -9,11 +9,13 @@ struct LiveActivityPauseRestTimerIntent: LiveActivityIntent {
     static let isDiscoverable: Bool = false
 
     @MainActor func perform() async throws -> some IntentResult {
-        Diag.breadcrumb(Self.diagCrumb)
-        let restTimer = RestTimerState.shared
-        guard restTimer.isRunning else { return .result() }
+        func run() async throws -> some IntentResult {
+            let restTimer = RestTimerState.shared
+            guard restTimer.isRunning else { return .result() }
 
-        restTimer.pause()
-        return .result()
+            restTimer.pause()
+            return .result()
+        }
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 }

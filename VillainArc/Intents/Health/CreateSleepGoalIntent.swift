@@ -21,25 +21,27 @@ struct CreateSleepGoalIntent: AppIntent {
     var duration: Measurement<UnitDuration>
 
     @MainActor func perform() async throws -> some IntentResult & ProvidesDialog {
-        Diag.breadcrumb(Self.diagCrumb)
-        let context = SharedModelContainer.container.mainContext
-        try SetupGuard.requireReady(context: context)
+        func run() async throws -> some IntentResult & ProvidesDialog {
+            let context = SharedModelContainer.container.mainContext
+            try SetupGuard.requireReady(context: context)
 
-        let seconds = duration.converted(to: .seconds).value
-        guard seconds > 0 else {
-            return .result(dialog: "Your sleep goal needs to be more than 0.")
+            let seconds = duration.converted(to: .seconds).value
+            guard seconds > 0 else {
+                return .result(dialog: "Your sleep goal needs to be more than 0.")
+            }
+
+            let normalizedGoalDuration = normalizedGoalDurationSeconds(seconds)
+            let calendar = Calendar.autoupdatingCurrent
+            let today = calendar.startOfDay(for: .now)
+            let effectiveStartDay = (try? SleepGoal.effectiveStartDay(context: context)) ?? today
+            _ = try? SleepGoal.replaceActiveGoal(with: normalizedGoalDuration, context: context)
+            saveContext(context: context)
+            HealthMetricWidgetReloader.reloadSleep()
+
+            let appliesMessage = calendar.isDate(effectiveStartDay, inSameDayAs: today) ? "Changes apply starting today." : "Changes apply starting tomorrow."
+            return .result(dialog: "Your sleep goal is now \(formattedDurationText(normalizedGoalDuration)). \(appliesMessage)")
         }
-
-        let normalizedGoalDuration = normalizedGoalDurationSeconds(seconds)
-        let calendar = Calendar.autoupdatingCurrent
-        let today = calendar.startOfDay(for: .now)
-        let effectiveStartDay = (try? SleepGoal.effectiveStartDay(context: context)) ?? today
-        _ = try? SleepGoal.replaceActiveGoal(with: normalizedGoalDuration, context: context)
-        saveContext(context: context)
-        HealthMetricWidgetReloader.reloadSleep()
-
-        let appliesMessage = calendar.isDate(effectiveStartDay, inSameDayAs: today) ? "Changes apply starting today." : "Changes apply starting tomorrow."
-        return .result(dialog: "Your sleep goal is now \(formattedDurationText(normalizedGoalDuration)). \(appliesMessage)")
+        return try await Diag.intent(Self.diagCrumb, run)
     }
 
     private func normalizedGoalDurationSeconds(_ seconds: Double) -> TimeInterval {
