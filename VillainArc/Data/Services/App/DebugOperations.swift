@@ -39,7 +39,7 @@ enum DebugOperations {
 
     static func resyncExerciseCatalog() async throws {
         AppLog.info("Debug exercise catalog resync started.")
-        SharedModelContainer.sharedDefaults.removeObject(forKey: DataManager.exerciseCatalogVersionKey)
+        unsafe SharedModelContainer.sharedDefaults.removeObject(forKey: DataManager.exerciseCatalogVersionKey)
         _ = try await DataManager.seedExercisesForOnboarding()
         AppLog.info("Debug exercise catalog resync completed.")
     }

@@ -2,6 +2,15 @@ import FCTMetrics
 import Foundation
 import HealthKit
 
+/// Owns one `HKObserverQuery` per sample type and turns each notification into a sync.
+///
+/// **Every observer here re-binds its `completionHandler` as `nonisolated(unsafe)` and calls it
+/// through an `unsafe` expression**, because HealthKit hands back a bare `@convention(block)`
+/// closure that carries no `Sendable` conformance while the work it gates has to run in a `Task`.
+/// What makes each of those calls safe is the shape they all share: the re-bound handler is a
+/// local read by exactly one `Task`, that `Task` calls it exactly once from a `defer`, and nothing
+/// else in the process can reach it — which is also HealthKit's own requirement, since an observer
+/// that never calls its handler stops receiving notifications.
 final class HealthStoreUpdateCoordinator {
     private enum ObserverKind: Sendable {
         case workout
@@ -109,7 +118,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.workout) {
                         await HealthSyncCoordinator.shared.syncWorkouts()
                     }
@@ -123,7 +132,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.workout, failedQueryID: failedQueryID)
                 }
@@ -143,7 +152,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.weight) {
                         await HealthSyncCoordinator.shared.syncWeightEntries()
                     }
@@ -157,7 +166,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.weight, failedQueryID: failedQueryID)
                 }
@@ -177,7 +186,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.step) {
                         await HealthDailyMetricsSync.shared.syncSteps()
                     }
@@ -191,7 +200,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.step, failedQueryID: failedQueryID)
                 }
@@ -211,7 +220,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.walkingRunningDistance) {
                         await HealthDailyMetricsSync.shared.syncWalkingRunningDistance()
                     }
@@ -225,7 +234,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.walkingRunningDistance, failedQueryID: failedQueryID)
                 }
@@ -245,7 +254,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.activeEnergy) {
                         await HealthDailyMetricsSync.shared.syncActiveEnergyBurned()
                     }
@@ -259,7 +268,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.activeEnergy, failedQueryID: failedQueryID)
                 }
@@ -279,7 +288,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.restingEnergy) {
                         await HealthDailyMetricsSync.shared.syncRestingEnergyBurned()
                     }
@@ -293,7 +302,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.restingEnergy, failedQueryID: failedQueryID)
                 }
@@ -313,7 +322,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.sleep) {
                         await HealthSleepSync.shared.syncSleepNights()
                     }
@@ -327,7 +336,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.sleep, failedQueryID: failedQueryID)
                 }
@@ -347,7 +356,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.heartRate) {
                         await HealthDailyMetricsSync.shared.syncHeartRate()
                     }
@@ -361,7 +370,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.heartRate, failedQueryID: failedQueryID)
                 }
@@ -381,7 +390,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.restingHeartRate) {
                         await HealthDailyMetricsSync.shared.syncRestingHeartRate()
                     }
@@ -395,7 +404,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.restingHeartRate, failedQueryID: failedQueryID)
                 }
@@ -415,7 +424,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.walkingHeartRate) {
                         await HealthDailyMetricsSync.shared.syncWalkingHeartRate()
                     }
@@ -429,7 +438,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.walkingHeartRate, failedQueryID: failedQueryID)
                 }
@@ -449,7 +458,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.heartRateVariability) {
                         await HealthDailyMetricsSync.shared.syncHeartRateVariability()
                     }
@@ -463,7 +472,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.heartRateVariability, failedQueryID: failedQueryID)
                 }
@@ -483,7 +492,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.respiratoryRate) {
                         await HealthDailyMetricsSync.shared.syncRespiratoryRate()
                     }
@@ -497,7 +506,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.respiratoryRate, failedQueryID: failedQueryID)
                 }
@@ -517,7 +526,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.wristTemperature) {
                         await HealthDailyMetricsSync.shared.syncWristTemperature()
                     }
@@ -531,7 +540,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.wristTemperature, failedQueryID: failedQueryID)
                 }
@@ -551,7 +560,7 @@ final class HealthStoreUpdateCoordinator {
             guard let error else {
                 nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { completionHandler() }
+                    defer { unsafe completionHandler() }
                     await Self.trackObserverSync(.dietaryWater) {
                         await HealthSyncCoordinator.shared.syncHydrationEntries()
                     }
@@ -565,7 +574,7 @@ final class HealthStoreUpdateCoordinator {
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { completionHandler() }
+                defer { unsafe completionHandler() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.dietaryWater, failedQueryID: failedQueryID)
                 }

@@ -805,7 +805,9 @@ private func formatSeconds(_ seconds: Int) -> String {
     let clampedSeconds = max(0, seconds)
     let minutes = clampedSeconds / 60
     let remainingSeconds = clampedSeconds % 60
-    return String(format: "%02d:%02d", minutes, remainingSeconds)
+    // A literal `%02d:%02d` against two `Int`s — the pairing C varargs cannot check, and no
+    // `FormatStyle` produces zero-padded fixed-width clock digits.
+    return unsafe String(format: "%02d:%02d", minutes, remainingSeconds)
 }
 
 private func displayedLiveEnergyValue(for kilocalories: Double, unit: String?) -> Double {

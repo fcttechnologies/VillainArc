@@ -553,7 +553,7 @@ final class VASync {
             AppLog.error("Sign-out cache clear failed", error: error)
         }
         HealthSyncPreferences.resetAllAnchors()
-        SharedModelContainer.sharedDefaults.removeObject(forKey: DataManager.exerciseCatalogVersionKey)
+        unsafe SharedModelContainer.sharedDefaults.removeObject(forKey: DataManager.exerciseCatalogVersionKey)
         SpotlightIndexer.deleteAll()
     }
 

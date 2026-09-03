@@ -289,5 +289,8 @@ private func formattedDistance(_ meters: Double, compact: Bool = false) -> Strin
 private func formattedPace(secondsPerKilometer: Double) -> String {
     let secondsPerUnit = Locale.current.measurementSystem == .us ? secondsPerKilometer * 1.609344 : secondsPerKilometer
     let totalSeconds = max(0, Int(secondsPerUnit.rounded()))
-    return "\(totalSeconds / 60):\(String(format: "%02d", totalSeconds % 60))"
+    // A literal `%02d` against an `Int` — the pairing C varargs cannot check, and no `FormatStyle`
+    // produces zero-padded fixed-width clock digits.
+    let paddedSeconds = unsafe String(format: "%02d", totalSeconds % 60)
+    return "\(totalSeconds / 60):\(paddedSeconds)"
 }

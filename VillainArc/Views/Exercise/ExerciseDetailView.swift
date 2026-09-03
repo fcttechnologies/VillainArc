@@ -362,7 +362,7 @@ struct ExerciseDetailView: View {
                                 formatValueText: { activeMetric.formattedValueText($0, weightUnit: weightUnit) }
                             )
                             .id(activeMetric.id)
-                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                            .transition(OpacityTransition().combined(with: ScaleTransition(0.98)))
                             .popoverTip(exerciseHistoryChartTip)
 
                             if availableMetrics.count > 1 {

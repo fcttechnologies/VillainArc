@@ -143,6 +143,8 @@ struct WatchRestTimerView: View {
     private func timeText(seconds: Int) -> String {
         let minutes = seconds / 60
         let remainder = seconds % 60
-        return String(format: "%d:%02d", minutes, remainder)
+        // A literal `%d:%02d` against two `Int`s — the pairing C varargs cannot check, and no
+        // `FormatStyle` produces zero-padded fixed-width clock digits.
+        return unsafe String(format: "%d:%02d", minutes, remainder)
     }
 }

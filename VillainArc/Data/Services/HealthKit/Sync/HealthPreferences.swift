@@ -36,7 +36,7 @@ nonisolated enum HealthSyncPreferences {
         dietaryWaterAnchorKey,
     ]
 
-    nonisolated(unsafe) private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
+    private static var defaults: UserDefaults { unsafe SharedModelContainer.sharedDefaults }
 
     /// Forget how far each import has read, so the next one reads Apple Health from the beginning.
     ///

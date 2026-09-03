@@ -40,17 +40,16 @@ struct LocalizationIntegrityTests {
                 issues.append("\(locale): no AppIntentVocabulary.plist")
                 continue
             }
-            guard let plist = try PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-                  let phrases = plist["IntentPhrases"] as? [[String: Any]] else {
+            guard let vocabulary = try? PropertyListDecoder().decode(SiriVocabulary.self, from: data) else {
                 issues.append("\(locale): AppIntentVocabulary.plist has no IntentPhrases array")
                 continue
             }
             for intent in intents {
-                guard let entry = phrases.first(where: { $0["IntentName"] as? String == intent }) else {
+                guard let entry = vocabulary.intentPhrases.first(where: { $0.intentName == intent }) else {
                     issues.append("\(locale): missing \(intent)")
                     continue
                 }
-                let examples = entry["IntentExamples"] as? [String] ?? []
+                let examples = entry.intentExamples ?? []
                 if examples.isEmpty { issues.append("\(locale): \(intent) has no examples") }
                 // The app name is what Siri matches the phrase against, so it is never translated.
                 for example in examples where !example.contains("Villain Arc") {
@@ -60,6 +59,27 @@ struct LocalizationIntegrityTests {
         }
 
         #expect(issues.isEmpty, "\(issues.count) Siri vocabulary issue(s):\n\(issues.sorted().joined(separator: "\n"))")
+    }
+}
+
+/// The half of `AppIntentVocabulary.plist` this suite reads, decoded rather than cast out of an
+/// `Any` tree: `PropertyListDecoder` is the safe form of the read, where
+/// `PropertyListSerialization` takes an `UnsafeMutablePointer` for its format out-parameter.
+private struct SiriVocabulary: Decodable {
+    struct Phrase: Decodable {
+        let intentName: String
+        let intentExamples: [String]?
+
+        enum CodingKeys: String, CodingKey {
+            case intentName = "IntentName"
+            case intentExamples = "IntentExamples"
+        }
+    }
+
+    let intentPhrases: [Phrase]
+
+    enum CodingKeys: String, CodingKey {
+        case intentPhrases = "IntentPhrases"
     }
 }
 

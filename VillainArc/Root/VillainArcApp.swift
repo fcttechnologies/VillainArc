@@ -47,7 +47,7 @@ struct VillainArcApp: App {
         VAMetrics.start()
         VAMetrics.service.trackLaunchTask(.launch, stateLabel: "app-init") {
             try? Tips.configure([.datastoreLocation(.applicationDefault)])
-            CardioFavoriteTip.appLaunchCount = min(CardioFavoriteTip.appLaunchCount + 1, 100)
+            Task { await CardioFavoriteTip.appLaunched.donate() }
         }
         SubscriptionStore.shared.start()
     }

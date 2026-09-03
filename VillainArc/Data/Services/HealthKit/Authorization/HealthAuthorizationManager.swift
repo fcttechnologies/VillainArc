@@ -56,7 +56,7 @@ nonisolated enum HealthAuthorizationManager {
         #endif
     }
     static var currentPermissionsVersion: String { HealthKitCatalog.permissionsCatalogVersion }
-    static var lastHandledPermissionsVersion: String? { SharedModelContainer.sharedDefaults.string(forKey: lastHandledPermissionsVersionKey) }
+    static var lastHandledPermissionsVersion: String? { unsafe SharedModelContainer.sharedDefaults.string(forKey: lastHandledPermissionsVersionKey) }
 
     static var currentAuthorizationState: HealthAuthorizationState {
         guard isHealthDataAvailable else { return .unavailable }
@@ -188,7 +188,7 @@ nonisolated enum HealthAuthorizationManager {
     }
 
     static func markCurrentPermissionsVersionHandled() {
-        SharedModelContainer.sharedDefaults.set(currentPermissionsVersion, forKey: lastHandledPermissionsVersionKey)
+        unsafe SharedModelContainer.sharedDefaults.set(currentPermissionsVersion, forKey: lastHandledPermissionsVersionKey)
     }
 
     static func authorizationAction() async -> HealthAuthorizationAction {

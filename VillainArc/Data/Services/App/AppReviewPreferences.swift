@@ -8,7 +8,7 @@ import Foundation
 nonisolated enum AppReviewPreferences {
     private static let completedSessionCountKey = "review_completed_session_count"
     private static let hasRequestedReviewKey = "review_has_requested"
-    nonisolated(unsafe) private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
+    private static var defaults: UserDefaults { unsafe SharedModelContainer.sharedDefaults }
 
     static var completedSessionCount: Int {
         get { defaults.integer(forKey: completedSessionCountKey) }

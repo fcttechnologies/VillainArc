@@ -15,15 +15,15 @@ final class DataManager {
 
     /// Fast path for returning users - only checks catalog version
     @discardableResult static func seedExercisesIfNeeded() async throws -> Bool {
-        let storedVersion = SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey)
+        let storedVersion = unsafe SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey)
         guard ExerciseCatalog.catalogVersion != storedVersion else { return false }
 
         return try syncExercisesAndPersist()
     }
 
-    nonisolated static func hasCompletedInitialBootstrap() -> Bool { SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey) != nil }
+    nonisolated static func hasCompletedInitialBootstrap() -> Bool { unsafe SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey) != nil }
 
-    static func catalogNeedsSync() -> Bool { SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey) != ExerciseCatalog.catalogVersion }
+    static func catalogNeedsSync() -> Bool { unsafe SharedModelContainer.sharedDefaults.string(forKey: exerciseCatalogVersionKey) != ExerciseCatalog.catalogVersion }
 
     @discardableResult private static func syncExercisesAndPersist() throws -> Bool {
         let context = SharedModelContainer.container.mainContext
@@ -32,7 +32,7 @@ final class DataManager {
             try context.save()
             AppLog.info("Exercises synced.")
         }
-        SharedModelContainer.sharedDefaults.set(ExerciseCatalog.catalogVersion, forKey: exerciseCatalogVersionKey)
+        unsafe SharedModelContainer.sharedDefaults.set(ExerciseCatalog.catalogVersion, forKey: exerciseCatalogVersionKey)
         return didChange
     }
 

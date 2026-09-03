@@ -19,7 +19,7 @@ import Observation
     @ObservationIgnored var startedFromSetID: UUID?
     @ObservationIgnored var startedSeconds: Int
     init() {
-        let defaults = SharedModelContainer.sharedDefaults
+        let defaults = unsafe SharedModelContainer.sharedDefaults
         let storedEndDate = defaults.double(forKey: StorageKey.endDate)
         let storedRemaining = defaults.integer(forKey: StorageKey.remainingSeconds)
         let storedPaused = defaults.bool(forKey: StorageKey.isPaused)
@@ -218,7 +218,7 @@ import Observation
         }
     }
     private func persist() {
-        let defaults = SharedModelContainer.sharedDefaults
+        let defaults = unsafe SharedModelContainer.sharedDefaults
         if let endDate {
             defaults.set(endDate.timeIntervalSince1970, forKey: StorageKey.endDate)
         } else {

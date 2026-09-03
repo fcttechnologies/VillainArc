@@ -440,7 +440,11 @@ actor HealthDailyMetricsSync {
         let totalsByDay = TotalsByDayBox<Value>()
         let calendar = self.calendar
 
-        result.enumerateStatistics(from: rangeStart, to: rangeEndExclusive) { statistics, _ in
+        // `enumerateStatistics` hands its block an `UnsafeMutablePointer<ObjCBool>` stop flag and
+        // HealthKit ships no safe form of the walk. This is safe because the pointer is ignored
+        // rather than stored: the block never writes through it and never lets it escape, so the
+        // only lifetime involved is the framework's own, for the duration of the call.
+        unsafe result.enumerateStatistics(from: rangeStart, to: rangeEndExclusive) { statistics, _ in
             let dayStart = calendar.startOfDay(for: statistics.startDate)
             let total = statistics.sumQuantity()?.doubleValue(for: unit) ?? 0
             totalsByDay.value[dayStart] = mapValue(max(0, total))
@@ -732,7 +736,8 @@ actor HealthDailyMetricsSync {
         let statsByDay = TotalsByDayBox<(min: Double?, max: Double?, avg: Double?)>()
         let calendar = self.calendar
 
-        result.enumerateStatistics(from: rangeStart, to: rangeEndExclusive) { statistics, _ in
+        // The stop flag is ignored rather than stored, as in `dailyTotalsByDay` above.
+        unsafe result.enumerateStatistics(from: rangeStart, to: rangeEndExclusive) { statistics, _ in
             let dayStart = calendar.startOfDay(for: statistics.startDate)
             let minVal = statistics.minimumQuantity()?.doubleValue(for: unit)
             let maxVal = statistics.maximumQuantity()?.doubleValue(for: unit)

@@ -97,7 +97,10 @@ struct AccountBlobWiringTests {
 /// throw rather than prove anything about the gate.
 private let avatarBytes: Data = {
     let side = 240
-    let context = CGContext(
+    // `data: nil` is what makes this safe: Core Graphics allocates and owns the backing store for
+    // the context's whole lifetime, so the image below aliases no local buffer that could go out
+    // of scope under it. The initializer is unsafe only because it *can* take a caller's pointer.
+    let context = unsafe CGContext(
         data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
         space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
     )!

@@ -1,11 +1,16 @@
 import Foundation
 
+// A clock face is zero-padded fixed-width digits, which no `FormatStyle` produces, so these reach
+// for `String(format:)`. Every one is safe for the same reason: the format string is a literal
+// holding only `%d`/`%02d`, and every argument beside it is an `Int` — the pairing C varargs
+// cannot check is checked here by reading the two together.
+
 nonisolated func secondsToTime(_ seconds: Int) -> String {
     let clampedSeconds = max(0, seconds)
     let minutes = clampedSeconds / 60
     let remainingSeconds = clampedSeconds % 60
-    if minutes < 10 { return String(format: "%d:%02d", minutes, remainingSeconds) }
-    return String(format: "%02d:%02d", minutes, remainingSeconds)
+    if minutes < 10 { return unsafe String(format: "%d:%02d", minutes, remainingSeconds) }
+    return unsafe String(format: "%02d:%02d", minutes, remainingSeconds)
 }
 
 nonisolated func secondsToTimeWithHours(_ seconds: Int) -> String {
@@ -13,7 +18,9 @@ nonisolated func secondsToTimeWithHours(_ seconds: Int) -> String {
     let hours = clampedSeconds / 3_600
     let remainingMinutes = (clampedSeconds % 3_600) / 60
     let remainingSeconds = clampedSeconds % 60
-    return "\(hours):\(String(format: "%02d", remainingMinutes)):\(String(format: "%02d", remainingSeconds))"
+    let paddedMinutes = unsafe String(format: "%02d", remainingMinutes)
+    let paddedSeconds = unsafe String(format: "%02d", remainingSeconds)
+    return "\(hours):\(paddedMinutes):\(paddedSeconds)"
 }
 
 func formattedDateRange(start: Date, end: Date? = nil, includeTime: Bool = false) -> String {
@@ -262,7 +269,11 @@ nonisolated private func formattedTimeRangeText(start: Date, end: Date?) -> Stri
     return formatter.string(from: start, to: end)
 }
 
-nonisolated private func localizedDateRangeLabel(start: String, end: String) -> String { String(format: String(localized: "%1$@ - %2$@"), locale: .autoupdatingCurrent, start, end) }
+// The format string is a localized template, so a translator owns it — but every locale's copy of
+// `%1$@ - %2$@` is pinned to two `%@` specifiers by `LocalizationIntegrityTests`' format-specifier
+// parity check, and both arguments here are `String`. That check is what makes the varargs pairing
+// safe in every locale rather than only in English.
+nonisolated private func localizedDateRangeLabel(start: String, end: String) -> String { unsafe String(format: String(localized: "%1$@ - %2$@"), locale: .autoupdatingCurrent, start, end) }
 
 nonisolated private func normalizedEndDate(start: Date, end: Date?) -> Date? {
     guard let end else { return nil }

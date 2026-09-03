@@ -330,7 +330,7 @@ final class SubscriptionStore {
     }
 
     private func persistCache() {
-        let defaults = SharedModelContainer.sharedDefaults
+        let defaults = unsafe SharedModelContainer.sharedDefaults
         defaults.set(status.isPro, forKey: Self.cachedIsProKey)
         if let productID = status.productID {
             defaults.set(productID, forKey: Self.cachedProductIDKey)
@@ -345,16 +345,16 @@ final class SubscriptionStore {
     }
 
     static var cachedIsPro: Bool {
-        SharedModelContainer.sharedDefaults.bool(forKey: cachedIsProKey)
+        unsafe SharedModelContainer.sharedDefaults.bool(forKey: cachedIsProKey)
     }
 
     static var cachedExpiration: Date? {
-        let interval = SharedModelContainer.sharedDefaults.double(forKey: cachedExpirationKey)
+        let interval = unsafe SharedModelContainer.sharedDefaults.double(forKey: cachedExpirationKey)
         return interval > 0 ? Date(timeIntervalSince1970: interval) : nil
     }
 
     static var cachedProductID: String? {
-        SharedModelContainer.sharedDefaults.string(forKey: cachedProductIDKey)
+        unsafe SharedModelContainer.sharedDefaults.string(forKey: cachedProductIDKey)
     }
 
     // MARK: - Convenience

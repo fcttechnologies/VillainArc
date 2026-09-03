@@ -363,7 +363,7 @@ struct CorrelationInsightsView: View {
         }.sorted { $0.x < $1.x }
 
         let fit = LinearFit.fit(points.map { ($0.x, $0.y) })
-        let caption = fit.map { String(localized: "Correlation r = \(String(format: "%.2f", $0.pearson)) · \(points.count) sessions") }
+        let caption = fit.map { String(localized: "Correlation r = \($0.pearson.formatted(.number.precision(.fractionLength(2)))) · \(points.count) sessions") }
         let emptyText = "\(needs) \(String(localized: "(\(points.count) data points so far.)"))"
 
         return CorrelationMetric(
@@ -557,7 +557,7 @@ private struct CorrelationScatterCard: View {
                 .accessibilityLabel(Text("\(title) scatter chart with fitted line"))
 
                 if let fit {
-                    Text("Correlation r = \(String(format: "%.2f", fit.pearson)) · \(points.count) sessions")
+                    Text("Correlation r = \(fit.pearson.formatted(.number.precision(.fractionLength(2)))) · \(points.count) sessions")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

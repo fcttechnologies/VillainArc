@@ -6,7 +6,7 @@ import Foundation
 // Mark as seen by calling markCurrentVersionSeen() when the user dismisses, or immediately when nothing is presented.
 nonisolated enum WhatsNewPreferences {
     private static let lastShownVersionKey = "whats_new_last_shown_version"
-    nonisolated(unsafe) private static var defaults: UserDefaults { SharedModelContainer.sharedDefaults }
+    private static var defaults: UserDefaults { unsafe SharedModelContainer.sharedDefaults }
 
     static var lastShownVersion: String? {
         get { defaults.string(forKey: lastShownVersionKey) }

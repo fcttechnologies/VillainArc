@@ -20,6 +20,11 @@ enum SharedModelContainer {
 
     nonisolated static let schema = configuration.schema
 
+    /// `UserDefaults` is not `Sendable`, so the shared instance is `nonisolated(unsafe)` and every
+    /// read and write of it is spelled `unsafe` at its expression. What makes that safe is
+    /// `UserDefaults`' own documented thread safety: the class synchronizes its own access, so
+    /// concurrent readers and writers of this instance are serialized by the framework rather than
+    /// by us.
     nonisolated(unsafe) static let sharedDefaults: UserDefaults = {
         do {
             return try configuration.sharedDefaults()

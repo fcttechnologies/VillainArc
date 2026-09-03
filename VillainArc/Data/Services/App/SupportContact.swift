@@ -37,11 +37,16 @@ enum SupportContact {
     /// utsname reports the host architecture) or if sysctl is unavailable.
     static var deviceModel: String {
         var systemInfo = utsname()
-        uname(&systemInfo)
+        // `uname` is a C entry point with no safe form. Each step below states what the compiler
+        // cannot: `&systemInfo` is a local that outlives the call and `uname` writes only inside
+        // the `utsname` it was handed; the rebound pointer is bounded by `machine`'s own size and
+        // never escapes the closure; and `machine` is a NUL-terminated C string by the contract of
+        // `uname`, which is what makes `String(cString:)` stop inside the buffer.
+        unsafe uname(&systemInfo)
         let machineSize = MemoryLayout.size(ofValue: systemInfo.machine)
         let identifier = withUnsafePointer(to: &systemInfo.machine) { pointer -> String in
-            pointer.withMemoryRebound(to: CChar.self, capacity: machineSize) {
-                String(cString: $0)
+            unsafe pointer.withMemoryRebound(to: CChar.self, capacity: machineSize) {
+                unsafe String(cString: $0)
             }
         }
         if identifier.isEmpty || identifier == "x86_64" || identifier == "arm64" {

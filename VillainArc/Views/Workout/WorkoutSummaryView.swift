@@ -224,14 +224,11 @@ struct WorkoutSummaryView: View {
                         }
                     }
                     .disabled(isGeneratingSuggestions || isSaving)
-                    .popoverTip(suggestionDeferTip)
+                    .popoverTip(pendingSuggestionCount > 0 ? suggestionDeferTip : nil)
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutSummaryDoneButton)
                     .accessibilityLabel(AccessibilityText.workoutSummaryDoneLabel)
                     .accessibilityHint(AccessibilityText.workoutSummaryDoneHint)
                 }
-            }
-            .onChange(of: pendingSuggestionCount, initial: true) { _, newValue in
-                SuggestionDeferTip.hasPendingSuggestions = newValue > 0
             }
             .task(id: workout.id) {
                 loadPRs()

@@ -10,13 +10,13 @@ struct WorkoutSessionContainer: View {
             switch workout.statusValue {
             case .pending:
                 DeferredSuggestionsView(workout: workout)
-                    .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
+                    .transition(.sessionAdvance(reduceMotion: reduceMotion))
             case .active:
                 WorkoutView(workout: workout)
-                    .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
+                    .transition(.sessionAdvance(reduceMotion: reduceMotion))
             case .summary, .done:
                 WorkoutSummaryView(workout: workout)
-                    .transition(reduceMotion ? .opacity : .move(edge: .trailing).combined(with: .opacity))
+                    .transition(.sessionAdvance(reduceMotion: reduceMotion))
             }
         }
         .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: workout.statusValue)

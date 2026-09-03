@@ -51,7 +51,7 @@ struct WhatsNewPresentationTests {
 
     /// Runs `body` against a chosen stored state, restoring whatever this device really had.
     private func withStoredState(lastShownVersion: String?, sawLegacySlideshow: Bool, _ body: () -> Void) {
-        let defaults = SharedModelContainer.sharedDefaults
+        let defaults = unsafe SharedModelContainer.sharedDefaults
         let storedVersion = WhatsNewPreferences.lastShownVersion
         let storedLegacyMarker = defaults.object(forKey: Self.legacySlideshowSeenKey)
         defer {

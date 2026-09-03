@@ -179,7 +179,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     var isCardioSessionCoverPresented = false
     var isPlanBuilderSheetPresented = false
     var tabSelection: AppTab = .home {
-        didSet { SharedModelContainer.sharedDefaults.set(tabSelection.rawValue, forKey: Self.selectedTabDefaultsKey) }
+        didSet { unsafe SharedModelContainer.sharedDefaults.set(tabSelection.rawValue, forKey: Self.selectedTabDefaultsKey) }
     }
     var navigationEventToken = 0
     var homeTabResetToken = UUID()
@@ -350,7 +350,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     /// navigating to `.workoutSessionsList`; consumed and cleared by `WorkoutsListView`.
     var pendingWorkoutHistoryFilterID: String?
     private init() {
-        if let storedRawValue = SharedModelContainer.sharedDefaults.string(forKey: Self.selectedTabDefaultsKey),
+        if let storedRawValue = unsafe SharedModelContainer.sharedDefaults.string(forKey: Self.selectedTabDefaultsKey),
            let storedTab = AppTab(rawValue: storedRawValue) {
             tabSelection = storedTab
         }

@@ -86,7 +86,11 @@ struct HealthEnergyDaySamples: Sendable {
         let result = try await descriptor.result(for: healthStore)
 
         var samples: [TimeSeriesSample] = []
-        result.enumerateStatistics(from: dayStart, to: dayEndExclusive) { statistics, _ in
+        // `enumerateStatistics` hands its block an `UnsafeMutablePointer<ObjCBool>` stop flag and
+        // HealthKit ships no safe form of the walk. This is safe because the pointer is ignored
+        // rather than stored: the block never writes through it and never lets it escape, so the
+        // only lifetime involved is the framework's own, for the duration of the call.
+        unsafe result.enumerateStatistics(from: dayStart, to: dayEndExclusive) { statistics, _ in
             let value = max(0, statistics.sumQuantity()?.doubleValue(for: unit) ?? 0)
             guard value > 0 else { return }
             let hourStart = statistics.startDate

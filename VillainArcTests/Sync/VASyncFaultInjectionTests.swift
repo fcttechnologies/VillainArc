@@ -370,7 +370,7 @@ struct VASyncFaultInjectionTests {
     /// The other side of the same barrier: once the account holds everything, the clear runs.
     @Test @MainActor
     func signOutClearsOnceTheAccountHoldsEverything() async throws {
-        let defaults = SharedModelContainer.sharedDefaults
+        let defaults = unsafe SharedModelContainer.sharedDefaults
         let storedCatalogVersion = defaults.object(forKey: DataManager.exerciseCatalogVersionKey)
         defer {
             if let storedCatalogVersion {
