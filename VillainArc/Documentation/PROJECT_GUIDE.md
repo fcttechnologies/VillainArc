@@ -440,3 +440,5 @@ If you are changing:
   - `Documentation/TEMPLATES_FLOW.md`
 - the Apple Watch companion app or phone↔watch sync:
   - `Documentation/WATCH_COMPANION.md`
+- what the app reports from the field, or turning a field report into a fix:
+  - `Documentation/DIAGNOSTICS_AND_FIX_LOOP.md`

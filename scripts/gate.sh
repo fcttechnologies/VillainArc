@@ -21,13 +21,39 @@
 # the whole gate rather than the first thing that went wrong. Read the failures from the logs it
 # names.
 #
-# Usage:  scripts/gate.sh
+# `--fast` is the INNER loop, not a cheaper gate. It runs the Debug build and the suite and stops:
+# the one pair that can answer "is my fix right yet" while you are still writing it. Everything it
+# skips — Release, the archive, the built-artifact reads, localization drift, the listing, the
+# cold launch — answers a question about what SHIPS, which a fix in progress is not. So a `--fast`
+# green is never a claim that anything is done: the full gate is what says that, and it is what
+# every commit claiming a step is finished still has to pass.
+#
+# `--only <spec>` narrows the suite to one target/suite/test (xcodebuild's `-only-testing:` form),
+# which is what makes a single failing test a seconds-long loop rather than a minutes-long one.
+#
+# Usage:  scripts/gate.sh [--fast] [--only VillainArcTests/SomeSuite]
 # Env:    SIM_NAME  simulator device name (default "iPhone 17 Pro") outside a lane; inside one the
 #                   leased device is the destination (gate-lib's lane_sim_destination).
 
 set -uo pipefail
 
 cd "$(dirname "$0")/.."
+
+FAST=0
+ONLY_TESTING=()
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --fast) FAST=1; shift ;;
+    --only)
+      [ $# -ge 2 ] || { echo "==> FAIL: --only needs a test spec (e.g. --only VillainArcTests/SuggestionSystemTests)"; exit 1; }
+      ONLY_TESTING+=("-only-testing:$2"); shift 2 ;;
+    -h|--help) sed -n '2,40p' "$0"; exit 0 ;;
+    *) echo "==> FAIL: unknown argument '$1' (see scripts/gate.sh --help)"; exit 1 ;;
+  esac
+done
+# A narrowed run is a narrowed run whichever flag asked for it: `--only` on its own would otherwise
+# build the archive and the Release slice to run four tests.
+[ ${#ONLY_TESTING[@]} -gt 0 ] && FAST=1
 
 source "../FCTFoundation/scripts/gate-lib.sh"
 phase_init
@@ -64,11 +90,25 @@ VERIFY_ICONS="../FCTFoundation/scripts/verify-app-icons.py"
 # idle = 5.02, and Anchor ships 5.0. The slowest this app was ever observed under real build load
 # is 3.165s. A 26-38s first-run stall — the class this leg exists for — fails by four times over.
 COLD_LAUNCH_BUDGET=6.0
-DD="$(mktemp -d -t villainarc-gate)" || exit 1
 LOGS="/tmp/villainarc-gate-logs"
 rm -rf "${LOGS}" && mkdir -p "${LOGS}"
-trap 'rm -rf "${DD}"' EXIT
 STATUS=0
+
+# The full gate builds into a throwaway directory, because a gate that reuses build state is a
+# gate that can pass on something a clean checkout cannot build.
+#
+# `--fast` keeps its DerivedData between runs instead, and that is the whole of why it is fast: a
+# clean Debug build of this app is around three minutes, so a fast lane that threw its products
+# away each time would cost the same three minutes to re-answer a one-line fix. It is scoped per
+# simulator — the products are built for that destination — and it is never what a done claim
+# rests on, since the full gate above it always builds from nothing.
+if [ "${FAST}" -eq 1 ]; then
+  DD="${TMPDIR:-/tmp}/villainarc-gate-fast/${SIM_UDID}"
+  mkdir -p "${DD}" || exit 1
+else
+  DD="$(mktemp -d -t villainarc-gate)" || exit 1
+  trap 'rm -rf "${DD}"' EXIT
+fi
 
 fail() { echo "==> FAIL: $*"; STATUS=1; }
 
@@ -118,17 +158,24 @@ mark "Debug build"
 # graph it just built. The count is asserted, not just the exit status — a target that stops
 # compiling its test sources reports success having executed nothing. Only a floor is pinned:
 # adding tests must never fail the gate, losing them always must.
-echo "==> Unit suite + Release builds"
+if [ "${FAST}" -eq 1 ]; then
+  echo "==> Unit suite (fast)"
+else
+  echo "==> Unit suite + Release builds"
+fi
 TEST_LOG="${LOGS}/unit-suite.log"
 leg_start unit-suite "${TEST_LOG}" \
   xcodebuild -project VillainArc.xcodeproj -scheme VillainArc \
     -destination "${IOS_DEST}" \
     -derivedDataPath "${DD}/ios" -parallel-testing-enabled NO \
+    "${ONLY_TESTING[@]+"${ONLY_TESTING[@]}"}" \
     -allowProvisioningUpdates test-without-building
-start_build ios-release build   Release "${IOS_DEST}" \
-  ONLY_ACTIVE_ARCH=YES ARCHS=arm64
-start_build archive     archive Release "generic/platform=iOS" \
-  -archivePath "${DD}/VillainArc.xcarchive" CODE_SIGNING_ALLOWED=NO
+if [ "${FAST}" -eq 0 ]; then
+  start_build ios-release build   Release "${IOS_DEST}" \
+    ONLY_ACTIVE_ARCH=YES ARCHS=arm64
+  start_build archive     archive Release "generic/platform=iOS" \
+    -archivePath "${DD}/VillainArc.xcarchive" CODE_SIGNING_ALLOWED=NO
+fi
 
 if ! leg_wait unit-suite; then
   grep -E '✘|error:' "${TEST_LOG}" | head -40
@@ -137,8 +184,26 @@ fi
 check_warnings "${TEST_LOG}" "unit suite"
 TEST_COUNT="$(sed -n 's/.*Test run with \([0-9]*\) tests.*/\1/p' "${TEST_LOG}" | tail -1)"
 [ -n "${TEST_COUNT}" ] || fail "could not read a test count from ${TEST_LOG} — the suite may not have run"
-[ -n "${TEST_COUNT}" ] && { [ "${TEST_COUNT}" -ge "${MIN_TESTS}" ] \
-  || fail "only ${TEST_COUNT} tests ran, expected at least ${MIN_TESTS} — tests stopped being compiled or listed"; }
+# The floor is about the WHOLE suite still being compiled and listed, so a deliberately narrowed
+# run is not measured against it — four tests out of `--only` is the point, not a regression.
+if [ ${#ONLY_TESTING[@]} -eq 0 ] && [ -n "${TEST_COUNT}" ]; then
+  [ "${TEST_COUNT}" -ge "${MIN_TESTS}" ] \
+    || fail "only ${TEST_COUNT} tests ran, expected at least ${MIN_TESTS} — tests stopped being compiled or listed"
+fi
+
+if [ "${FAST}" -eq 1 ]; then
+  mark "unit suite"
+  phase_table
+  if [ "${STATUS}" -eq 0 ]; then
+    echo "==> FAST PASS: ${TEST_COUNT} tests green and the Debug build is warning-free.
+     This says the fix compiles and the suite agrees with it. It says NOTHING about Release, the
+     archive, the built artifacts, localization drift, the listing, or the cold launch — run
+     scripts/gate.sh with no arguments before calling anything done."
+  else
+    echo "==> FAST GATE FAILED — see the FAIL lines above and the logs in ${LOGS}."
+  fi
+  exit "${STATUS}"
+fi
 collect_build ios-release
 collect_build archive
 mark "suite + Release builds (concurrent)"
