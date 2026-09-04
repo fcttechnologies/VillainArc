@@ -19,15 +19,12 @@ scan attributes each occurrence to the nearest enclosing control start.
 Deliberately NOT counted as controls: `Text`, `Label`, `Image` (not interactive on their own),
 and anything inside a `#if DEBUG` block is counted separately rather than mixed in.
 
-Two known false positives, both consequences of attributing an occurrence to the nearest enclosing
-control, so read a gap against its call site before treating it as one:
-
-- A control that IS a whole row or helper view, whose identifier every call site applies to the
-  returned view (`ExerciseSummaryRow`, `WorkoutRowView`, `WorkoutHistoryRowView`, and the
-  `splitUnavailableView` / `activeSplitCard` / `unavailableView` helpers). The identifier is real
-  and addressable; it just is not inside the element this scan measures.
-- A control in preview-only scaffolding that is not wrapped in `#if DEBUG` (`TimerDurationPickerDemo`).
-  It reaches no user, so an identifier on it would satisfy the count and nothing else.
+One known false positive, a consequence of attributing an occurrence to the nearest enclosing
+control, so read a gap against its call site before treating it as one: a control that IS a whole
+row or helper view, whose identifier the call site applies to the returned view rather than inside
+the element this scan measures. The identifier is real and addressable either way.
+A `#Preview` body is counted with the debug-only controls rather than the shipping ones: it renders
+in Xcode's canvas and nowhere else, so an identifier on it would satisfy the count and nothing else.
 
 """
 import argparse
@@ -95,6 +92,17 @@ def scan_file(path):
             start, is_debug = stack.pop()
             if is_debug:
                 debug_ranges.append((start, n))
+
+    # A `#Preview { … }` body is canvas-only scaffolding, so it belongs with the debug controls:
+    # its span is the macro line to the closing brace at the macro's own indentation.
+    for n, line in enumerate(lines):
+        if not line.lstrip().startswith("#Preview"):
+            continue
+        indent = line[: len(line) - len(line.lstrip())]
+        for j in range(n + 1, len(lines)):
+            if lines[j] == indent + "}":
+                debug_ranges.append((n, j))
+                break
 
     def in_debug(n):
         return any(a <= n <= b for a, b in debug_ranges)

@@ -179,29 +179,20 @@ extension Comparable {
     }
 }
 
-// MARK: - Example usage
-
-struct TimerDurationPickerDemo: View {
-    @State private var seconds: Int = 60
-    @State private var showZero: Bool = true
-
-    var body: some View {
-        VStack(spacing: 24) {
-            Toggle("Allow 0:00", isOn: $showZero)
-                .padding(.horizontal)
-
-            Text(secondsToTime(seconds))
-                .font(.system(size: 56, weight: .bold))
-                .contentTransition(.numericText())
-
-            TimerDurationPicker(seconds: $seconds, showZero: showZero)
-                .frame(height: 50)
-        }
-        .padding()
-    }
-
-}
-
 #Preview {
-    TimerDurationPickerDemo()
+    @Previewable @State var seconds: Int = 60
+    @Previewable @State var showZero: Bool = true
+
+    VStack(spacing: 24) {
+        Toggle("Allow 0:00", isOn: $showZero)
+            .padding(.horizontal)
+
+        Text(secondsToTime(seconds))
+            .font(.system(size: 56, weight: .bold))
+            .contentTransition(.numericText())
+
+        TimerDurationPicker(seconds: $seconds, showZero: showZero)
+            .frame(height: 50)
+    }
+    .padding()
 }

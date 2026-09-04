@@ -56,6 +56,7 @@ struct RecentExercisesSectionView: View {
                 .appCardStyle()
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityIdentifiers.recentExercisesUnavailableButton)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(AccessibilityText.recentExercisesUnavailableLabel)
         .accessibilityValue(AccessibilityText.recentExercisesUnavailableValue)

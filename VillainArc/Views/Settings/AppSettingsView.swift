@@ -461,6 +461,13 @@ private struct AppSettingsFormView: View {
                 .appGroupedListRow(position: .top)
             }
 
+            // The board is the package's (`FeedbackBoardSheet`); the ROW is deliberately this app's
+            // own rather than `FeedbackSettingsSection`. That section is a whole `Section` with its
+            // own header and footer, and this is one of three rows inside a single Support block
+            // whose grouped-row chrome and positions (`.top`/`.middle`/`.bottom`) are computed
+            // together — adopting it would split the block in two and leave the remaining rows'
+            // corners wrong. The sheet, its credentials and its slug are all the package's, so
+            // there is no logic here to drift.
             Button {
                 Haptics.selection()
                 isShowingFeedbackBoard = true

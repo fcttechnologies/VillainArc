@@ -27,6 +27,7 @@ struct WorkoutHistoryRowView: View {
                 .fontDesign(.rounded)
         }
         .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutHistoryRow(item.id))
         .contextMenu {
             if let workout = item.session {
                 Button("Delete Workout", systemImage: "trash", role: .destructive) {

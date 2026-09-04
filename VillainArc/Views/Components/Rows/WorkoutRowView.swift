@@ -48,6 +48,7 @@ struct WorkoutRowView: View {
             .accessibilityHint(AccessibilityText.workoutRowHint)
         }
         .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutRow(workout))
         .contextMenu {
             Button("Delete Workout", systemImage: "trash", role: .destructive) {
                 deleteWorkout()

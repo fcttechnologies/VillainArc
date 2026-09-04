@@ -57,6 +57,7 @@ struct WorkoutSplitSectionView: View {
                 .tint(.primary)
         }
         .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSectionUnavailableButton)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(title)
         .accessibilityValue(description)
@@ -95,6 +96,7 @@ struct WorkoutSplitSectionView: View {
                 .tint(.primary)
             }
             .buttonStyle(.borderless)
+            .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitSectionOpenButton)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(titleText)
             .accessibilityValue(subtitleText)

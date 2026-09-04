@@ -45,6 +45,7 @@ struct ExerciseSummaryRow: View {
             .tint(.primary)
         }
         .buttonStyle(.borderless)
+        .accessibilityIdentifier(AccessibilityIdentifiers.exerciseSummaryRow(exercise))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(exercise.name)
         .accessibilityValue(AccessibilityText.exerciseSummaryRowValue(lastUsed: lastUsedText, sessions: sessionText, record: recordText))

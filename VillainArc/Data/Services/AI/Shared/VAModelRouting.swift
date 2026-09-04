@@ -16,6 +16,10 @@ import FoundationModels
 /// when the device is not entitled or the cloud is unreachable, so a caller never constructs an
 /// unentitled `PrivateCloudComputeLanguageModel` — the one construction that is an uncatchable
 /// crash rather than a throw.
+///
+/// The profiles carry no `disclosure` copy: no surface in the app shows which tier answered, so
+/// writing the strings here would ship two untranslated sentences nothing displays. The disclosure
+/// belongs with the surface that shows it, on the day one does.
 enum VAModelRouting {
     /// The availability probe the whole app branches on.
     static let availability = ModelAvailability()
@@ -23,24 +27,12 @@ enum VAModelRouting {
     /// Generating a whole multi-day program from a sentence: the longest prompt the app writes and
     /// the one whose output a person reads end to end, so it escalates when the local window is the
     /// base 4,096-token model.
-    static let planGeneration = AIModelProfile(
-        allowsPCC: true,
-        disclosure: .init(
-            cloudEscalation: String(localized: "This plan was generated using Apple's Private Cloud Compute."),
-            onDeviceFallback: String(localized: "Generated on this device.")
-        )
-    )
+    static let planGeneration = AIModelProfile(allowsPCC: true)
 
     /// Answering questions over the user's own indexed training data. Tool-rich — the Spotlight
     /// search tool's results ride in the context — which is exactly the case the threshold exists
     /// for.
-    static let assistant = AIModelProfile(
-        allowsPCC: true,
-        disclosure: .init(
-            cloudEscalation: String(localized: "This answer was generated using Apple's Private Cloud Compute."),
-            onDeviceFallback: String(localized: "Answered on this device.")
-        )
-    )
+    static let assistant = AIModelProfile(allowsPCC: true)
 
     /// Swapping one exercise for another: a short prompt with a small structured answer, which the
     /// base on-device window holds comfortably. Local, always.

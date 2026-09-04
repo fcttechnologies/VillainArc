@@ -211,6 +211,14 @@ enum AccessibilityIdentifiers {
 
     static func workoutRow(_ workout: WorkoutSession) -> String { "workoutsListRow-\(workout.id.uuidString)" }
 
+    static func workoutHistoryRow(_ id: String) -> String { "workoutHistoryRow-\(id)" }
+
+    static func exerciseSummaryRow(_ exercise: Exercise) -> String { "exerciseSummaryRow-\(exercise.catalogID)" }
+
+    static let workoutSplitSectionOpenButton = "workoutSplitSectionOpenButton"
+    static let workoutSplitSectionUnavailableButton = "workoutSplitSectionUnavailableButton"
+    static let recentExercisesUnavailableButton = "recentExercisesUnavailableButton"
+
     static func workoutPlanRow(_ workoutPlan: WorkoutPlan) -> String { "workoutPlanRow-\(workoutPlan.id)" }
 
     static func workoutDetailExercise(_ exercise: ExercisePerformance) -> String { "workoutDetailExercise-\(String(describing: exercise.workoutSession?.id.uuidString))-\(exercise.catalogID)-\(exercise.index)" }
