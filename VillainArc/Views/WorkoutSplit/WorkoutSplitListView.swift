@@ -198,15 +198,8 @@ struct WorkoutSplitListView: View {
 
     private func setActive(_ split: WorkoutSplit) {
         Haptics.selection()
-        Diag.breadcrumb(VACrumb.splitActivated)
-        for item in visibleSplits where item !== split { item.isActive = false }
-        split.isActive = true
-        if split.mode == .rotation {
-            split.rotationCurrentIndex = 0
-            split.rotationLastUpdatedDate = Calendar.current.startOfDay(for: .now)
-        }
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSplits: visibleSplits)
+        WorkoutSplitActivation.activate(split, among: visibleSplits, context: context)
+        Task { await IntentDonations.donateActivateWorkoutSplit(workoutSplit: split) }
     }
 
     private func setInactive(_ split: WorkoutSplit) {
@@ -227,6 +220,10 @@ struct WorkoutSplitListView: View {
         guard !toDelete.isEmpty else { return }
         Diag.breadcrumb(VACrumb.splitDeleted)
         SpotlightIndexer.deleteWorkoutSplits(ids: toDelete.map(\.id))
+        if toDelete.count == 1, let split = toDelete.first {
+            let entity = WorkoutSplitEntity(workoutSplit: split)
+            Task { await IntentDonations.donateDeleteWorkoutSplit(workoutSplit: entity) }
+        }
         pendingDeletionIDs.formUnion(toDelete.map { $0.persistentModelID })
         DispatchQueue.main.async {
             for split in toDelete { context.delete(split) }

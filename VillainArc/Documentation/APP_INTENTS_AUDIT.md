@@ -102,6 +102,7 @@ Legend: ✅ existing · ⬜ intentionally omitted or deferred (reason inline).
 | View last used plan | ✅ `ViewLastWorkoutPlanIntent` |
 | Delete a plan | ✅ `DeleteWorkoutPlanIntent` |
 | Delete all plans | ✅ `DeleteAllWorkoutPlansIntent` |
+| Review a plan's suggested changes | ✅ `OpenSuggestionReviewIntent` (routes to the plan and opens the review sheet through `AppRouter.pendingSuggestionReviewPlanID`) |
 | Reference a plan by name | ✅ `WorkoutPlanEntity` (+ query) |
 
 ### Workout split
@@ -109,6 +110,8 @@ Legend: ✅ existing · ⬜ intentionally omitted or deferred (reason inline).
 | Action / view | Intent |
 |---|---|
 | Create a split | ✅ `CreateWorkoutSplitIntent` |
+| Activate a split | ✅ `ActivateWorkoutSplitIntent` (exclusive — every other split goes inactive in the same write, through `WorkoutSplitActivation`) |
+| Delete a split | ✅ `DeleteWorkoutSplitIntent` (allowed on the active split, as the split screen allows it; the confirmation says what deleting it costs) |
 | Manage/open splits | ✅ `ManageWorkoutSplitsIntent`, `OpenWorkoutSplitIntent` |
 | Open today's plan from the split | ✅ `OpenTodaysPlanIntent` |
 | Start today's split workout | ✅ `StartTodaysWorkoutIntent` |
@@ -124,6 +127,7 @@ Legend: ✅ existing · ⬜ intentionally omitted or deferred (reason inline).
 | Show cardio history + routes | ✅ `ShowCardioHistoryIntent` |
 | Finish / cancel cardio session | ✅ `FinishCardioSessionIntent`, `CancelCardioSessionIntent` (`.background`; call `AppRouter.finishCardioSession` / `cancelCardioSession`) |
 | Open a specific past cardio session | ✅ `OpenCardioSessionIntent` |
+| Delete a completed cardio session | ✅ `DeleteCardioSessionIntent` — and it is the app's ONLY delete path for one: the workouts list disables the swipe on cardio rows (`deleteDisabled(item.session == nil)`), so a session recorded by mistake is removable by Shortcuts/Siri and nowhere else. A screen affordance is the open product gap, not an intent one. |
 | Reference a cardio session by name | ✅ `CardioSessionEntity` (+ query, Spotlight-indexed on finish) |
 
 ### Rest timer
@@ -228,3 +232,8 @@ Today's Summary · Last Night's Sleep · Today's Steps · Today's Calories · St
 
 Everything else is reachable as a Shortcuts-app action or by an assistant. Displacing a
 voice slot is a deliberate trade — only do it when a new phrase clearly out-earns one above.
+
+The split, cardio and suggestion-review verbs deliberately take no slot. Activating a split and
+reviewing a plan's suggestions happen occasionally and from a screen the user is already on; the
+two deletes are rare and destructive, which is the worst thing to hand a misheard phrase. All ten
+slots above are either mid-workout (hands busy, the case voice exists for) or a daily read.

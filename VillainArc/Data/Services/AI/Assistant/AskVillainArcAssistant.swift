@@ -24,6 +24,9 @@ enum AskVillainArcAssistant {
     nonisolated enum Availability: Equatable, Sendable {
         case available
         case modelUnavailable
+        /// PCC is this device's only tier and its request budget is spent — available again when
+        /// the budget resets, which is a different sentence from "not available here".
+        case quotaReached
 
         var isAvailable: Bool { self == .available }
     }
@@ -35,7 +38,8 @@ enum AskVillainArcAssistant {
 
     /// Whether the assistant can run right now, and why not if it can't.
     static var availability: Availability {
-        VAModelRouting.isAvailable(VAModelRouting.assistant) ? .available : .modelUnavailable
+        if VAModelRouting.isAvailable(VAModelRouting.assistant) { return .available }
+        return VAModelRouting.isQuotaLimited(VAModelRouting.assistant) ? .quotaReached : .modelUnavailable
     }
 
     static var isAvailable: Bool { availability.isAvailable }

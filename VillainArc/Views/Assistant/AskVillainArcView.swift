@@ -1,3 +1,4 @@
+import FCTIntelligence
 import FCTMetrics
 import SwiftUI
 
@@ -5,6 +6,10 @@ import SwiftUI
 /// training data. Answered on-device via `AskVillainArcAssistant`, which gives the model a read-only
 /// Spotlight search over the user's private index. When the assistant isn't available (iOS < 27 or no
 /// Apple Intelligence) the sheet shows a fallback pointing at History and Trends.
+///
+/// A spent Private Cloud Compute budget is its own state, and it is stated here rather than in an
+/// alert: it lasts until Apple's reset, so it belongs on the screen the whole time it is true, with
+/// the increase Apple offers beside it.
 struct AskVillainArcView: View {
     @Environment(\.dismiss) private var dismiss
 
@@ -25,15 +30,20 @@ struct AskVillainArcView: View {
 
     private var availability: AskVillainArcAssistant.Availability { AskVillainArcAssistant.availability }
 
+    /// Whether the PCC budget is currently changing what this sheet can answer — true both when the
+    /// device falls back to its own model and when the cloud was the only model it had.
+    private var isQuotaLimited: Bool { VAModelRouting.isQuotaLimited(VAModelRouting.assistant) }
+
     var body: some View {
         NavigationStack {
             List {
+                if isQuotaLimited { quotaSection }
                 if availability.isAvailable {
                     questionSection
                     quickPicksSection
                     if let answer { answerSection(answer) }
                     if let errorMessage { errorSection(errorMessage) }
-                } else {
+                } else if availability == .modelUnavailable {
                     unavailableSection
                 }
             }
@@ -157,6 +167,38 @@ struct AskVillainArcView: View {
         }
     }
 
+    /// The quota's own surface: the profile's line, and Apple's limit-increase flow where Apple
+    /// offers one. No dismiss — the fact is true until the budget resets.
+    private var quotaSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 8) {
+                Label("Cloud limit reached", systemImage: "cloud")
+                    .font(.headline)
+                Text(VAModelRouting.assistant.disclosure.quotaReached)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if canRequestLimitIncrease {
+                    Button("Ask Apple for More") {
+                        Haptics.selection()
+                        _ = ModelAvailability.showPCCLimitIncrease()
+                    }
+                    .buttonStyle(.glassProminent)
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .accessibilityIdentifier(AccessibilityIdentifiers.askVillainArcRequestLimitIncreaseButton)
+                    .accessibilityHint(AccessibilityText.askVillainArcRequestLimitIncreaseHint)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .appGroupedListRow(position: .single)
+        }
+    }
+
+    private var canRequestLimitIncrease: Bool {
+        guard case let .limitReached(_, canRequestIncrease) = VAModelRouting.availability.pccQuota else { return false }
+        return canRequestIncrease
+    }
+
     private var unavailableSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 8) {
@@ -175,7 +217,8 @@ struct AskVillainArcView: View {
         switch availability {
         case .modelUnavailable:
             return String(localized: "Apple Intelligence isn't available on this device. You can still explore everything in History and Trends.")
-        case .available:
+        // The quota state has its own section, which is the whole explanation; `.available` needs none.
+        case .available, .quotaReached:
             return ""
         }
     }

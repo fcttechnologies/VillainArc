@@ -180,6 +180,14 @@ struct WorkoutPlanDetailView: View {
                 WorkoutPlanSuggestionsSheet(plan: plan, initialTab: suggestionsInitialTab, initialFocusedExerciseID: focusedSuggestionExerciseID)
                     .presentationBackground(Color.sheetBg)
             }
+            // `OpenSuggestionReviewIntent` asks for this plan's review by naming it on the router,
+            // which the screen answers on the way in — and on the change too, since the plan the
+            // intent names can already be the one on screen.
+            .onChange(of: router.pendingSuggestionReviewPlanID, initial: true) { _, requestedPlanID in
+                guard requestedPlanID == plan.id else { return }
+                router.pendingSuggestionReviewPlanID = nil
+                openSuggestionsSheet(tab: toReviewSuggestionSections.isEmpty ? .awaitingOutcome : .toReview, focusedExerciseID: nil)
+            }
             .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 if showsCloseButton {
@@ -196,6 +204,7 @@ struct WorkoutPlanDetailView: View {
                     Button {
                         Haptics.selection()
                         openSuggestionsSheet(tab: toReviewSuggestionSections.isEmpty ? .awaitingOutcome : .toReview, focusedExerciseID: nil)
+                        Task { await IntentDonations.donateOpenSuggestionReview(workoutPlan: plan) }
                     } label: {
                         Image(systemName: "sparkles")
                             .accessibilityHidden(true)

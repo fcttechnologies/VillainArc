@@ -10,6 +10,7 @@ struct AppIntentExecutionPolicyTests {
             StartCardioSessionIntent.allowedExecutionTargets,
             FinishCardioSessionIntent.allowedExecutionTargets,
             CancelCardioSessionIntent.allowedExecutionTargets,
+            DeleteCardioSessionIntent.allowedExecutionTargets,
             AddExerciseIntent.allowedExecutionTargets,
             AddExercisesIntent.allowedExecutionTargets,
             ReplaceExerciseIntent.allowedExecutionTargets,
@@ -39,6 +40,8 @@ struct AppIntentExecutionPolicyTests {
             DeleteWorkoutPlanIntent.allowedExecutionTargets,
             DeleteAllWorkoutPlansIntent.allowedExecutionTargets,
             StartTodaysWorkoutIntent.allowedExecutionTargets,
+            ActivateWorkoutSplitIntent.allowedExecutionTargets,
+            DeleteWorkoutSplitIntent.allowedExecutionTargets,
         ]
 
         #expect(targets.allSatisfy { $0 == .main })

@@ -1,5 +1,4 @@
 import FCTAccount
-import FCTMetrics
 import FCTStoreKit
 import Foundation
 import SwiftUI
@@ -106,7 +105,6 @@ enum VAPro {
             presenter: presenter,
             isEligibleForIntroOffer: store.isEligibleForIntroOffer
         )
-        .diagScreen(VACrumb.premiumLocked)
     }
 
     /// Bind the store to the FCT account, or release it on sign-out. The device's own Apple ID

@@ -649,15 +649,8 @@ struct WorkoutSplitView: View {
     
     private func setActive(_ split: WorkoutSplit) {
         Haptics.selection()
-        Diag.breadcrumb(VACrumb.splitActivated)
-        for item in allSplits where item !== split { item.isActive = false }
-        split.isActive = true
-        if split.mode == .rotation {
-            split.rotationCurrentIndex = 0
-            split.rotationLastUpdatedDate = Calendar.current.startOfDay(for: .now)
-        }
-        saveContext(context: context)
-        SpotlightIndexer.index(workoutSplits: allSplits)
+        WorkoutSplitActivation.activate(split, among: allSplits, context: context)
+        Task { await IntentDonations.donateActivateWorkoutSplit(workoutSplit: split) }
     }
     
     private func missedDay(for split: WorkoutSplit) {
@@ -698,6 +691,8 @@ struct WorkoutSplitView: View {
         Haptics.selection()
         Diag.breadcrumb(VACrumb.splitDeleted)
         SpotlightIndexer.deleteWorkoutSplit(split)
+        let entity = WorkoutSplitEntity(workoutSplit: split)
+        Task { await IntentDonations.donateDeleteWorkoutSplit(workoutSplit: entity) }
         if isOverride { dismiss() }
         context.delete(split)
     }

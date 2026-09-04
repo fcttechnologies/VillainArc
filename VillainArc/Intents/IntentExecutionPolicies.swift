@@ -14,6 +14,10 @@ extension CancelCardioSessionIntent {
     static var allowedExecutionTargets: IntentExecutionTargets { .main }
 }
 
+extension DeleteCardioSessionIntent {
+    static var allowedExecutionTargets: IntentExecutionTargets { .main }
+}
+
 extension AddExerciseIntent {
     static var allowedExecutionTargets: IntentExecutionTargets { .main }
 }
@@ -127,5 +131,13 @@ extension DeleteAllWorkoutPlansIntent {
 }
 
 extension StartTodaysWorkoutIntent {
+    static var allowedExecutionTargets: IntentExecutionTargets { .main }
+}
+
+extension ActivateWorkoutSplitIntent {
+    static var allowedExecutionTargets: IntentExecutionTargets { .main }
+}
+
+extension DeleteWorkoutSplitIntent {
     static var allowedExecutionTargets: IntentExecutionTargets { .main }
 }

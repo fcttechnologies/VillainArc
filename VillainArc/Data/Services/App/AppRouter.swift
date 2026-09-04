@@ -345,6 +345,10 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     var homeTabPath: [Destination] = []
     var cardioTabPath: [Destination] = []
     var healthTabPath: [Destination] = []
+    /// The plan whose suggestion review should open as soon as its detail screen is showing. Set by
+    /// `OpenSuggestionReviewIntent` right before it navigates; read and cleared by
+    /// `WorkoutPlanDetailView`, which is where the review sheet lives.
+    var pendingSuggestionReviewPlanID: UUID?
     /// A workout-history filter the All-Workouts list should auto-select the next time it appears.
     /// Set by entry points like the cardio tab's "View All" (which requests `cardio`) right before
     /// navigating to `.workoutSessionsList`; consumed and cleared by `WorkoutsListView`.

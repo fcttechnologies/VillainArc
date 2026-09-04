@@ -101,6 +101,10 @@ enum SpotlightIndexer {
         delete(identifiers: ids.map(workoutSessionIdentifier(for:)))
     }
 
+    static func deleteCardioSession(id: UUID) {
+        delete(identifiers: [cardioSessionIdentifier(for: id)])
+    }
+
     static func deleteWorkoutPlan(id: UUID) {
         delete(identifiers: [workoutPlanIdentifier(for: id)])
     }

@@ -549,6 +549,7 @@ enum AccessibilityIdentifiers {
     static let askVillainArcQuestionField = "askVillainArcQuestionField"
     static let askVillainArcAskButton = "askVillainArcAskButton"
     static let askVillainArcAnswer = "askVillainArcAnswer"
+    static let askVillainArcRequestLimitIncreaseButton = "askVillainArcRequestLimitIncreaseButton"
     static let cardioLiveActivityMetricsRow = "cardioLiveActivityMetricsRow"
     static func cardioLiveActivityMetricRow(_ rawValue: String) -> String { "cardioLiveActivityMetricRow-\(rawValue)" }
     static let workoutDetailNotesText = "workoutDetailNotesText"
@@ -1377,6 +1378,9 @@ enum AccessibilityText {
     static let suggestionDeferLabel = localized("Later")
     static let suggestionDeferHint = localized("Defers this suggestion to review before the next workout.")
     static func suggestionConfidenceLabel(_ label: String) -> String { localized("Suggestion strength \(label)") }
+
+    // MARK: - AskVillainArcView
+    static let askVillainArcRequestLimitIncreaseHint = localized("Opens Apple's request for a higher Private Cloud Compute limit.")
 
     // MARK: - DeferredSuggestionsView
     static let deferredSuggestionsSkipLabel = localized("Skip")

@@ -41,7 +41,7 @@ import Testing
     /// watching from a screen the person was looking at when the trail is read.
     @Test func intentCrumbsAreNamespaced() {
         let intentCases = VACrumb.allCases.filter { $0.diagName.hasPrefix("intent.") }
-        #expect(intentCases.count >= 115)
+        #expect(intentCases.count >= 119)
     }
 
     /// **Every intent actually runs through the bracket.** The two tests above read the vocabulary,
@@ -51,7 +51,7 @@ import Testing
     /// entirely.
     @Test func everyIntentRunsThroughTheBracket() throws {
         let performs = try performBodies()
-        #expect(performs.count >= 115, "the sweep found \(performs.count) `perform()` bodies; the app has at least 115")
+        #expect(performs.count >= 119, "the sweep found \(performs.count) `perform()` bodies; the app has at least 119")
 
         let missing = performs
             .filter { !$0.body.contains("Diag.intent(") }

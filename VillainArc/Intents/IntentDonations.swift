@@ -16,6 +16,20 @@ enum IntentDonations {
 
     static func donateManageWorkoutSplits() async { guard donationsEnabled else { return }; _ = try? await ManageWorkoutSplitsIntent().donate() }
 
+    static func donateActivateWorkoutSplit(workoutSplit: WorkoutSplit) async {
+        guard donationsEnabled else { return }
+        let intent = ActivateWorkoutSplitIntent()
+        intent.workoutSplit = WorkoutSplitEntity(workoutSplit: workoutSplit)
+        _ = try? await intent.donate()
+    }
+
+    static func donateDeleteWorkoutSplit(workoutSplit: WorkoutSplitEntity) async {
+        guard donationsEnabled else { return }
+        let intent = DeleteWorkoutSplitIntent()
+        intent.workoutSplit = workoutSplit
+        _ = try? await intent.donate()
+    }
+
     static func donateOpenTodaysPlan() async { guard donationsEnabled else { return }; _ = try? await OpenTodaysPlanIntent().donate() }
 
     static func donateStartTodaysWorkout() async { guard donationsEnabled else { return }; _ = try? await StartTodaysWorkoutIntent().donate() }
@@ -85,6 +99,13 @@ enum IntentDonations {
     }
 
     static func donateDeleteAllWorkoutPlans() async { guard donationsEnabled else { return }; _ = try? await DeleteAllWorkoutPlansIntent().donate() }
+
+    static func donateOpenSuggestionReview(workoutPlan: WorkoutPlan) async {
+        guard donationsEnabled else { return }
+        let intent = OpenSuggestionReviewIntent()
+        intent.workoutPlan = WorkoutPlanEntity(workoutPlan: workoutPlan)
+        _ = try? await intent.donate()
+    }
 
     static func donateToggleWorkoutPlanFavorite(workoutPlan: WorkoutPlan) async {
         guard donationsEnabled else { return }

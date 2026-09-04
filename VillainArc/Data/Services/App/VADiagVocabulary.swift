@@ -124,9 +124,6 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
     case settingsLegal = "settings.legal"
     case profileEditor = "profile.editor"
     case assistant = "assistant"
-    /// The paywall itself is `FCTStoreKit`'s and names itself; this is the placeholder VA shows
-    /// where a gated destination was reached without passing the gate.
-    case premiumLocked = "premium.locked"
     case whatsNew = "whats_new"
     case textEditor = "text_editor"
 
@@ -201,6 +198,7 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
     /// `IntentCrumbCoverageTests` pins that every intent in the app does it and has a case here.
 
     case intentCancelCardioSession = "intent.cancel_cardio_session"
+    case intentDeleteCardioSession = "intent.delete_cardio_session"
     case intentFinishCardioSession = "intent.finish_cardio_session"
     case intentOpenActiveCardioSession = "intent.open_active_cardio_session"
     case intentOpenCardioSession = "intent.open_cardio_session"
@@ -305,11 +303,14 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
     case intentEditWorkoutPlan = "intent.edit_workout_plan"
     case intentOpenActiveWorkoutPlan = "intent.open_active_workout_plan"
     case intentOpenWorkoutPlan = "intent.open_workout_plan"
+    case intentOpenSuggestionReview = "intent.open_suggestion_review"
     case intentShowWorkoutPlans = "intent.show_workout_plans"
     case intentStartWorkoutWithPlan = "intent.start_workout_with_plan"
     case intentToggleWorkoutPlanFavorite = "intent.toggle_workout_plan_favorite"
     case intentViewLastWorkoutPlan = "intent.view_last_workout_plan"
+    case intentActivateWorkoutSplit = "intent.activate_workout_split"
     case intentCreateWorkoutSplit = "intent.create_workout_split"
+    case intentDeleteWorkoutSplit = "intent.delete_workout_split"
     case intentManageWorkoutSplits = "intent.manage_workout_splits"
     case intentOpenTodaysPlan = "intent.open_todays_plan"
     case intentOpenWorkoutSplit = "intent.open_workout_split"
@@ -356,4 +357,8 @@ nonisolated enum VACounter: String, DiagCounter, CaseIterable {
     /// keep; per install it is nothing but a count.
     case aiCloudEscalations = "ai_cloud_escalations"
     case aiCloudUnavailable = "ai_cloud_unavailable"
+    /// The escalation the user's own PCC budget refused. Counted apart from `aiCloudUnavailable`:
+    /// an unreachable cloud is a reason to look at the entitlement, a spent budget is the opposite
+    /// — the feature was wanted often enough to run out.
+    case aiCloudQuotaLimited = "ai_cloud_quota_limited"
 }
