@@ -1,3 +1,4 @@
+import FCTIntelligence
 import FCTMetrics
 import CoreSpotlight
 import FoundationModels
@@ -10,7 +11,7 @@ import FoundationModels
 ///
 /// **Read-only, private-data boundary.** The only tool the session can call is the Spotlight search,
 /// scoped to `.coreSpotlight` (this app's own index) — it reads the user's data and never writes. No
-/// state-mutating tool is ever attached (enforced by `AIToolSafetyPolicy.vettedSpotlightTools`). The
+/// state-mutating tool is ever attached (enforced by `VAAITools.vettedSystem`). The
 /// model runs entirely on-device: no prompt, index excerpt, or answer is sent anywhere. The training
 /// data it reads is a separate fact — those rows sync to the user's FCT account like every other
 /// authored row (`VASyncSchema`), which is what the user-facing copy has to say alongside this.
@@ -34,8 +35,7 @@ enum AskVillainArcAssistant {
 
     /// Whether the assistant can run right now, and why not if it can't.
     static var availability: Availability {
-        if case .available = SystemLanguageModel.default.availability { return .available }
-        return .modelUnavailable
+        VAModelRouting.isAvailable(VAModelRouting.assistant) ? .available : .modelUnavailable
     }
 
     static var isAvailable: Bool { availability.isAvailable }
@@ -61,35 +61,39 @@ enum AskVillainArcAssistant {
         Diag.breadcrumb(VACrumb.assistantAsked)
         Diag.count(VACounter.assistantQuestions)
 
-        let tools = AIToolSafetyPolicy.vettedSpotlightTools([makeSpotlightTool()])
-        let session = LanguageModelSession(tools: tools, instructions: instructions)
-        let prompt = Prompt {
-            "Answer this question about my Villain Arc training data:"
-            ""
-            question
-        }
+        let tools = VAAITools.vettedSystem([makeSpotlightTool()])
+        let tier = VAModelRouting.tier(for: VAModelRouting.assistant)
 
         do {
-            let response = try await VAMetrics.service.trackOperation(
+            let answer = try await VAMetrics.service.trackOperation(
                 .askAssistant,
                 stateLabel: "respond",
                 signpostName: "Ask Villain Arc"
             ) {
-                try await session.respond(to: prompt)
+                try await VAModelRouting.generator(tools: tools).respond(
+                    tier: tier,
+                    instructions: instructions,
+                    promptText: prompt(question: question)
+                )
             }
-            return .success(response.content)
+            return .success(answer)
         } catch {
             return .failure(.failed)
         }
+    }
+
+    /// The prompt body as text — the form the generator seam takes, and the form the `fm`
+    /// evaluation loop can score directly.
+    static func prompt(question: String) -> String {
+        """
+        Answer this question about my Villain Arc training data:
+
+        \(PromptSafety.sanitize(question, maxLength: 500))
+        """
     }
 
     /// The Spotlight search tool scoped to this app's own CoreSpotlight index (the private-data boundary).
     static func makeSpotlightTool() -> SpotlightSearchTool {
         SpotlightSearchTool(configuration: .init(sources: [.coreSpotlight]))
     }
-}
-
-extension SpotlightSearchTool: SafeTool {
-    /// The Spotlight tool only reads the user's index; it has no write capability.
-    static var capability: AIToolCapability { .readOnly }
 }

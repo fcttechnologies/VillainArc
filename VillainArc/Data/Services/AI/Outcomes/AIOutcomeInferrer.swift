@@ -1,3 +1,4 @@
+import FCTIntelligence
 import Foundation
 import FoundationModels
 
@@ -18,8 +19,7 @@ struct AIOutcomeInferrer {
     }
 
     private static func infer(input: AIOutcomeGroupInput, instructions: String, promptHeader: String) async -> AIOutcomeInferenceOutput? {
-        let model = SystemLanguageModel.default
-        guard case .available = model.availability else { return nil }
+        guard VAModelRouting.isAvailable(VAModelRouting.engineInference) else { return nil }
 
         do {
             let session = LanguageModelSession(instructions: instructions)

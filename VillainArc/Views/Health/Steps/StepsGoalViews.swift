@@ -1,3 +1,5 @@
+import FCTComponentsUI
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -130,11 +132,12 @@ struct StepsGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                AccountEmptyState {
+                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                     ContentUnavailableView("No Steps Goals", systemImage: "target", description: Text("Your saved and previous steps goals will appear here."))
                 }
             }
         }
+        .diagScreen(VACrumb.healthStepsGoalHistory)
     }
 
     private func deleteGoal(_ goal: StepsGoal) {
@@ -308,10 +311,13 @@ struct NewStepsGoalView: View {
                 }
             )
         }
+        .diagScreen(VACrumb.healthNewStepsGoal)
     }
 
     private func save() {
         guard let parsedTargetSteps, parsedTargetSteps > 0 else { return }
+        Diag.breadcrumb(VACrumb.goalCreated)
+        Diag.count(VACounter.goalsCreated)
 
         let calendar = Calendar.autoupdatingCurrent
         let todayStart = calendar.startOfDay(for: .now)

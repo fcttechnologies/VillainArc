@@ -1,4 +1,5 @@
 import FCTComponentsUI
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -152,6 +153,7 @@ struct WorkoutPlanPickerView: View {
         }) {
             WorkoutPlanView(plan: $0)
         }
+        .diagScreen(VACrumb.planPicker)
     }
 
     private func createWorkoutPlan() {

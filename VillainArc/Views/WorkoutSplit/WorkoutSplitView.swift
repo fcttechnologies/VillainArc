@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import AppIntents
@@ -143,6 +144,7 @@ struct WorkoutSplitView: View {
             activity.contentAttributeSet = attributeSet
             activity.appEntityIdentifier = .init(for: entity)
         }
+        .diagScreen(VACrumb.splitDetail)
     }
     
     // MARK: - Content
@@ -647,6 +649,7 @@ struct WorkoutSplitView: View {
     
     private func setActive(_ split: WorkoutSplit) {
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.splitActivated)
         for item in allSplits where item !== split { item.isActive = false }
         split.isActive = true
         if split.mode == .rotation {
@@ -693,6 +696,7 @@ struct WorkoutSplitView: View {
     private func deleteSplit() {
         guard let split = currentSplit else { return }
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.splitDeleted)
         SpotlightIndexer.deleteWorkoutSplit(split)
         if isOverride { dismiss() }
         context.delete(split)

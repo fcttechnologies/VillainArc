@@ -1,3 +1,5 @@
+import FCTIntelligence
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -255,6 +257,7 @@ struct ExerciseSetRowView: View {
     
     private func deleteSet() {
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.setDeleted)
         exercise.deleteSet(set)
         context.delete(set)
         saveContext(context: context)
@@ -276,6 +279,7 @@ struct ExerciseSetRowView: View {
     }
     
     private func completeSet(playHaptics: Bool = true) {
+        Diag.breadcrumb(VACrumb.setLogged)
         let shouldPrewarmSuggestions = shouldPrewarmSuggestionModelsOnCompletion
         if playHaptics {
             Haptics.selection()
@@ -290,7 +294,7 @@ struct ExerciseSetRowView: View {
         saveContext(context: context)
         WorkoutActivityManager.update()
         if shouldPrewarmSuggestions {
-            FoundationModelPrewarmer.warmup()
+            FoundationModelPrewarmer.warmUp()
         }
         Task { await IntentDonations.donateCompleteActiveSet() }
     }

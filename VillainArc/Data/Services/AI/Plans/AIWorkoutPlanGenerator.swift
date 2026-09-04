@@ -15,10 +15,7 @@ struct AIWorkoutPlanGenerator {
 
     /// True when the system language model is available on this device. Caller should hide AI UI
     /// when this is false (older simulators, unsupported regions, Apple Intelligence disabled).
-    static var isAvailable: Bool {
-        if case .available = SystemLanguageModel.default.availability { return true }
-        return false
-    }
+    static var isAvailable: Bool { VAModelRouting.isAvailable(VAModelRouting.planGeneration) }
 
     /// Hard cap on the user-supplied free-text portion of the prompt. Long inputs
     /// don't add information value, slow generation, and give a larger surface for
@@ -28,42 +25,54 @@ struct AIWorkoutPlanGenerator {
     static func generate(userPrompt: String, profileContext: AIPlanProfileContext) async -> Result<AIGeneratedPlanResult, GenerationError> {
         guard isAvailable else { return .failure(.modelUnavailable) }
 
-        let session = LanguageModelSession(instructions: instructions)
-        let safePrompt = sanitize(userPrompt: userPrompt)
-
-        let prompt = Prompt {
-            "Design a structured strength-training plan for this user."
-            ""
-            "User request:"
-            safePrompt
-            ""
-            "User context:"
-            profileContext.summary
-            ""
-            "Rules:"
-            "- Use only the exercise types and equipment a typical commercial gym has."
-            "- Compounds first each day, then accessory work."
-            "- Stay within 3–8 exercises per day."
-            "- Pick rep ranges that match the user's goal: 4–6 for strength, 6–10 for hypertrophy strength bias, 8–12 for hypertrophy, 12–20 for endurance/conditioning."
-            "- Use realistic rest periods: 180–240s for heavy compounds, 60–120s for isolation."
-            "- Keep names concise and use standard gym terminology."
-        }
+        Diag.breadcrumb(VACrumb.aiPlanRequested)
+        let tier = VAModelRouting.tier(for: VAModelRouting.planGeneration)
+        let promptText = prompt(userPrompt: userPrompt, profileContext: profileContext)
 
         do {
-            let response = try await VAMetrics.service.trackOperation(
+            let plan = try await VAMetrics.service.trackOperation(
                 .aiPlanGeneration,
                 stateLabel: "respond",
                 signpostName: "AI Plan Generation"
             ) {
-                try await session.respond(to: prompt, generating: AIGeneratedPlan.self)
+                try await VAModelRouting.generator().generate(
+                    AIGeneratedPlan.self,
+                    tier: tier,
+                    instructions: instructions,
+                    promptText: promptText,
+                    imageData: []
+                )
             }
-            let resolved = resolve(plan: response.content)
+            let resolved = resolve(plan: plan)
             guard !resolved.days.isEmpty else { return .failure(.emptyResult) }
             Diag.count(VACounter.aiPlansGenerated)
             return .success(resolved)
         } catch {
             return .failure(.modelFailed)
         }
+    }
+
+    /// The prompt body, as the text the model actually receives — a string rather than a `Prompt`
+    /// builder because the generator seam takes text, which is also what makes the prompt readable
+    /// by the `fm` evaluation loop without standing up the app.
+    static func prompt(userPrompt: String, profileContext: AIPlanProfileContext) -> String {
+        """
+        Design a structured strength-training plan for this user.
+
+        User request:
+        \(sanitize(userPrompt: userPrompt))
+
+        User context:
+        \(profileContext.summary)
+
+        Rules:
+        - Use only the exercise types and equipment a typical commercial gym has.
+        - Compounds first each day, then accessory work.
+        - Stay within 3–8 exercises per day.
+        - Pick rep ranges that match the user's goal: 4–6 for strength, 6–10 for hypertrophy strength bias, 8–12 for hypertrophy, 12–20 for endurance/conditioning.
+        - Use realistic rest periods: 180–240s for heavy compounds, 60–120s for isolation.
+        - Keep names concise and use standard gym terminology.
+        """
     }
 
     /// Trim, cap length, and strip control/invisible characters before the prompt reaches the model.

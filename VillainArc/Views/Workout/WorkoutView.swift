@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import AppIntents
@@ -242,6 +243,7 @@ struct WorkoutView: View {
         // Soft scroll-edge fade for this separate presentation context — ContentView's root
         // modifier doesn't reach full-screen covers. Inert on the iOS 26 SDK (see ContentView).
         .scrollEdgeEffectStyle(.soft, for: .all)
+        .diagScreen(VACrumb.workoutSession)
     }
 
     var exerciseTabView: some View {
@@ -363,6 +365,7 @@ struct WorkoutView: View {
     private func applyNativeExerciseReorder(
         _ difference: ReorderDifference<UUID, ReorderableSingleCollectionIdentifier>
     ) {
+        Diag.breadcrumb(VACrumb.exerciseReordered)
         let exercises = workout.sortedExercises
         let destinationID: UUID?
         switch difference.destination.position {
@@ -559,6 +562,7 @@ struct WorkoutView: View {
     }
 
     private func commitEffortAndFinish(_ effort: Int?, action: WorkoutFinishAction) {
+        if let effort, effort > 0 { Diag.breadcrumb(VACrumb.effortRecorded) }
         workout.postEffort = effort ?? 0
         router.activeWorkoutSheet = nil
         pendingEffortSelection = 0
@@ -619,6 +623,7 @@ struct WorkoutView: View {
     private func deleteExercise(offsets: IndexSet) {
         guard !offsets.isEmpty else { return }
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.exerciseRemoved)
         let exercisesToDelete = offsets.map { workout.sortedExercises[$0] }
 
         for exercise in exercisesToDelete {
@@ -640,6 +645,7 @@ struct WorkoutView: View {
     private func deleteExercise(_ exercise: ExercisePerformance) {
         let deletedIndex = exercise.index
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.exerciseRemoved)
         workout.deleteExercise(exercise)
         context.delete(exercise)
         saveContext(context: context)

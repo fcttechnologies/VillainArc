@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import AppIntents
@@ -138,6 +139,7 @@ struct WorkoutPlanDetailView: View {
                 detailContent
             }
         }
+        .diagScreen(VACrumb.planDetail)
     }
 
     private var detailContent: some View {

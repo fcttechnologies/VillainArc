@@ -66,6 +66,7 @@ struct WorkoutPlanView: View {
                                 if Self.makeStructureSnapshot(for: plan) != initialStructureSnapshot {
                                     showCancelWorkoutPlanConfirmation = true
                                 } else {
+                                    Diag.funnel(VAFunnel.planAuthoring, .abandoned)
                                     discardEditingCopyAndDismiss()
                                 }
                             } else if plan.completed {
@@ -81,6 +82,7 @@ struct WorkoutPlanView: View {
                         .confirmationDialog(isEditingExistingPlan ? "Discard Changes?" : "Cancel Workout Plan?", isPresented: $showCancelWorkoutPlanConfirmation) {
                             Button(isEditingExistingPlan ? "Discard Changes" : "Cancel Plan", role: .destructive) {
                                 if isEditingExistingPlan {
+                                    Diag.funnel(VAFunnel.planAuthoring, .abandoned)
                                     discardEditingCopyAndDismiss()
                                 } else {
                                     deleteDraftPlanAndDismiss()
@@ -105,6 +107,8 @@ struct WorkoutPlanView: View {
                                 Haptics.selection()
                                 plan.convertTargetWeightsToKg(from: weightUnit)
                                 if let originalPlan {
+                                    Diag.breadcrumb(VACrumb.planEdited)
+                                    Diag.funnel(VAFunnel.planAuthoring, .completed)
                                     originalPlan.applyEditingCopy(plan, context: context)
                                     saveContext(context: context)
                                     SpotlightIndexer.index(workoutPlan: originalPlan)
@@ -115,6 +119,11 @@ struct WorkoutPlanView: View {
                                 if !plan.completed {
                                     plan.completed = true
                                     Diag.breadcrumb(VACrumb.planCreated)
+                                    Diag.count(VACounter.plansCreated)
+                                    Diag.funnel(VAFunnel.planAuthoring, .completed)
+                                } else {
+                                    Diag.breadcrumb(VACrumb.planEdited)
+                                    Diag.funnel(VAFunnel.planAuthoring, .completed)
                                 }
                                 plan.clearCompletedSessionPerformanceReferences()
                                 saveContext(context: context)
@@ -223,6 +232,7 @@ struct WorkoutPlanView: View {
         // Soft scroll-edge fade for this separate presentation context — ContentView's root
         // modifier doesn't reach full-screen covers. Inert on the iOS 26 SDK (see ContentView).
         .scrollEdgeEffectStyle(.soft, for: .all)
+        .diagScreen(VACrumb.planEditor)
     }
 
     private var planDetailView: some View {
@@ -326,6 +336,7 @@ struct WorkoutPlanView: View {
     private func applyNativeExerciseReorder(
         _ difference: ReorderDifference<UUID, ReorderableSingleCollectionIdentifier>
     ) {
+        Diag.breadcrumb(VACrumb.exerciseReordered)
         let exercises = plan.sortedExercises
         let destinationID: UUID?
         switch difference.destination.position {
@@ -428,6 +439,7 @@ struct WorkoutPlanView: View {
 
     private func deleteDraftPlanAndDismiss() {
         Haptics.selection()
+        Diag.funnel(VAFunnel.planAuthoring, .abandoned)
         plan.deleteWithSuggestionCleanup(context: context)
         try? context.save()
         dismissPresentedPlanEditor()

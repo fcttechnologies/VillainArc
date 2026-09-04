@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -122,6 +123,7 @@ struct ExercisesListView: View {
         .onDisappear {
             router.isQuickActionsBarHidden = false
         }
+        .diagScreen(VACrumb.exerciseList)
     }
     
     @ViewBuilder

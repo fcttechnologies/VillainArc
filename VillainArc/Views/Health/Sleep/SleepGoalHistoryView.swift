@@ -1,3 +1,5 @@
+import FCTComponentsUI
+import FCTMetrics
 import SwiftData
 import SwiftUI
 
@@ -42,11 +44,12 @@ struct SleepGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                AccountEmptyState {
+                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                     ContentUnavailableView("No Sleep Goals", systemImage: "target", description: Text("Your saved and previous sleep goals will appear here."))
                 }
             }
         }
+        .diagScreen(VACrumb.healthSleepGoalHistory)
     }
 
     private func deleteGoal(_ goal: SleepGoal) {

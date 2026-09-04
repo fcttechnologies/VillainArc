@@ -1,3 +1,5 @@
+import FCTComponentsUI
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -92,7 +94,7 @@ struct WorkoutSplitListView: View {
             .sheetBackground()
             .overlay {
                 if visibleSplits.isEmpty {
-                    AccountEmptyState {
+                    RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                         ContentUnavailableView("No Splits", systemImage: "calendar.badge.plus", description: Text("Create a workout split to plan your training routine.")
                         )
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitEmptyState)
@@ -125,6 +127,7 @@ struct WorkoutSplitListView: View {
                 .presentationBackground(Color.sheetBg)
             }
         }
+        .diagScreen(VACrumb.splitList)
     }
 
     // MARK: - Row Content
@@ -195,6 +198,7 @@ struct WorkoutSplitListView: View {
 
     private func setActive(_ split: WorkoutSplit) {
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.splitActivated)
         for item in visibleSplits where item !== split { item.isActive = false }
         split.isActive = true
         if split.mode == .rotation {
@@ -221,6 +225,7 @@ struct WorkoutSplitListView: View {
             return current[index]
         }
         guard !toDelete.isEmpty else { return }
+        Diag.breadcrumb(VACrumb.splitDeleted)
         SpotlightIndexer.deleteWorkoutSplits(ids: toDelete.map(\.id))
         pendingDeletionIDs.formUnion(toDelete.map { $0.persistentModelID })
         DispatchQueue.main.async {

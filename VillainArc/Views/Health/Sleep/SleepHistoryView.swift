@@ -1,3 +1,4 @@
+import FCTMetrics
 import Charts
 import SwiftData
 import SwiftUI
@@ -38,6 +39,7 @@ struct SleepHistoryView: View {
         .appBackground()
         .navigationTitle("Sleep")
         .toolbarTitleDisplayMode(.inline)
+        .diagScreen(VACrumb.healthSleepHistory)
     }
 }
 
@@ -745,7 +747,7 @@ private struct SleepHistoryMainSection: View {
         // Device-sourced, so this is not an account claim and never waits on a first pull: the
         // Apple Health mirror is read from HealthKit on this phone and never travels on the wire,
         // so its emptiness is already true at the moment it renders. The goals set over these
-        // metrics do sync, and those empty states are wrapped in `AccountEmptyState`.
+        // metrics do sync, and those empty states are wrapped in `RestoringEmptyState`.
         if entries.isEmpty {
             ContentUnavailableView {
                 Label(AccessibilityText.healthHistoryNoHealthDataTitle, systemImage: "heart.text.square")

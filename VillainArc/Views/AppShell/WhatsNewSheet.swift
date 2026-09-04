@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 // What's New sheet: the highlights of every release this user hasn't seen yet.
@@ -27,6 +28,7 @@ struct WhatsNewSheet: View {
             }
             .accessibilityIdentifier("whats_new_sheet")
         }
+        .diagScreen(VACrumb.whatsNew)
     }
 
     private var header: some View {

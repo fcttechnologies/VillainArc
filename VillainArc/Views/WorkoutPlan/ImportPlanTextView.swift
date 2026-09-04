@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 struct ImportPlanTextView: View {
@@ -99,6 +100,7 @@ struct ImportPlanTextView: View {
             }
             .onAppear { textFocused = true }
         }
+        .diagScreen(VACrumb.planImport)
     }
 
     private func importRoutine() async {

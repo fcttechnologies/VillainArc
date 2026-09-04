@@ -1,3 +1,4 @@
+import FCTMetrics
 import FCTStoreKit
 import SwiftUI
 import SwiftData
@@ -172,6 +173,7 @@ struct PlanBuilderSheet: View {
             }
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.planBuilderSheet)
+        .diagScreen(VACrumb.planBuilder)
     }
 
     @ViewBuilder

@@ -1,4 +1,5 @@
 import FCTAccount
+import FCTMetrics
 import FCTStoreKit
 import Foundation
 import SwiftUI
@@ -99,12 +100,13 @@ enum VAPro {
 
     /// The "this needs Pro" placeholder for a gated destination something pushed without passing
     /// the gate — an App Intent, or a restored navigation path.
-    static func lockedView(_ feature: PremiumFeature) -> PremiumLockedView<PremiumFeature> {
+    static func lockedView(_ feature: PremiumFeature) -> some View {
         PremiumLockedView(
             feature: feature,
             presenter: presenter,
             isEligibleForIntroOffer: store.isEligibleForIntroOffer
         )
+        .diagScreen(VACrumb.premiumLocked)
     }
 
     /// Bind the store to the FCT account, or release it on sign-out. The device's own Apple ID

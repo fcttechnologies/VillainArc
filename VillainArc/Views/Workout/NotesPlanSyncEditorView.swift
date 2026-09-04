@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 /// Comparison + sync editor shown when notes that were seeded from a plan have drifted from the
@@ -63,5 +64,6 @@ struct NotesPlanSyncEditorView: View {
         .navBar(title: title) {
             CloseButton()
         }
+        .diagScreen(VACrumb.workoutNotesEditor)
     }
 }

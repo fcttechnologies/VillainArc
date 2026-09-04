@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftData
 import SwiftUI
 
@@ -73,10 +74,16 @@ final class DataManager {
     }
 }
 
+/// Every user-facing write in the app lands here, so the trail names the store rather than each
+/// caller: a save that succeeded is worth one crumb per foreground (hundreds more would spend the
+/// ring on themselves and push the person's own steps out), and a save that *threw* is worth one
+/// every time, because that is the last thing that happened before whatever comes next.
 func saveContext(context: ModelContext) {
     do {
         try context.save()
+        Diag.breadcrumbOncePerForeground(VACrumb.storeSaved)
     } catch {
+        Diag.breadcrumb(VACrumb.storeSaveFailed)
         AppLog.error("Failed to save context", error: error)
     }
 }

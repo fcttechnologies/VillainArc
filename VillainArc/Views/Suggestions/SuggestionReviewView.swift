@@ -312,6 +312,8 @@ func acceptGroup(
 ) {
     group.event.decision = .accepted
     Diag.breadcrumb(VACrumb.suggestionDecided)
+    Diag.breadcrumb(VACrumb.suggestionApplied)
+    Diag.count(VACounter.suggestionsApplied)
     outcomes.record(.accepted, for: group.event, rank: rank)
     for change in group.changes {
         applyChange(change, in: group.event, context: context)
@@ -329,6 +331,7 @@ func rejectGroup(
 ) {
     group.event.decision = .rejected
     Diag.breadcrumb(VACrumb.suggestionDecided)
+    Diag.breadcrumb(VACrumb.suggestionDismissed)
     outcomes.record(.dismissed, for: group.event, rank: rank)
     saveContext(context: context)
     AppLog.info("Suggestion group rejected. changes=\(group.changes.count)")
@@ -352,6 +355,7 @@ func skipSuggestions(
 
 func deferGroup(_ group: SuggestionGroup, context: ModelContext) {
     group.event.decision = .deferred
+    Diag.breadcrumb(VACrumb.suggestionDeferredAction)
     saveContext(context: context)
     AppLog.info("Suggestion group deferred. changes=\(group.changes.count)")
 }

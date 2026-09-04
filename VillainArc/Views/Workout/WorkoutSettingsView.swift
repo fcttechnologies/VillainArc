@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -23,6 +24,7 @@ struct WorkoutSettingsView: View {
         .navBar(title: "Workout Settings") {
             CloseButton()
         }
+        .diagScreen(VACrumb.workoutSettings)
     }
 
     private func settingsForm(_ settings: AppSettings) -> some View {

@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -83,6 +84,7 @@ struct NewWeightEntryView: View {
                 }
             )
         }
+        .diagScreen(VACrumb.healthAddWeight)
     }
 
     private func save() {
@@ -96,6 +98,8 @@ struct NewWeightEntryView: View {
         let completionGoal = activeGoals.first
         let shouldPresentCompletion = completionGoal.map { $0.contains(entryDate) && $0.reachesTarget(with: entry.weight, toleranceKg: goalAchievementToleranceKg) } == true
 
+        Diag.breadcrumb(VACrumb.weightLogged)
+        Diag.count(VACounter.weightEntriesLogged)
         context.insert(entry)
         saveContext(context: context)
         HealthMetricWidgetReloader.reloadWeight()

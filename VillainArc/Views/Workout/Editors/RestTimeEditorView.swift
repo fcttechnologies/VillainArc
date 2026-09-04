@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -34,6 +35,7 @@ struct RestTimeEditorView<ExerciseType: RestTimeEditable>: View {
         .onDisappear {
             saveContext(context: context)
         }
+        .diagScreen(VACrumb.workoutRestTimeEditor)
     }
 
     private func restSecondsBinding(for set: ExerciseType.SetType) -> Binding<Int> {

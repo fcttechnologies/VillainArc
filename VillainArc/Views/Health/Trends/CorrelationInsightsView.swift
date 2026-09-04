@@ -1,3 +1,4 @@
+import FCTMetrics
 import Charts
 import SwiftData
 import SwiftUI
@@ -232,6 +233,7 @@ struct CorrelationInsightsView: View {
         .accessibilityIdentifier(AccessibilityIdentifiers.correlationInsightsRoot)
         .task(id: rebuildSignature) { rebuild() }
         .task { await IntentDonations.donateShowCorrelationInsights() }
+        .diagScreen(VACrumb.healthCorrelationInsights)
     }
 
     private var ratedQualityCard: some View {

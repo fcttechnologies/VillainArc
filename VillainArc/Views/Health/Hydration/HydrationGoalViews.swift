@@ -1,3 +1,5 @@
+import FCTComponentsUI
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -127,11 +129,12 @@ struct HydrationGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                AccountEmptyState {
+                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                     ContentUnavailableView("No Hydration Goals", systemImage: "target", description: Text("Your saved and previous hydration goals will appear here."))
                 }
             }
         }
+        .diagScreen(VACrumb.healthHydrationGoalHistory)
     }
 
     private func deleteGoal(_ goal: HydrationGoal) {
@@ -299,10 +302,13 @@ struct NewHydrationGoalView: View {
                 }
             )
         }
+        .diagScreen(VACrumb.healthNewHydrationGoal)
     }
 
     private func save() {
         guard let parsedTargetML, parsedTargetML > 0 else { return }
+        Diag.breadcrumb(VACrumb.goalCreated)
+        Diag.count(VACounter.goalsCreated)
 
         let calendar = Calendar.autoupdatingCurrent
         let todayStart = calendar.startOfDay(for: .now)

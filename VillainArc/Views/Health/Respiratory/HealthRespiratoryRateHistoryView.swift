@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftData
 import SwiftUI
 
@@ -40,5 +41,6 @@ struct HealthRespiratoryRateHistoryView: View {
                 )
             }
         }
+        .diagScreen(VACrumb.healthRespiratoryRateHistory)
     }
 }

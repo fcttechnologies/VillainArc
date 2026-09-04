@@ -1,3 +1,5 @@
+import FCTComponentsUI
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -58,11 +60,12 @@ struct WeightGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                AccountEmptyState {
+                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                     ContentUnavailableView("No Weight Goals", systemImage: "target", description: Text("Your saved and previous weight goals will appear here."))
                 }
             }
         }
+        .diagScreen(VACrumb.healthWeightGoalHistory)
     }
 
     private func deleteGoal(_ goal: WeightGoal) {

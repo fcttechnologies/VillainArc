@@ -1,3 +1,4 @@
+import FCTComponentsUI
 import SwiftUI
 import SwiftData
 
@@ -30,7 +31,7 @@ struct RecentWorkoutSectionView: View {
             }
 
             if recentItem == nil {
-                AccountEmptyState {
+                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                     ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Tap the \(Image(systemName: "plus")) button to start your first workout."))
                         .frame(maxWidth: .infinity)
                         .appCardStyle()

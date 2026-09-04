@@ -1,3 +1,5 @@
+import FCTIntelligence
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -98,6 +100,7 @@ struct RestTimerView: View {
                 }
             }
         }
+        .diagScreen(VACrumb.workoutRestTimer)
     }
 
     private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
@@ -113,6 +116,7 @@ struct RestTimerView: View {
             HStack(spacing: 16) {
                 Button {
                     Haptics.selection()
+                    Diag.breadcrumb(VACrumb.restTimerSkipped)
                     restTimer.stop()
                     Task { await IntentDonations.donateStopRestTimer() }
                 } label: {
@@ -147,6 +151,7 @@ struct RestTimerView: View {
             HStack(spacing: 16) {
                 Button {
                     Haptics.selection()
+                    Diag.breadcrumb(VACrumb.restTimerSkipped)
                     restTimer.stop()
                     Task { await IntentDonations.donateStopRestTimer() }
                 } label: {
@@ -335,7 +340,7 @@ struct RestTimerView: View {
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
         if shouldPrewarmSuggestions {
-            FoundationModelPrewarmer.warmup()
+            FoundationModelPrewarmer.warmUp()
         }
         Task { await IntentDonations.donateCompleteActiveSet() }
     }

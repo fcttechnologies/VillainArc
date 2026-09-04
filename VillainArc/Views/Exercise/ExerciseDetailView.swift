@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import Charts
@@ -468,6 +469,7 @@ struct ExerciseDetailView: View {
                 }
             }
         }
+        .diagScreen(VACrumb.exerciseDetail)
     }
 
     private var addedConfirmationBinding: Binding<Bool> {

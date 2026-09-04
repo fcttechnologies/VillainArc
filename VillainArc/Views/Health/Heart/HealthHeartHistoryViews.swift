@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftData
 import SwiftUI
 
@@ -40,6 +41,7 @@ struct HealthHeartRateHistoryView: View {
                 )
             }
         }
+        .diagScreen(VACrumb.healthHeartRateHistory)
     }
 }
 
@@ -75,6 +77,7 @@ struct HealthRestingHeartRateHistoryView: View {
                 )
             }
         }
+        .diagScreen(VACrumb.healthRestingHeartRateHistory)
     }
 }
 
@@ -110,6 +113,7 @@ struct HealthWalkingHeartRateHistoryView: View {
                 )
             }
         }
+        .diagScreen(VACrumb.healthWalkingHeartRateHistory)
     }
 }
 
@@ -145,6 +149,7 @@ struct HealthHeartRateVariabilityHistoryView: View {
                 )
             }
         }
+        .diagScreen(VACrumb.healthHeartRateVariabilityHistory)
     }
 }
 

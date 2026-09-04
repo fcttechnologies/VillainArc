@@ -1,3 +1,4 @@
+import FCTIntelligence
 import Foundation
 import FoundationModels
 
@@ -15,12 +16,11 @@ struct AITrainingStyleClassifier {
         #if targetEnvironment(simulator)
         if ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil { return nil }
         #endif
-        let model = SystemLanguageModel.default
-        guard case .available = model.availability else { return nil }
+        guard VAModelRouting.isAvailable(VAModelRouting.engineInference) else { return nil }
 
         // Route through the agentic-safety policy: every tool is asserted read-only and on the
         // allowlist before it can reach the session ("AI reads, user confirms writes").
-        let tools = AIToolSafetyPolicy.vettedTools([RecentExercisePerformancesTool()])
+        let tools = VAAITools.vetted([RecentExercisePerformancesTool()])
 
         let input = AIInferenceInput(performance: performance)
 

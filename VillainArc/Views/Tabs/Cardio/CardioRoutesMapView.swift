@@ -1,3 +1,4 @@
+import FCTMetrics
 import CoreLocation
 import Foundation
 import HealthKit
@@ -126,6 +127,7 @@ struct CardioRoutesMapView: View {
             MapCompass()
         }
         .ignoresSafeArea(edges: .top)
+        .diagScreen(VACrumb.cardioRoutes)
     }
 
     private static let routeColors: [Color] = [.blue, .orange, .purple, .pink, .teal, .indigo, .red, .cyan, .mint, .brown]

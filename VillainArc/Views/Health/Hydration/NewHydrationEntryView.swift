@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftData
 import SwiftUI
 
@@ -79,6 +80,7 @@ struct NewHydrationEntryView: View {
                 }
             )
         }
+        .diagScreen(VACrumb.healthAddHydration)
     }
 
     private func save() {
@@ -88,6 +90,8 @@ struct NewHydrationEntryView: View {
         let timeComponents = calendar.dateComponents([.hour, .minute], from: selectedTime)
         let entryDate = calendar.date(bySettingHour: timeComponents.hour ?? 0, minute: timeComponents.minute ?? 0, second: 0, of: selectedDate) ?? selectedDate
 
+        Diag.breadcrumb(VACrumb.hydrationLogged)
+        Diag.count(VACounter.hydrationEntriesLogged)
         let entry = HydrationEntry(date: entryDate, volume: parsedVolumeML)
         context.insert(entry)
         let hydrationGoalNotification = try? HydrationDay.reconcile(for: entryDate, context: context)

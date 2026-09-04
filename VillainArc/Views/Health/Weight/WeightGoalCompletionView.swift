@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftData
 import SwiftUI
 
@@ -227,6 +228,7 @@ struct WeightGoalCompletionView: View {
             }
         }
         .appBackground()
+        .diagScreen(VACrumb.healthWeightGoalCompletion)
     }
     
     private func finishGoal(using action: PrimaryAction) {

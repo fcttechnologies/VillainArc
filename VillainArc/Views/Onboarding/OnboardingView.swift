@@ -1,3 +1,4 @@
+import FCTMetrics
 import CoreLocation
 import SwiftData
 import SwiftUI
@@ -86,6 +87,7 @@ struct OnboardingView: View {
         }
         .presentationDetents([.height(max(280, manager.sheetHeight))])
         .animation(.easeInOut(duration: 0.25), value: manager.sheetHeight)
+        .diagScreen(VACrumb.onboardingSetup)
     }
 
     private var bootstrapView: some View {

@@ -1,3 +1,5 @@
+import FCTComponentsUI
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -49,6 +51,7 @@ struct TrainingConditionHistoryView: View {
                 .accessibilityHint(AccessibilityText.healthTrainingConditionHistoryAddHint)
             }
         }
+        .diagScreen(VACrumb.healthTrainingConditionHistory)
     }
 
     @ViewBuilder
@@ -74,7 +77,7 @@ struct TrainingConditionHistoryView: View {
     @ViewBuilder
     private var historySection: some View {
         if endedPeriods.isEmpty {
-            AccountEmptyState {
+            RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                 ContentUnavailableView("No Condition History", systemImage: "clock.arrow.trianglehead.counterclockwise.rotate.90", description: Text("Ended or replaced conditions will appear here."))
                     .frame(maxWidth: .infinity)
                     .padding()

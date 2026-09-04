@@ -1,3 +1,4 @@
+import FCTMetrics
 import Foundation
 import Observation
 
@@ -64,6 +65,7 @@ import Observation
             stopInternal(cancelNotification: true, clearOrigin: false)
             return
         }
+        Diag.breadcrumb(VACrumb.restTimerStarted)
         endDate = Date.now.addingTimeInterval(TimeInterval(clamped))
         pausedRemainingSeconds = 0
         isPaused = false

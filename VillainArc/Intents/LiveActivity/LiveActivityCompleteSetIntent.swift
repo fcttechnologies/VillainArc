@@ -1,3 +1,4 @@
+import FCTIntelligence
 import AppIntents
 import FCTMetrics
 import SwiftData
@@ -30,7 +31,7 @@ struct LiveActivityCompleteSetIntent: LiveActivityIntent {
 
             saveContext(context: context)
             WorkoutActivityManager.update(for: workout)
-            if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmup() }
+            if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmUp() }
 
             return .result()
         }

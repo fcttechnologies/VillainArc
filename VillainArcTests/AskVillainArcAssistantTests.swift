@@ -1,4 +1,5 @@
 import CoreSpotlight
+import FCTIntelligence
 import FoundationModels
 import Testing
 
@@ -27,15 +28,16 @@ struct AskVillainArcAssistantTests {
 
     @Test
     func spotlightTool_isReadOnly() {
-        #expect(SpotlightSearchTool.capability == .readOnly)
+        let capability: AIToolCapability = SpotlightSearchTool.capability
+        #expect(capability == .readOnly)
     }
 
     @Test
     func makeSpotlightTool_producesAVettableReadOnlyTool() {
         let tool = AskVillainArcAssistant.makeSpotlightTool()
-        // vettedSpotlightTools precondition-fails on a non-read-only tool; reaching a non-empty
-        // result proves the assistant's tool passes the safety gate.
-        let vetted = AIToolSafetyPolicy.vettedSpotlightTools([tool])
+        // The vetting precondition-fails on a non-read-only tool; reaching a non-empty result
+        // proves the assistant's tool passes the safety gate.
+        let vetted = VAAITools.vettedSystem([tool])
         #expect(vetted.count == 1)
     }
 }

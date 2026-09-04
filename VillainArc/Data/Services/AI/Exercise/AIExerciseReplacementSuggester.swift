@@ -1,3 +1,4 @@
+import FCTIntelligence
 import FCTMetrics
 import Foundation
 import FoundationModels
@@ -7,10 +8,7 @@ import FoundationModels
 /// unavailable; the existing deterministic muscle-overlap ranker still renders the rest of the
 /// picker.
 struct AIExerciseReplacementSuggester {
-    static var isAvailable: Bool {
-        if case .available = SystemLanguageModel.default.availability { return true }
-        return false
-    }
+    static var isAvailable: Bool { VAModelRouting.isAvailable(VAModelRouting.exerciseReplacement) }
 
     struct Input {
         let currentExerciseName: String
@@ -35,30 +33,24 @@ struct AIExerciseReplacementSuggester {
     static func suggest(input: Input) async -> [AIResolvedReplacementSuggestion] {
         guard isAvailable else { return [] }
 
-        let session = LanguageModelSession(instructions: instructions)
-        let prompt = Prompt {
-            "Suggest 3 to 5 replacement exercises for the current exercise."
-            ""
-            "Context:"
-            input.summary
-            ""
-            "Rules:"
-            "- Suggestions must train the same primary muscles."
-            "- Prefer movements available in a typical commercial gym."
-            "- Vary equipment when sensible (a dumbbell or cable variant of a barbell movement is a good swap)."
-            "- Do not suggest the same exercise the user is replacing."
-            "- One-sentence reasoning per suggestion."
-        }
+        Diag.breadcrumb(VACrumb.aiReplacementRequested)
+        let tier = VAModelRouting.tier(for: VAModelRouting.exerciseReplacement)
 
         do {
-            let response = try await VAMetrics.service.trackOperation(
+            let list = try await VAMetrics.service.trackOperation(
                 .aiExerciseReplacement,
                 stateLabel: "respond",
                 signpostName: "AI Exercise Replacement"
             ) {
-                try await session.respond(to: prompt, generating: AIReplacementSuggestionList.self)
+                try await VAModelRouting.generator().generate(
+                    AIReplacementSuggestionList.self,
+                    tier: tier,
+                    instructions: instructions,
+                    promptText: prompt(input: input),
+                    imageData: []
+                )
             }
-            let resolved = resolve(suggestions: response.content.suggestions, excluding: input.excludedCatalogID)
+            let resolved = resolve(suggestions: list.suggestions, excluding: input.excludedCatalogID)
             if !resolved.isEmpty { Diag.count(VACounter.aiReplacementsSuggested) }
             return resolved
         } catch {
@@ -66,7 +58,25 @@ struct AIExerciseReplacementSuggester {
         }
     }
 
-    private static var instructions: String {
+    /// The prompt body as text: the seam the generator takes, and the form the `fm` evaluation
+    /// loop scores without standing up the app.
+    static func prompt(input: Input) -> String {
+        """
+        Suggest 3 to 5 replacement exercises for the current exercise.
+
+        Context:
+        \(input.summary)
+
+        Rules:
+        - Suggestions must train the same primary muscles.
+        - Prefer movements available in a typical commercial gym.
+        - Vary equipment when sensible (a dumbbell or cable variant of a barbell movement is a good swap).
+        - Do not suggest the same exercise the user is replacing.
+        - One-sentence reasoning per suggestion.
+        """
+    }
+
+    static var instructions: String {
         """
         You suggest workout exercise replacements that train the same target muscles.
         Return three to five suggestions as an AIReplacementSuggestionList.

@@ -1,3 +1,4 @@
+import FCTIntelligence
 import AppIntents
 import FCTMetrics
 import SwiftData
@@ -66,7 +67,7 @@ struct FinishWorkoutIntent: AppIntent {
                 saveContext(context: context)
                 await HealthLiveWorkoutSessionCoordinator.shared.finishIfRunning(for: workoutSession, context: context)
                 WorkoutActivityManager.end()
-                if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmup() }
+                if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmUp() }
             case .workoutDeleted:
                 RestTimerState.shared.stop()
                 HealthLiveWorkoutSessionCoordinator.shared.discardIfRunning(for: workoutSession)

@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import TipKit
@@ -250,6 +251,8 @@ struct ExerciseView: View {
             }
             .sheet(isPresented: $showReplaceExerciseSheet) {
                 ReplaceExerciseView(currentCatalogID: exercise.catalogID, sourceMuscles: Set(exercise.musclesTargeted), sourceEquipmentType: exercise.equipmentType) { newExercise, keepSets in
+                    Diag.breadcrumb(VACrumb.exerciseReplaced)
+                    Diag.count(VACounter.exercisesReplaced)
                     exercise.replaceWith(newExercise, keepSets: keepSets, context: context)
                     saveContext(context: context)
                     WorkoutActivityManager.update()
@@ -292,6 +295,7 @@ struct ExerciseView: View {
     
     private func addSet() {
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.setAdded)
         exercise.addSet(unit: weightUnit)
         saveContext(context: context)
         WorkoutActivityManager.update()

@@ -1,3 +1,4 @@
+import FCTIntelligence
 import SwiftUI
 import SwiftData
 
@@ -219,7 +220,7 @@ struct ActiveWorkoutResumeBarButton: View {
         WorkoutActivityManager.update(for: workout)
         Task { await IntentDonations.donateCompleteActiveSet() }
         if shouldPrewarmSuggestions {
-            FoundationModelPrewarmer.warmup()
+            FoundationModelPrewarmer.warmUp()
         }
     }
 }

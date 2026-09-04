@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftData
 import SwiftUI
 
@@ -40,5 +41,6 @@ struct HealthWristTemperatureHistoryView: View {
                 )
             }
         }
+        .diagScreen(VACrumb.healthWristTemperatureHistory)
     }
 }

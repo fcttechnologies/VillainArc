@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -323,10 +324,13 @@ struct NewWeightGoalView: View {
                 }
             )
         }
+        .diagScreen(VACrumb.healthNewWeightGoal)
     }
 
     private func save() {
         guard let parsedStartWeight, let parsedTargetWeight, validationMessage == nil else { return }
+        Diag.breadcrumb(VACrumb.goalCreated)
+        Diag.count(VACounter.goalsCreated)
 
         if let activeGoal = activeGoals.first {
             if Calendar.autoupdatingCurrent.isDate(activeGoal.startedAt, inSameDayAs: goalStartDate) {

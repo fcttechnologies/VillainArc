@@ -1,3 +1,4 @@
+import FCTIntelligence
 import Foundation
 import SwiftData
 import WatchConnectivity
@@ -231,7 +232,7 @@ import WatchConnectivity
         }
         saveContext(context: context)
         WorkoutActivityManager.update(for: workout)
-        if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmup() }
+        if shouldPrewarmSuggestions { FoundationModelPrewarmer.warmUp() }
     }
 }
 

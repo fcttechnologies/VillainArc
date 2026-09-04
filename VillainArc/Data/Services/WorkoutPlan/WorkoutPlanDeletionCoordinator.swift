@@ -1,3 +1,4 @@
+import FCTMetrics
 import Foundation
 import SwiftData
 
@@ -72,6 +73,7 @@ enum WorkoutPlanDeletionCoordinator {
     static func delete(_ assessment: Assessment, context: ModelContext, router: AppRouter = .shared) {
         let plans = unique(assessment.plans)
         guard !plans.isEmpty else { return }
+        Diag.breadcrumb(VACrumb.planDeleted)
 
         let planIDs = Set(plans.map(\.id))
         let linkedSplits = uniqueLinkedSplits(for: plans)

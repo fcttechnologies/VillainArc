@@ -1,3 +1,4 @@
+import FCTMetrics
 import Charts
 import SwiftData
 import SwiftUI
@@ -197,6 +198,7 @@ struct HealthHydrationHistoryView: View {
         .appBackground()
         .navigationTitle("Hydration")
         .toolbarTitleDisplayMode(.inline)
+        .diagScreen(VACrumb.healthHydrationHistory)
     }
 }
 
@@ -425,7 +427,7 @@ private struct HealthHydrationMainChartSection: View {
             // Device-sourced, so this is not an account claim and never waits on a first pull: the
             // Apple Health mirror is read from HealthKit on this phone and never travels on the wire,
             // so its emptiness is already true at the moment it renders. The goals set over these
-            // metrics do sync, and those empty states are wrapped in `AccountEmptyState`.
+            // metrics do sync, and those empty states are wrapped in `RestoringEmptyState`.
             if hasAnyData {
                 ContentUnavailableView("No Data", systemImage: "drop.fill", description: Text("No hydration entries are in this range."))
             } else {

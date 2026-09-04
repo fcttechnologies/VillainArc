@@ -556,6 +556,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         saveContext(context: context)
         if activeCardioSession?.id == cardioSession.id { activeCardioSession = nil }
         CardioActivityManager.end()
+        Diag.breadcrumb(VACrumb.cardioDiscarded)
         Diag.funnel(VAFunnel.cardioSession, .abandoned)
         AppLog.info("Cardio session canceled: \(cardioSession.id).")
     }
@@ -763,6 +764,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
 
     func presentWeightGoalCompletion(for goal: WeightGoal, trigger: WeightGoalCompletionRoute.Trigger, triggeringEntry: WeightEntry? = nil, referenceDate: Date? = nil) {
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.goalCompleted)
         tabSelection = .health
         activeWeightGoalCompletion = WeightGoalCompletionRoute(goalID: goal.id, triggeringEntryID: triggeringEntry?.id, trigger: trigger, referenceDate: referenceDate ?? triggeringEntry?.date ?? .now)
     }
@@ -1022,6 +1024,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         saveContext(context: context)
         activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = newWorkoutPlan
+        Diag.funnel(VAFunnel.planAuthoring, .started)
         AppLog.info("Workout plan creation started: \(newWorkoutPlan.id).")
     }
 
@@ -1047,6 +1050,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         saveContext(context: context)
         activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = plan
+        Diag.funnel(VAFunnel.planAuthoring, .started)
         AppLog.info("Workout plan creation started from pre-built draft: \(plan.id).")
     }
 
@@ -1063,6 +1067,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         saveContext(context: context)
         activeWorkoutPlanOriginal = nil
         activeWorkoutPlan = newWorkoutPlan
+        Diag.funnel(VAFunnel.planAuthoring, .started)
         AppLog.info("Workout plan creation started from workout: \(workout.id).")
     }
 
@@ -1070,6 +1075,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
     func addExerciseToActiveFlow(_ exercise: Exercise) -> Bool {
         if let workout = activeWorkoutSession, workout.statusValue == .active {
             Haptics.selection()
+            Diag.breadcrumb(VACrumb.exerciseAdded)
             workout.addExercise(exercise)
             exercise.updateLastAddedAt()
             saveContext(context: context)
@@ -1079,6 +1085,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
 
         if let plan = activeWorkoutPlan {
             Haptics.selection()
+            Diag.breadcrumb(VACrumb.exerciseAdded)
             plan.addExercise(exercise)
             exercise.updateLastAddedAt()
             saveContext(context: context)
@@ -1100,6 +1107,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         saveContext(context: context)
         activeWorkoutPlanOriginal = plan
         activeWorkoutPlan = editingCopy
+        Diag.funnel(VAFunnel.planAuthoring, .started)
         AppLog.info("Workout plan edit started: \(plan.id).")
     }
 
@@ -1124,6 +1132,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
             startWorkoutRuntime(for: workoutSession)
         }
         Diag.breadcrumb(VACrumb.workoutStarted)
+        Diag.breadcrumb(VACrumb.planUsed)
         Diag.funnel(VAFunnel.workoutSession, .started)
         AppLog.info("Workout session started from plan: \(plan.id), session: \(workoutSession.id), pendingSuggestions=\(hasDeferredSuggestions).")
     }
@@ -1137,6 +1146,7 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
 
     func resumeWorkoutSession(_ workoutSession: WorkoutSession) {
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.workoutResumed)
         activeWorkoutSession = workoutSession
         restoreWorkoutRuntime(for: workoutSession)
         AppLog.info("Workout session resumed: \(workoutSession.id).")

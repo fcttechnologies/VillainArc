@@ -1,3 +1,4 @@
+import FCTMetrics
 import Combine
 import CoreLocation
 import MapKit
@@ -169,6 +170,7 @@ struct CardioActiveSessionView: View {
                         finishSession()
                     },
                     onConfirm: {
+                        Diag.breadcrumb(VACrumb.effortRecorded)
                         session.postEffort = pendingEffort
                         showEffortPrompt = false
                         finishSession()
@@ -184,6 +186,7 @@ struct CardioActiveSessionView: View {
         // Soft scroll-edge fade for this separate presentation context — ContentView's root
         // modifier doesn't reach full-screen covers. Inert on the iOS 26 SDK (see ContentView).
         .scrollEdgeEffectStyle(.soft, for: .all)
+        .diagScreen(VACrumb.cardioSession)
     }
 
     private var shouldShowHealthAccessCard: Bool {
@@ -401,6 +404,7 @@ struct CardioActiveSessionView: View {
             Task { await healthCoordinator.beginActiveCollection(for: session) }
         }
         let addedAt: Date = count == 0 ? (session.startedAt ?? .now) : .now
+        Diag.breadcrumb(VACrumb.cardioIntervalAdded)
         let interval = CardioMachineInterval(index: count, speedKPH: speedKPH, inclinePercent: inclinePercent, addedAt: addedAt, session: session)
         context.insert(interval)
         session.machineIntervals?.append(interval)

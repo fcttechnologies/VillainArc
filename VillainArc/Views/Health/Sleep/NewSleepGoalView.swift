@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftData
 import SwiftUI
 
@@ -156,10 +157,13 @@ struct NewSleepGoalView: View {
                 normalizeSelectionForBounds()
             }
         }
+        .diagScreen(VACrumb.healthNewSleepGoal)
     }
 
     private func save() {
         guard canSave else { return }
+        Diag.breadcrumb(VACrumb.goalCreated)
+        Diag.count(VACounter.goalsCreated)
         let normalizedTargetDuration = Self.normalizedDuration(targetDuration)
         _ = try? SleepGoal.replaceActiveGoal(with: normalizedTargetDuration, context: context)
         saveContext(context: context)

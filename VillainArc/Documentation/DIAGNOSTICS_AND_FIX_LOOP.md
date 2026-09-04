@@ -42,6 +42,20 @@ take `crumb:`, and `.diagTask(_:)` replaces `.task`. Each pairs the app's name w
 `ui.work_finished` on return, so **a name with no finish after it is work that was still running
 when the process died**.
 
+- **The store is named once per foreground, and every time it refuses.** Every user-facing write in
+  the app goes through `saveContext(context:)`, which raises `store_saved` through
+  `Diag.breadcrumbOncePerForeground` and `store_save_failed` on the catch. A crumb on each of the
+  hundreds of saves a session makes would spend the whole ring on itself; a save that *threw* is
+  rare, and it is the last thing that happened before whatever comes next.
+- **A counter is raised where the feature completes, not where its screen opens** — a plan created
+  when the editor's Save commits it, a split created where all three builder paths converge, an
+  escalation counted by the router that decided it. `VACounter` has no case that nothing raises: a
+  name waiting on an unbuilt feature is deleted with the feature's decision, not parked here.
+- **A funnel's three edges live at the three real events**, never at one convenient place: plan
+  authoring starts where the router opens a draft, completes where Save commits it, and abandons
+  where the draft is discarded; a review pass starts on a surface that has something to review and
+  ends on the way out, completed or abandoned by whether anything was left undecided.
+
 **Every App Intent carries a `static let diagCrumb` and hands its body to `Diag.intent(_:_:)`**,
 which records that name and then brackets the run with `intent.started` and
 `intent.returned`/`.threw`. `IntentCrumbCoverageTests` keeps the names distinct and namespaced, and
@@ -101,13 +115,19 @@ first step is always a test that fails the way the field failed.
 Measured on this repo: a warm `--fast --only` run of one suite is ~14s and the whole suite is
 ~77s, against ~354s for the full gate.
 
-## The two gates
+## The three gates
 
-| | `scripts/gate.sh --fast` | `scripts/gate.sh` |
-|---|---|---|
-| DerivedData | kept between runs, per simulator | thrown away every run |
-| builds | Debug only | Debug, Release, and an archive dry-run |
-| suite | all of it, or `--only <spec>` | all of it, against a pinned floor |
-| reads the built artifacts | no | shortcuts, icons, privacy manifests, in Debug and Release |
-| localization drift, the listing, cold launch | no | yes |
-| what a green means | the fix compiles and the suite agrees | this is shippable |
+| | `scripts/gate.sh --fast` | `scripts/gate.sh` | `scripts/gate.sh --full` |
+|---|---|---|---|
+| DerivedData | kept between runs, per simulator | thrown away every run | thrown away every run |
+| builds | Debug only | Debug, Release, and an archive dry-run | those, plus a ThreadSanitizer build |
+| suite | all of it, or `--only <spec>` | all of it, against a pinned floor | all of it twice, the second run instrumented |
+| reads the built artifacts | no | shortcuts, icons, privacy manifests, in Debug and Release | same |
+| localization drift, the listing, cold launch | no | yes | yes |
+| what a green means | the fix compiles and the suite agrees | this is shippable | this is shippable and nothing raced |
+
+TSan gets its own build because instrumentation is a compile-time decision — running the existing
+products under `test-without-building` would report a clean pass that measured nothing. It roughly
+doubles the gate, which is why it is a flag: run it before a release and after anything that
+touches concurrency, the sync engine, or a HealthKit callback. AddressSanitizer is not run at all —
+it answers for C/C++/ObjC memory, and every target here is pure Swift with strict memory safety on.

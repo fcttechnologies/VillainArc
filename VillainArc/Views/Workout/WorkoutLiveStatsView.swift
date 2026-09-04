@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -30,6 +31,7 @@ struct WorkoutLiveStatsView: View {
         }
         .fontDesign(.rounded)
         .padding()
+        .diagScreen(VACrumb.workoutLiveStats)
     }
 
     static func toolbarAccessibilityValue(for workoutID: UUID) -> String {

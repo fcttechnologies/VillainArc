@@ -109,10 +109,8 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
 
     // MARK: Screens — suggestions
 
-    case suggestionReview = "suggestion.review"
     case suggestionDeferred = "suggestion.deferred"
     case suggestionPlan = "suggestion.plan"
-    case suggestionProgression = "suggestion.progression"
 
     // MARK: Screens — app shell
 
@@ -120,11 +118,14 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
     case settings = "settings"
     case settingsWorkoutPreferences = "settings.workout_preferences"
     case settingsAppleHealth = "settings.apple_health"
+    case settingsNotifications = "settings.notifications"
+    case settingsUnits = "settings.units"
     case settingsCardioMetricPicker = "settings.cardio_metric_picker"
     case settingsLegal = "settings.legal"
     case profileEditor = "profile.editor"
     case assistant = "assistant"
-    case paywall = "paywall"
+    /// The paywall itself is `FCTStoreKit`'s and names itself; this is the placeholder VA shows
+    /// where a gated destination was reached without passing the gate.
     case premiumLocked = "premium.locked"
     case whatsNew = "whats_new"
     case textEditor = "text_editor"
@@ -134,7 +135,6 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
     case workoutStarted = "workout_started"
     case workoutFinished = "workout_finished"
     case workoutDiscarded = "workout_discarded"
-    case workoutPaused = "workout_paused"
     case workoutResumed = "workout_resumed"
     case setLogged = "set_logged"
     case setAdded = "set_added"
@@ -175,7 +175,6 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
     case aiPlanRequested = "ai_plan_requested"
     case aiPlanImported = "ai_plan_imported"
     case aiReplacementRequested = "ai_replacement_requested"
-    case aiProgressionRequested = "ai_progression_requested"
 
     // MARK: Actions — health
 
@@ -188,10 +187,11 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
 
     // MARK: Actions — app shell
 
-    case paywallShown = "paywall_shown"
     case settingChanged = "setting_changed"
+    /// The store accepted a write this foreground, and — every time, because it is rare and it is
+    /// the last thing that happened — one that it refused.
     case storeSaved = "store_saved"
-    case dataExported = "data_exported"
+    case storeSaveFailed = "store_save_failed"
 
     // MARK: Actions — App Intents
 
@@ -343,7 +343,6 @@ nonisolated enum VACounter: String, DiagCounter, CaseIterable {
     case aiPlansGenerated = "ai_plans_generated"
     case aiPlansImported = "ai_plans_imported"
     case aiReplacementsSuggested = "ai_replacements_suggested"
-    case aiProgressionAnalyses = "ai_progression_analyses"
     case assistantQuestions = "assistant_questions"
     case suggestionsShown = "suggestions_shown"
     case suggestionsApplied = "suggestions_applied"

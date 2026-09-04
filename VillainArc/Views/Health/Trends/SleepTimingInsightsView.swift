@@ -1,3 +1,4 @@
+import FCTMetrics
 import Charts
 import SwiftData
 import SwiftUI
@@ -147,6 +148,7 @@ struct SleepTimingInsightsView: View {
         .toolbarTitleDisplayMode(.inline)
         .accessibilityIdentifier(AccessibilityIdentifiers.sleepTimingInsightsRoot)
         .task { await IntentDonations.donateShowSleepInsights() }
+        .diagScreen(VACrumb.healthSleepTimingInsights)
     }
 
     private func insightText(forShift shiftMinutes: Int) -> String {

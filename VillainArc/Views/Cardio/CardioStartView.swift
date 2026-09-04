@@ -1,3 +1,4 @@
+import FCTMetrics
 import CoreLocation
 import SwiftUI
 import UIKit
@@ -90,6 +91,7 @@ struct CardioStartView: View {
             .navigationTitle(type.title)
             .navigationBarTitleDisplayMode(.inline)
         }
+        .diagScreen(VACrumb.cardioStart)
     }
 
     // MARK: Capture mode choice

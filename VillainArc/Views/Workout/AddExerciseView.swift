@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -119,6 +120,7 @@ struct AddExerciseView: View {
                 }
             }
         }
+        .diagScreen(VACrumb.exerciseAdd)
     }
 }
 

@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -27,6 +28,9 @@ struct WorkoutPlanSuggestionsSheet: View {
 
     @State private var selectedTab: Tab
     @State private var focusedExerciseID: UUID?
+    /// Whether this presentation opened on something to review, so the pass it ends is only
+    /// reported when there was a pass.
+    @State private var didStartReview = false
 
     init(plan: WorkoutPlan, initialTab: Tab = .toReview, initialFocusedExerciseID: UUID? = nil) {
         self.plan = plan
@@ -104,12 +108,23 @@ struct WorkoutPlanSuggestionsSheet: View {
                 }
                 .onAppear {
                     scrollToFocusedExerciseIfNeeded(using: proxy)
+                    let pending = toReviewSections.reduce(0) { $0 + $1.groups.count }
+                    if pending > 0 {
+                        didStartReview = true
+                        Diag.funnel(VAFunnel.suggestionReview, .started)
+                        Diag.count(VACounter.suggestionsShown, by: pending)
+                    }
+                }
+                .onDisappear {
+                    guard didStartReview else { return }
+                    Diag.funnel(VAFunnel.suggestionReview, toReviewSections.isEmpty ? .completed : .abandoned)
                 }
                 .onChange(of: selectedTab) { _, _ in
                     scrollToFocusedExerciseIfNeeded(using: proxy)
                 }
             }
         }
+        .diagScreen(VACrumb.suggestionPlan)
     }
 
     private func scrollToFocusedExerciseIfNeeded(using proxy: ScrollViewProxy) {

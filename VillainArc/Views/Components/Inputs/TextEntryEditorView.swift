@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 struct TextEntryEditorView: View {
@@ -62,6 +63,7 @@ struct TextEntryEditorView: View {
         .navBar(title: title) {
             CloseButton()
         }
+        .diagScreen(VACrumb.textEditor)
     }
 
     private func shouldSelectAllOnFocus() -> Bool {

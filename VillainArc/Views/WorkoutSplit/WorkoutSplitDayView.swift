@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -135,6 +136,7 @@ struct WorkoutSplitDayView: View {
                 router.isQuickActionsBarHidden = false
             }
         )
+        .diagScreen(VACrumb.splitDay)
     }
 
     private var targetMusclesRow: some View {

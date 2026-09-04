@@ -1,3 +1,4 @@
+import FCTMetrics
 import AppIntents
 import CoreLocation
 import CoreSpotlight
@@ -41,6 +42,7 @@ struct CardioSessionDetailView: View {
             let entity = CardioSessionEntity(cardioSession: session)
             activity.appEntityIdentifier = .init(for: entity)
         }
+        .diagScreen(VACrumb.cardioDetail)
     }
 
     // Outdoor (GPS) sessions keep the immersive route map, with the metrics in a bottom
@@ -318,6 +320,7 @@ struct CardioMetricsSheet: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .diagScreen(VACrumb.cardioMetrics)
     }
 
     private var headerRow: some View {

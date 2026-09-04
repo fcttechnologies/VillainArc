@@ -31,6 +31,7 @@
 		38F5B4EA9DF12A08A0B96B49 /* FCTEntities in Frameworks */ = {isa = PBXBuildFile; productRef = B4373FF459A151B3B305FDAA /* FCTEntities */; };
 		8E388E3FF8AA1FB43DC8C1CB /* FCTSync in Frameworks */ = {isa = PBXBuildFile; productRef = C5EC413C794E0ED7DF5B6881 /* FCTSync */; };
 		912F77127216E6A720D55660 /* FCTIntelligence in Frameworks */ = {isa = PBXBuildFile; productRef = 254EA949EE4842D7AF0AE15A /* FCTIntelligence */; };
+		A1C0FF11E0A57A5701000031 /* FCTIntelligence in Frameworks */ = {isa = PBXBuildFile; productRef = A1C0FF11E0A57A5701000032 /* FCTIntelligence */; };
 		A54F0367A912B1480985484F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 57340E3AA3AF074CD4BF345E /* Foundation.framework */; };
 		C61D188DE205EED2135DCDD6 /* FCTEntities in Frameworks */ = {isa = PBXBuildFile; productRef = EF47D003449BB9F5A885E3F4 /* FCTEntities */; };
 		DB5153E291329ED28DE3BE58 /* FCTEntities in Frameworks */ = {isa = PBXBuildFile; productRef = C382025D55A14347E9C351BD /* FCTEntities */; };
@@ -254,7 +255,6 @@
 				Data/Models/WorkoutSplit/WorkoutSplitDay.swift,
 				Data/Protocols/RestTimeEditable.swift,
 				Data/Schema/VillainArcSchemaV1.swift,
-				Data/Services/AI/Shared/FoundationModelPrewarmer.swift,
 				Data/Sync/VASyncIdentity.swift,
 				Data/Services/App/VADiagVocabulary.swift,
 				Data/Services/App/AppLog.swift,
@@ -386,6 +386,7 @@
 				C61D188DE205EED2135DCDD6 /* FCTEntities in Frameworks */,
 				8E388E3FF8AA1FB43DC8C1CB /* FCTSync in Frameworks */,
 				A1C0FF11E0A57A5701000003 /* FCTComponentsUI in Frameworks */,
+				A1C0FF11E0A57A5701000031 /* FCTIntelligence in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -537,6 +538,7 @@
 				EF47D003449BB9F5A885E3F4 /* FCTEntities */,
 				C5EC413C794E0ED7DF5B6881 /* FCTSync */,
 				A1C0FF11E0A57A5701000004 /* FCTComponentsUI */,
+				A1C0FF11E0A57A5701000032 /* FCTIntelligence */,
 			);
 			productName = VillainArcWidgetExtensionExtension;
 			productReference = FD93E5E42F3051FD009569BB /* VillainArcWidgetExtensionExtension.appex */;
@@ -1425,6 +1427,11 @@
 			productName = FCTBlobSyncTesting;
 		};
 		254EA949EE4842D7AF0AE15A /* FCTIntelligence */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTIntelligence;
+		};
+		A1C0FF11E0A57A5701000032 /* FCTIntelligence */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
 			productName = FCTIntelligence;

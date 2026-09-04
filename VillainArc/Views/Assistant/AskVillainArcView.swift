@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 /// "Ask Villain Arc": a small sheet where the user asks a natural-language question about their own
@@ -75,6 +76,7 @@ struct AskVillainArcView: View {
             }
             .onAppear { questionFocused = availability.isAvailable }
         }
+        .diagScreen(VACrumb.assistant)
     }
 
     private var questionSection: some View {

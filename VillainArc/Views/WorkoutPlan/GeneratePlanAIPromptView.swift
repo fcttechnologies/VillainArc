@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -132,6 +133,7 @@ struct GeneratePlanAIPromptView: View {
             }
             .onAppear { promptFocused = true }
         }
+        .diagScreen(VACrumb.planAIPrompt)
     }
 
     private func generate() async {

@@ -1,3 +1,4 @@
+import FCTMetrics
 import FCTStoreKit
 import SwiftUI
 import SwiftData
@@ -147,6 +148,7 @@ struct ReplaceExerciseView: View {
                 await loadAISuggestionsIfNeeded()
             }
         }
+        .diagScreen(VACrumb.exerciseReplace)
     }
 
     private func handleAISelection(catalogID: String) {

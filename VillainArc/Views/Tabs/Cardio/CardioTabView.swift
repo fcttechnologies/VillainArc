@@ -1,3 +1,4 @@
+import FCTComponentsUI
 import AppIntents
 import CoreLocation
 import SwiftData
@@ -163,7 +164,7 @@ struct CardioTabView: View {
                         startCardioSection
 
                         if mergedHistory.isEmpty {
-                            AccountEmptyState {
+                            RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                                 ContentUnavailableView("No Cardio Yet", systemImage: "figure.run", description: Text("Outdoor routes and treadmill sessions will show up here."))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 24)

@@ -1,3 +1,4 @@
+import FCTIntelligence
 import FCTMetrics
 import SwiftUI
 import SwiftData
@@ -233,7 +234,7 @@ struct WorkoutSummaryView: View {
             .task(id: workout.id) {
                 loadPRs()
                 if workout.workoutPlan == nil {
-                    FoundationModelPrewarmer.warmup()
+                    FoundationModelPrewarmer.warmUp()
                 }
                 refreshRateableSuggestionEvents()
                 await generateSuggestionsIfNeeded()
@@ -269,6 +270,7 @@ struct WorkoutSummaryView: View {
                     }
             }
         }
+        .diagScreen(VACrumb.workoutSummary)
     }
 
     private var effortSection: some View {

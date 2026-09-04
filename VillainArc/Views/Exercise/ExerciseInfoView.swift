@@ -1,3 +1,4 @@
+import FCTMetrics
 import Charts
 import MuscleMap
 import SwiftData
@@ -147,6 +148,7 @@ struct ExerciseInfoView: View {
                 selectedMetric = firstMetric
             }
         }
+        .diagScreen(VACrumb.exerciseInfo)
     }
 
     // MARK: - Muscle Map

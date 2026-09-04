@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -103,6 +104,7 @@ struct RepRangeEditorView: View {
         .onAppear {
             suggestion = loadSuggestion()
         }
+        .diagScreen(VACrumb.workoutRepRangeEditor)
     }
     
     private var modeFooterText: String {

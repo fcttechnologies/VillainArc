@@ -93,6 +93,7 @@ struct AppSettingsView: View {
             SettingsLegalWebSheet(destination: destination)
                 .presentationBackground(Color.sheetBg)
         }
+        .diagScreen(VACrumb.settings)
     }
 
     @ViewBuilder
@@ -275,7 +276,7 @@ private struct AppSettingsFormView: View {
             refreshLatestDiagnostic()
         }
         .onChange(of: settings.appearanceMode) {
-            saveContext(context: context)
+            settingChanged(context)
             dismissAllPresentedSheets()
         }
     }
@@ -573,6 +574,7 @@ private struct WorkoutPreferencesView: View {
         .toolbarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
+        .diagScreen(VACrumb.settingsWorkoutPreferences)
     }
 
     private func settingsForm(_ settings: AppSettings) -> some View {
@@ -684,36 +686,36 @@ private struct WorkoutPreferencesView: View {
             }
         }
         .onChange(of: settings.retainPerformancesForLearning) {
-            saveContext(context: context)
+            settingChanged(context)
             guard !settings.retainPerformancesForLearning else { return }
             WorkoutDeletionCoordinator.applyRetentionSetting(context: context, settings: settings)
         }
         .onChange(of: settings.autoStartRestTimer) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.autoCompleteSetAfterRPE) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.assumeTargetRPEOnComplete) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.autoFillPlanTargets) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.prefersTargetReferenceWhenPlanned) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.previousSetReferenceSource) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.promptForPreWorkoutContext) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.promptForPostWorkoutEffort) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.liveActivitiesEnabled) {
-            saveContext(context: context)
+            settingChanged(context)
 
             if settings.liveActivitiesEnabled {
                 restartActiveLiveActivity()
@@ -800,7 +802,7 @@ private struct AppleHealthSettingsView: View {
             }
         }
         .onChange(of: settings.keepRemovedHealthData) {
-            saveContext(context: context)
+            settingChanged(context)
             guard !settings.keepRemovedHealthData else { return }
             Task {
                 await HealthSyncCoordinator.shared.applyRemovedHealthDataRetentionSetting()
@@ -817,6 +819,7 @@ private struct AppleHealthSettingsView: View {
         } message: {
             Text("Apple does not let this app open the exact Health permission screen directly. Go to Settings, Apps, Health, Health Access and Devices, tap this app, then update the workout permissions.")
         }
+        .diagScreen(VACrumb.settingsAppleHealth)
     }
     private func refreshHealthAuthorizationState() async {
         isRefreshingHealthStatus = true
@@ -953,16 +956,17 @@ private struct NotificationSettingsView: View {
             }
         }
         .onChange(of: settings.stepsNotificationMode) {
-            saveContext(context: context)
+            settingChanged(context)
             Task { await WeeklyHealthCoachingCoordinator.shared.refreshSchedule() }
         }
         .onChange(of: settings.sleepNotificationMode) {
-            saveContext(context: context)
+            settingChanged(context)
             Task { await WeeklyHealthCoachingCoordinator.shared.refreshSchedule() }
         }
         .onChange(of: settings.hydrationNotificationMode) {
-            saveContext(context: context)
+            settingChanged(context)
         }
+        .diagScreen(VACrumb.settingsNotifications)
     }
 
     private var notificationStatusText: String {
@@ -1399,25 +1403,26 @@ private struct UnitSettingsView: View {
         .onChange(of: settings.weightUnit, initial: false) { oldUnit, newUnit in
             guard oldUnit != newUnit else { return }
             migrateInProgressWeightValues(from: oldUnit, to: newUnit)
-            saveContext(context: context)
+            settingChanged(context)
             HealthMetricWidgetReloader.reloadWeight()
         }
         .onChange(of: settings.heightUnit) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.distanceUnit) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.energyUnit) {
-            saveContext(context: context)
+            settingChanged(context)
             HealthMetricWidgetReloader.reloadEnergy()
         }
         .onChange(of: settings.temperatureUnit) {
-            saveContext(context: context)
+            settingChanged(context)
         }
         .onChange(of: settings.speedUnit) {
-            saveContext(context: context)
+            settingChanged(context)
         }
+        .diagScreen(VACrumb.settingsUnits)
     }
 
     private func migrateInProgressWeightValues(from oldUnit: WeightUnit, to newUnit: WeightUnit) {
@@ -1457,5 +1462,14 @@ private struct SettingsLegalWebSheet: View {
                     }
                 }
         }
+        .diagScreen(VACrumb.settingsLegal)
     }
+}
+
+/// A preference moved. Every `onChange` in this file goes through here rather than straight to
+/// `saveContext`, so a trail that ends in a crash after someone changed a setting says so — while
+/// staying one name, never the setting's own value.
+@MainActor private func settingChanged(_ context: ModelContext) {
+    Diag.breadcrumb(VACrumb.settingChanged)
+    saveContext(context: context)
 }

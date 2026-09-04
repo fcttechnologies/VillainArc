@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 /// Second screen of the PlanBuilder. Shows the template description, then a per-day card list.
@@ -86,6 +87,7 @@ struct PlanTemplateDetailView: View {
         .sheetBackground()
         .navigationTitle(template.name)
         .navigationBarTitleDisplayMode(.inline)
+        .diagScreen(VACrumb.planTemplateDetail)
     }
 
     @ViewBuilder

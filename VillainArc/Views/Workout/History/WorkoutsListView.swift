@@ -1,3 +1,5 @@
+import FCTComponentsUI
+import FCTMetrics
 import AppIntents
 import SwiftUI
 import SwiftData
@@ -173,12 +175,13 @@ struct WorkoutsListView: View {
         }
         .overlay(alignment: .center) {
             if items.isEmpty {
-                AccountEmptyState {
+                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                     ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Your workout history will appear here."))
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutsEmptyState)
                 }
             }
         }
+        .diagScreen(VACrumb.workoutList)
     }
 
     private func appEntityIdentifier(for item: WorkoutHistoryItem) -> EntityIdentifier? {

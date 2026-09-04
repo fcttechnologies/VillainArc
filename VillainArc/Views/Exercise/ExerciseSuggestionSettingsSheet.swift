@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -216,6 +217,7 @@ struct ExerciseSuggestionSettingsSheet: View {
                 }
             )
         }
+        .diagScreen(VACrumb.exerciseSuggestionSettings)
     }
 
     private func save() {

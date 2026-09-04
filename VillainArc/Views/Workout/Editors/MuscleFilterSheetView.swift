@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 struct MuscleFilterSheetView: View {
@@ -108,6 +109,7 @@ struct MuscleFilterSheetView: View {
             }
             .accessibilityIdentifier(AccessibilityIdentifiers.muscleFilterSheet)
         }
+        .diagScreen(VACrumb.exerciseMuscleFilter)
     }
 
     private func clearSelection() {

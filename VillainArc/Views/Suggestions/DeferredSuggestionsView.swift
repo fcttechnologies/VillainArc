@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -9,6 +10,10 @@ struct DeferredSuggestionsView: View {
     @State private var sections: [ExerciseSuggestionSection] = []
     @State private var sessionEvents: [SuggestionEvent] = []
     @State private var isTransitioning = false
+    /// The review pass this presentation is: whether it had anything to review, and whether it
+    /// ended by answering the suggestions or by walking past them.
+    @State private var didStartReview = false
+    @State private var didSkipReview = false
     /// Where the review's own bulk actions report what became of each suggestion.
     var outcomes: any SuggestionOutcomeReporting = DiagSuggestionOutcomes()
     
@@ -82,6 +87,7 @@ struct DeferredSuggestionsView: View {
                 loadPendingSuggestions()
             }
         }
+        .diagScreen(VACrumb.suggestionDeferred)
     }
     
     private func loadPendingSuggestions() {
@@ -94,6 +100,11 @@ struct DeferredSuggestionsView: View {
         
         sessionEvents = pendingSuggestionEvents(for: plan, in: context)
         sections = groupSuggestions(sessionEvents)
+        if !sessionEvents.isEmpty {
+            didStartReview = true
+            Diag.funnel(VAFunnel.suggestionReview, .started)
+            Diag.count(VACounter.suggestionsShown, by: sessionEvents.count)
+        }
 
         if sessionEvents.isEmpty {
             workout.status = SessionStatus.active.rawValue
@@ -119,6 +130,7 @@ struct DeferredSuggestionsView: View {
     private func skipAll() {
         guard !isTransitioning else { return }
         Haptics.selection()
+        didSkipReview = true
         skipSuggestions(sessionEvents, context: context, outcomes: outcomes)
         proceedToWorkout()
     }
@@ -135,12 +147,20 @@ struct DeferredSuggestionsView: View {
     private func proceedToWorkout() {
         guard !isTransitioning else { return }
         isTransitioning = true
+        if didStartReview {
+            Diag.funnel(VAFunnel.suggestionReview, didSkipReview ? .abandoned : .completed)
+            didStartReview = false
+        }
         workout.status = SessionStatus.active.rawValue
         saveContext(context: context)
         router.activatePendingWorkoutSession(workout)
     }
 
     private func cancelWorkout() {
+        if didStartReview {
+            Diag.funnel(VAFunnel.suggestionReview, .abandoned)
+            didStartReview = false
+        }
         router.cancelWorkoutSession(workout)
     }
 

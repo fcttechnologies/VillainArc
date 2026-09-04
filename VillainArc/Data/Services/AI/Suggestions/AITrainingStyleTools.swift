@@ -1,3 +1,4 @@
+import FCTIntelligence
 import Foundation
 import FoundationModels
 import SwiftData

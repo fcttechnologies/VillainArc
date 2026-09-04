@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 /// Lets the user choose which metrics the cardio Live Activity shows (default heart + current pace).
@@ -43,6 +44,7 @@ struct CardioLiveActivityMetricPickerView: View {
         .toolbarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
+        .diagScreen(VACrumb.settingsCardioMetricPicker)
     }
 
     private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {

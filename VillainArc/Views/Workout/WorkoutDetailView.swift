@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 import AppIntents
@@ -121,6 +122,7 @@ struct WorkoutDetailView: View {
             let entity = WorkoutSessionEntity(workoutSession: session)
             activity.appEntityIdentifier = .init(for: entity)
         }
+        .diagScreen(VACrumb.workoutDetail)
     }
 
     @ViewBuilder

@@ -1,3 +1,4 @@
+import FCTMetrics
 import Charts
 import SwiftData
 import SwiftUI
@@ -165,6 +166,8 @@ struct HealthTrendsView: View {
         .appBackground()
         .navigationTitle("Trends")
         .toolbarTitleDisplayMode(.inline)
+        .diagScreen(VACrumb.healthTrends)
+        .onAppear { Diag.count(VACounter.healthTrendsViewed) }
     }
 }
 
@@ -474,6 +477,7 @@ private struct HealthTrendDetailSheet: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.healthTrendDetailDoneButton)
             }
         }
+        .diagScreen(VACrumb.healthTrendDetail)
     }
 }
 

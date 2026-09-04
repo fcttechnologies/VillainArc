@@ -1,3 +1,5 @@
+import FCTComponentsUI
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -128,7 +130,7 @@ struct WorkoutPlansListView: View {
         }
         .overlay(alignment: .center) {
             if workoutPlans.isEmpty {
-                AccountEmptyState {
+                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                     ContentUnavailableView("No Workout Plans", systemImage: "list.clipboard", description: Text("Your created workout plans will appear here."))
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansEmptyState)
                 }
@@ -137,6 +139,7 @@ struct WorkoutPlansListView: View {
                     .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansNoFavoritesState)
             }
         }
+        .diagScreen(VACrumb.planList)
     }
     
     private func deleteWorkoutPlan(offsets: IndexSet) {

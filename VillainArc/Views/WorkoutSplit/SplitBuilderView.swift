@@ -1,4 +1,5 @@
 import FCTComponentsUI
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -41,15 +42,28 @@ struct SplitBuilderView: View {
             }
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.splitBuilderSheet)
+        .diagScreen(VACrumb.splitBuilder)
+    }
+
+    /// Every creation path here ends the same way: the split exists, it is active or it is not,
+    /// and the sheet closes. One place to say so keeps the three paths from drifting apart.
+    private func finishCreation(_ split: WorkoutSplit) {
+        Diag.breadcrumb(VACrumb.splitCreated)
+        Diag.count(VACounter.splitsCreated)
+        if split.isActive { Diag.breadcrumb(VACrumb.splitActivated) }
+        onSplitCreated(split)
+        dismiss()
     }
 
     private func createProgramFromTemplate(_ template: PlanTemplate) {
         Haptics.selection()
+        Diag.breadcrumb(VACrumb.planTemplateApplied)
         let activeSplits = try? context.fetch(WorkoutSplit.active)
         let shouldActivate = activeSplits?.isEmpty ?? true
         let split = PlanTemplateMaterializer.materializeProgram(template: template, activate: shouldActivate, context: context)
         saveContext(context: context)
         let planCount = split.sortedDays.filter { !$0.isRestDay }.count
+        if planCount > 0 { Diag.count(VACounter.plansCreated, by: planCount) }
         let message = shouldActivate
             ? String(localized: "Created \(planCount) plans and activated the \(template.name) split.")
             : String(localized: "Created \(planCount) plans and added the \(template.name) split. Your active split is unchanged.")
@@ -62,8 +76,7 @@ struct SplitBuilderView: View {
                 haptic: .success
             )
         )
-        onSplitCreated(split)
-        dismiss()
+        finishCreation(split)
     }
     
     // MARK: - Create Split
@@ -90,8 +103,7 @@ struct SplitBuilderView: View {
         saveContext(context: context)
         SpotlightIndexer.index(workoutSplit: split)
 
-        onSplitCreated(split)
-        dismiss()
+        finishCreation(split)
     }
 
     private func createSplit(days: [DayTemplate]) {
@@ -119,8 +131,7 @@ struct SplitBuilderView: View {
         saveContext(context: context)
         SpotlightIndexer.index(workoutSplit: split)
 
-        onSplitCreated(split)
-        dismiss()
+        finishCreation(split)
     }
     
     private func createSplitFromConfig() {
@@ -325,6 +336,7 @@ private struct SelectModeView: View {
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
+        .diagScreen(VACrumb.splitSelectMode)
     }
     
     private func navigateToNextStep() {
@@ -396,6 +408,7 @@ private struct SelectDaysView: View {
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
+        .diagScreen(VACrumb.splitSelectDays)
     }
 
     private func rowPosition(for index: Int, count: Int) -> AppGroupedListRowPosition {
@@ -465,6 +478,7 @@ private struct SelectRestDaysView: View {
         .navigationBarTitleDisplayMode(.inline)
         .scrollContentBackground(.hidden)
         .sheetBackground()
+        .diagScreen(VACrumb.splitSelectRestDays)
     }
     
     @ViewBuilder

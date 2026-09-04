@@ -31,7 +31,18 @@
 # `--only <spec>` narrows the suite to one target/suite/test (xcodebuild's `-only-testing:` form),
 # which is what makes a single failing test a seconds-long loop rather than a minutes-long one.
 #
-# Usage:  scripts/gate.sh [--fast] [--only VillainArcTests/SomeSuite]
+# `--full` is the gate PLUS a second run of the whole suite under ThreadSanitizer. Every leg here
+# builds one product for one platform — VA ships iOS only, so there is no second host to fan the
+# cross-platform suite out to and the default run already executes all of it. What the default run
+# cannot see is a data race: this app's SwiftData writes, its HealthKit callbacks and its sync
+# engine all cross actors, and a race there reads as a flake or as nothing at all until a user's
+# store is corrupt. TSan needs its OWN build (instrumentation is a compile-time decision, so
+# `test-without-building` against the plain products would report a clean run that measured
+# nothing), which is why it is a flag rather than always on: it roughly doubles the gate.
+# AddressSanitizer is not run — it answers for C/C++/ObjC memory, and every target here is pure
+# Swift with strict memory safety on.
+#
+# Usage:  scripts/gate.sh [--fast | --full] [--only VillainArcTests/SomeSuite]
 # Env:    SIM_NAME  simulator device name (default "iPhone 17 Pro") outside a lane; inside one the
 #                   leased device is the destination (gate-lib's lane_sim_destination).
 
@@ -40,10 +51,12 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 FAST=0
+FULL=0
 ONLY_TESTING=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --fast) FAST=1; shift ;;
+    --full) FULL=1; shift ;;
     --only)
       [ $# -ge 2 ] || { echo "==> FAIL: --only needs a test spec (e.g. --only VillainArcTests/SuggestionSystemTests)"; exit 1; }
       ONLY_TESTING+=("-only-testing:$2"); shift 2 ;;
@@ -54,6 +67,11 @@ done
 # A narrowed run is a narrowed run whichever flag asked for it: `--only` on its own would otherwise
 # build the archive and the Release slice to run four tests.
 [ ${#ONLY_TESTING[@]} -gt 0 ] && FAST=1
+# --fast and --full are opposite ends of the same axis, and a run that claimed both would silently
+# take the cheaper one.
+if [ "${FAST}" -eq 1 ] && [ "${FULL}" -eq 1 ]; then
+  echo "==> FAIL: --fast and --full are mutually exclusive"; exit 1
+fi
 
 source "../FCTFoundation/scripts/gate-lib.sh"
 phase_init
@@ -344,6 +362,33 @@ else
   fail "cold launch over the ${COLD_LAUNCH_BUDGET}s budget, or it never became interactive (log: ${LOGS}/cold-launch.log)"
 fi
 mark "cold launch"
+
+# THE RACE LEG — `--full` only. Its own build, because sanitizer instrumentation is decided at
+# compile time: `test-without-building` against the products above would run clean and prove
+# nothing. Serial after the cold launch rather than beside it, since a TSan-instrumented suite is
+# both slower and heavier than the run it repeats and overlapping the two just starves both.
+#
+# `-parallel-testing-enabled NO` for the same reason as the plain run, and the exit status is the
+# verdict: TSan reports a race by failing the test that raced.
+if [ "${FULL}" -eq 1 ]; then
+  echo "==> Whole suite under ThreadSanitizer"
+  TSAN_LOG="${LOGS}/tsan-suite.log"
+  if ! xcodebuild -project VillainArc.xcodeproj -scheme VillainArc \
+      -configuration Debug -destination "${IOS_DEST}" \
+      -derivedDataPath "${DD}/tsan" -parallel-testing-enabled NO \
+      -enableThreadSanitizer YES \
+      -allowProvisioningUpdates test >"${TSAN_LOG}" 2>&1; then
+    grep -E "ThreadSanitizer|data race|✘|error:" "${TSAN_LOG}" | head -40
+    fail "the suite failed under ThreadSanitizer (log: ${TSAN_LOG})"
+  fi
+  # A race TSan reports without failing a test still has to be red: it prints its report to the
+  # runner's stderr, which xcodebuild carries into this log whether or not the test itself failed.
+  if grep -q "ThreadSanitizer: data race" "${TSAN_LOG}"; then
+    grep -A 12 "ThreadSanitizer: data race" "${TSAN_LOG}" | head -40
+    fail "ThreadSanitizer reported a data race (log: ${TSAN_LOG})"
+  fi
+  mark "suite under ThreadSanitizer"
+fi
 
 phase_table
 if [ "${STATUS}" -eq 0 ]; then

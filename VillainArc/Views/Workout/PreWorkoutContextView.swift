@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -71,6 +72,7 @@ struct PreWorkoutContextView: View {
             .navigationBarTitleDisplayMode(.inline)
             .scrollContentBackground(.hidden)
         }
+        .diagScreen(VACrumb.workoutPreContext)
     }
 
     private var readinessMetricsSection: some View {

@@ -1,3 +1,4 @@
+import FCTComponentsUI
 import SwiftUI
 import SwiftData
 
@@ -13,7 +14,7 @@ struct RecentWorkoutPlanSectionView: View {
             }
 
             if recentWorkoutPlan.isEmpty {
-                AccountEmptyState {
+                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
                     ContentUnavailableView("No Workout Plans Created", systemImage: "list.clipboard", description: Text("Tap the \(Image(systemName: "plus")) button to create a workout plan."))
                         .frame(maxWidth: .infinity)
                         .appCardStyle()

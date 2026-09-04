@@ -1,4 +1,5 @@
 import FCTComponentsUI
+import FCTMetrics
 import FCTStoreKit
 import SwiftUI
 import SwiftData
@@ -477,6 +478,7 @@ struct ContentView: View {
         guard !router.hasActiveAuthoringFlow else {
             return
         }
+        Diag.breadcrumb(VACrumb.planTemplateApplied)
         let context = SharedModelContainer.container.mainContext
         let plan = PlanTemplateMaterializer.makeIncompletePlan(template: template, day: day, context: context)
         router.activatePreBuiltPlan(plan)
@@ -486,6 +488,7 @@ struct ContentView: View {
         let context = SharedModelContainer.container.mainContext
         let split = PlanTemplateMaterializer.materializeProgram(template: template, activate: true, context: context)
         saveContext(context: context)
+        recordProgramMaterialized(split, origin: .planTemplateApplied)
         showToast(
             FCTToast(
                 title: String(localized: "Program ready"),
@@ -497,7 +500,21 @@ struct ContentView: View {
         )
     }
 
+    /// A whole program landing at once — a template program or a multi-day AI result — writes the
+    /// plans, the split, and the activation in a single act, so the trail names all three rather
+    /// than the one the user tapped.
+    private func recordProgramMaterialized(_ split: WorkoutSplit, origin: VACrumb?) {
+        if let origin { Diag.breadcrumb(origin) }
+        Diag.breadcrumb(VACrumb.splitCreated)
+        Diag.breadcrumb(VACrumb.splitActivated)
+        Diag.count(VACounter.splitsCreated)
+        let planCount = split.sortedDays.filter { !$0.isRestDay }.count
+        if planCount > 0 { Diag.count(VACounter.plansCreated, by: planCount) }
+    }
+
     private func handleAIGenerated(result: AIGeneratedPlanResult) {
+        Diag.breadcrumb(VACrumb.aiPlanImported)
+        Diag.count(VACounter.aiPlansImported)
         let context = SharedModelContainer.container.mainContext
         if result.days.count <= 1, let onlyDay = result.days.first {
             let plan = PlanTemplateMaterializer.makeIncompletePlan(
@@ -510,6 +527,7 @@ struct ContentView: View {
         } else {
             let split = PlanTemplateMaterializer.materializeProgram(aiResult: result, activate: true, context: context)
             saveContext(context: context)
+            recordProgramMaterialized(split, origin: nil)
             showToast(
                 FCTToast(
                     title: String(localized: "AI plan ready"),

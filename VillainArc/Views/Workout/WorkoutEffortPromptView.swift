@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 struct WorkoutEffortPromptView: View {
@@ -103,5 +104,6 @@ struct WorkoutEffortPromptView: View {
         .presentationDetents([.fraction(0.62)])
         .presentationBackground(Color.sheetBg)
         .accessibilityIdentifier(AccessibilityIdentifiers.workoutFinishEffortSheet)
+        .diagScreen(VACrumb.workoutEffortPrompt)
     }
 }

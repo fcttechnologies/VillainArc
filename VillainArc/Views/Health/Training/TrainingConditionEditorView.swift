@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 import SwiftData
 
@@ -129,6 +130,7 @@ struct TrainingConditionEditorView: View {
             selectedEndDay = TrainingConditionStore.displayedEndDay(for: activePeriod.endDate) ?? .now
             affectedMuscles = Set(activePeriod.affectedMuscles ?? [])
         }
+        .diagScreen(VACrumb.healthTrainingConditionEditor)
     }
 
     @ViewBuilder
@@ -336,6 +338,7 @@ struct TrainingConditionEditorView: View {
     }
 
     private func save() {
+        Diag.breadcrumb(VACrumb.trainingConditionLogged)
         do {
             guard let selectedKind else {
                 if let activePeriod {

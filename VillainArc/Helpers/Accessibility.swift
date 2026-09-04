@@ -196,8 +196,6 @@ enum AccessibilityIdentifiers {
     static let workoutsDoneEditingButton = "workoutsDoneEditingButton"
     static let workoutsEditButton = "workoutsEditButton"
     static let workoutsEmptyState = "workoutsEmptyState"
-    /// Shown in place of any account-claim empty state until the first pull lands.
-    static let accountRestoringState = "accountRestoringState"
     static let healthWorkoutRow = "healthWorkoutRow"
 
     // MARK: - WorkoutPlansListView

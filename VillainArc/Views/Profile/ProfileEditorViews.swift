@@ -1,3 +1,4 @@
+import FCTMetrics
 import SwiftUI
 
 func normalizedImperialHeightComponents(from centimeters: Double) -> (feet: Int, inches: Int) {
@@ -143,6 +144,7 @@ struct ProfileGenderEditorSheet: View {
                 }
             }
         }
+        .diagScreen(VACrumb.profileEditor)
     }
 }
 
@@ -230,6 +232,7 @@ struct ProfileHeightEditorSheet: View {
                 }
             }
         }
+        .diagScreen(VACrumb.profileEditor)
     }
 }
 
@@ -285,6 +288,7 @@ struct TrainingGoalEditorSheet: View {
                 }
             }
         }
+        .diagScreen(VACrumb.profileEditor)
     }
 }
 
@@ -342,6 +346,7 @@ struct FitnessLevelEditorSheet: View {
                 }
             }
         }
+        .diagScreen(VACrumb.profileEditor)
     }
 
     private var warningLevel: FitnessLevel? {
