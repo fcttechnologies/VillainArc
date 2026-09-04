@@ -44,7 +44,7 @@ struct SleepGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                RestoringEmptyState(state: VASync.shared.restoreSurface) {
                     ContentUnavailableView("No Sleep Goals", systemImage: "target", description: Text("Your saved and previous sleep goals will appear here."))
                 }
             }

@@ -130,7 +130,7 @@ struct WorkoutPlansListView: View {
         }
         .overlay(alignment: .center) {
             if workoutPlans.isEmpty {
-                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                RestoringEmptyState(state: VASync.shared.restoreSurface) {
                     ContentUnavailableView("No Workout Plans", systemImage: "list.clipboard", description: Text("Your created workout plans will appear here."))
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutPlansEmptyState)
                 }

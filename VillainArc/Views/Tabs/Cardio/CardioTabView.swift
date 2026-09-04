@@ -164,7 +164,7 @@ struct CardioTabView: View {
                         startCardioSection
 
                         if mergedHistory.isEmpty {
-                            RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                            RestoringEmptyState(state: VASync.shared.restoreSurface) {
                                 ContentUnavailableView("No Cardio Yet", systemImage: "figure.run", description: Text("Outdoor routes and treadmill sessions will show up here."))
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 24)

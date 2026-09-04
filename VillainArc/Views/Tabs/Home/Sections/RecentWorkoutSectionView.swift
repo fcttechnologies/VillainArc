@@ -31,7 +31,7 @@ struct RecentWorkoutSectionView: View {
             }
 
             if recentItem == nil {
-                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                RestoringEmptyState(state: VASync.shared.restoreSurface) {
                     ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Tap the \(Image(systemName: "plus")) button to start your first workout."))
                         .frame(maxWidth: .infinity)
                         .appCardStyle()

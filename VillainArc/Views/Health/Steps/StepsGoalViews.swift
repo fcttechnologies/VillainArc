@@ -132,7 +132,7 @@ struct StepsGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                RestoringEmptyState(state: VASync.shared.restoreSurface) {
                     ContentUnavailableView("No Steps Goals", systemImage: "target", description: Text("Your saved and previous steps goals will appear here."))
                 }
             }

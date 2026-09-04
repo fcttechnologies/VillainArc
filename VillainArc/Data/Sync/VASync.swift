@@ -1,6 +1,7 @@
 import FCTAccount
 import FCTAccountProfile
 import FCTBlobSync
+import FCTComponentsUI
 import FCTServerSync
 import FCTSync
 import Foundation
@@ -101,19 +102,52 @@ final class VASync {
     /// The record outbox, split by whether waiting will clear it: `retrying` goes by itself,
     /// `stuck` never will.
     private(set) var counted: OutboxCensus = OutboxCensus()
-    /// Staged uploads and refused uploads of the account's avatar — the blob half of "what has not
-    /// reached the account".
-    private(set) var blobPendingCount: Int = 0
-    /// **Whether this device has ever read the whole of the signed-in account.** An empty surface
-    /// that is a claim about the *account* — "no workouts yet", "no plans yet" — consults this
-    /// before it says so: on the first launch after a reinstall the rows are on the server and
-    /// have simply not arrived, which the person reading it sees as their training history being
-    /// gone. Durable, so a relaunch answers it before any cycle runs.
+    /// The avatar outbox, split the same way the record one is: a refused upload is never waiting
+    /// for anything, so it must not be reported as though waiting would clear it.
+    private(set) var blobCounted: OutboxCensus = OutboxCensus()
+    private(set) var lastError: String?
+
+    /// **Where this device stands with its first look at the account** — the three things a surface
+    /// with nothing on it may say, decided by the package's own rule.
+    ///
+    /// An empty surface that is a claim about the *account* — "no workouts yet", "no plans yet" —
+    /// consults this before it says so: on the first launch after a reinstall the rows are on the
+    /// server and have simply not arrived, which the person reading it sees as their training
+    /// history being gone.
     ///
     /// Device-sourced surfaces are not account claims and never read it: the Apple Health mirrors
     /// come from HealthKit on this phone, so their emptiness is true the moment it is rendered.
-    private(set) var hasRestoredAccountData = false
-    private(set) var lastError: String?
+    var restore: SyncRestoreState {
+        SyncRestoreState(
+            hasAccount: currentAccount() != nil,
+            hasCompletedFirstPull: hasCompletedFirstPull,
+            status: status
+        )
+    }
+
+    /// ``restore`` as the empty-state surface reads it, carrying the one thing the answer cannot:
+    /// what "try again" does here. A full cycle, awaited, so the button's spinner is the real
+    /// attempt — `SyncEngine.sync(_:)` consults no backoff, so this reaches the server in every
+    /// state that produced an `.unreachable`.
+    var restoreSurface: RestoreState {
+        switch restore {
+        case .restoring: .restoring
+        case .unreachable: .unreachable(retry: { [weak self] in await self?.syncNow(.full) })
+        case .settled: .settled
+        }
+    }
+
+    /// Whether a pull has ever walked the account's feed to its end on this device. Read off the
+    /// engine while one exists, and off the state file otherwise: the launch read happens before
+    /// the engine is built, and the fact is durable and per account, so a returning launch is
+    /// settled from the first frame rather than from the first cycle.
+    var hasCompletedFirstPull: Bool {
+        guard let accountID = currentAccount()?.accountID else { return false }
+        if let engine, engine.accountID == accountID { return engine.hasCompletedFirstPull }
+        return SyncFreshness.current(fileURL: try? configuration.stateFileURL())
+            .hasCompletedFirstPull(for: accountID)
+    }
+
     /// Set when a sign-out or switch discarded local changes the server never saw.
     private(set) var discardedOnSwitch: Int = 0
     /// Set when a sign-out found unpushed work and therefore kept the local data.
@@ -230,25 +264,17 @@ final class VASync {
     /// correctness rides on in the first place.
     private func startNudges() {
         nudgeTask?.cancel()
-        guard let nudges else { return }
+        guard let nudges, let engine else { return }
+        let gated = nudges.nudges(gatedBy: engine)
         nudgeTask = Task { [weak self] in
             do {
-                for try await nudge in nudges.nudges() {
-                    await self?.syncOnNudge(nudge)
+                for try await _ in gated {
+                    await self?.syncNow(.full)
                 }
             } catch {
                 AppLog.info("Sync nudge rung absent for this foreground: \(error)")
             }
         }
-    }
-
-    /// A nudge is a broadcast to every device on the account, this one included, so the engine is
-    /// asked whether it carries anything this device has not already read. Without that, a nudge
-    /// below the high-water mark spends a whole cycle on nothing — and the avatar blob pass inside
-    /// `syncNow` with it.
-    private func syncOnNudge(_ nudge: SyncNudge) async {
-        guard let engine, engine.shouldSync(for: nudge) else { return }
-        await syncNow(.full)
     }
 
     /// Bring the account's rows down before Villain Arc's own setup asks for anything the account
@@ -261,6 +287,44 @@ final class VASync {
     /// - Returns: whether the restore completed. A `false` is an **unanswered** question and never
     ///   "new account" — the caller has to say so rather than start setup over data it did not
     ///   look at.
+    /// Release every refused entry back to the queue and run a cycle. One explicit user action,
+    /// never a loop: the engine is right that a refused payload must not be retried on its own,
+    /// because the server judged that payload.
+    ///
+    /// It is only right about the payload, though. A refusal caused by the server's own state — a
+    /// key collision, a column its schema had not learned — is repaired somewhere this device
+    /// cannot see, on rows nobody is editing, so nothing local will ever change and nothing will
+    /// ever re-queue them. And a refusal blocks its own recovery: the drained-outbox barrier counts
+    /// stuck entries, so a device holding them can neither rebuild from the server nor sign out.
+    /// Without this the only remaining move is deleting the app.
+    @discardableResult
+    func retryRefused() async -> Int {
+        var requeued = engine?.retryFailed() ?? 0
+        requeued += avatars?.blobs.retryFailed() ?? 0
+        // Every backoff, or the release lands in a wire that is still waiting out the delay the
+        // refusals wound up — a "try these again" that visibly does nothing for a minute.
+        engine?.resetBackoff()
+        avatars?.blobs.resetBackoff()
+        // Full: a refusal is the one state where this device may also be the stale one — a record
+        // judged because the server had moved on is repaired by hearing what the account holds,
+        // not only by sending again.
+        await syncNow(.full)
+        return requeued
+    }
+
+    /// Rebuild this device's view from the server — the one answer to `.resyncRequired`. Refuses
+    /// while anything is unpushed, which is the engine's own barrier rather than this one's.
+    func fullResync() async {
+        guard let engine else { return }
+        do {
+            try await engine.fullResync()
+            publish(engine.status)
+        } catch {
+            lastError = "\(error)"
+            publish(engine.status)
+        }
+    }
+
     func restoreAccountData(waitingUpTo timeout: Duration = .seconds(30)) async -> Bool {
         let deadline = ContinuousClock.now + timeout
         // The engine is built from the account's event stream, which races the setup path that
@@ -273,18 +337,12 @@ final class VASync {
         }
         await syncNow(.full)
 
-        // The question is whether the PULL completed, not whether the outbox is clean. Records the
-        // server judged and refused are a push-side fact that never clears by itself, so gating on
-        // `.idle` would make a single stuck record block setup forever — with no profile and a
-        // Retry that cannot succeed. Only the states that mean "this device did not read the
-        // account" are a failed restore.
-        switch status {
-        // A spent storage ceiling is a push-side fact like a refusal: the pull that answers this
-        // question already ran, and holding setup for it would wait on something a person clears
-        // in another app.
-        case .idle, .failed, .capped: return true
-        case .off, .syncing, .offline, .needsReauthentication, .resyncRequired, .merged: return false
-        }
+        // The question is whether the PULL completed, not whether the outbox is clean, and the
+        // marker is the only thing that answers it: it is stamped once a pull has walked the feed
+        // to its end. A status cannot — records the server judged are a push-side fact that leaves
+        // a clean pull reading `.failed`, and three of the catch paths reach `.failed` without the
+        // pull having run at all.
+        return engine?.hasCompletedFirstPull ?? false
     }
 
     /// Ask for one more pass, folded into a running cycle when one is up. A **push**: the uploads
@@ -398,8 +456,7 @@ final class VASync {
             clearLocalCaches()
             lastSyncedAt = nil
             counted = OutboxCensus()
-            blobPendingCount = 0
-            hasRestoredAccountData = false
+            blobCounted = OutboxCensus()
             self.engine = nil
             self.avatars = nil
             onLocalDataCleared?()
@@ -483,9 +540,6 @@ final class VASync {
         self.engine = engine
         self.avatars = avatarStore
         self.nudges = configuration.makeNudgeChannel(credentials, stateFile)
-        // Before the first cycle of this launch: the marker outlives the process, so a returning
-        // user is never shown a restore they already completed.
-        hasRestoredAccountData = engine.hasCompletedFirstPull
 
         scheduler.observe(configuration.makeTriggers(container))
         startNudges()
@@ -533,8 +587,7 @@ final class VASync {
         self.avatars = nil
         lastSyncedAt = nil
         counted = OutboxCensus()
-        blobPendingCount = 0
-        hasRestoredAccountData = false
+        blobCounted = OutboxCensus()
     }
 
     /// The non-synced residue a departing account leaves behind, and the other half of the store's
@@ -632,11 +685,10 @@ final class VASync {
     }
 
     private func refreshCounters() {
-        hasRestoredAccountData = engine?.hasCompletedFirstPull ?? false
         guard let state = engine?.state else { return }
         lastSyncedAt = state.lastSyncedAt
         counted = state.counted
-        blobPendingCount = avatars.map { $0.blobs.counted.retrying + $0.blobs.counted.stuck } ?? 0
+        blobCounted = avatars?.blobs.counted ?? OutboxCensus()
     }
 
     // MARK: - Backoff and connectivity

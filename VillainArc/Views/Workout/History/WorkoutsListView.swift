@@ -175,7 +175,7 @@ struct WorkoutsListView: View {
         }
         .overlay(alignment: .center) {
             if items.isEmpty {
-                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                RestoringEmptyState(state: VASync.shared.restoreSurface) {
                     ContentUnavailableView("No Previous Workouts", systemImage: "clock.arrow.circlepath", description: Text("Your workout history will appear here."))
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutsEmptyState)
                 }

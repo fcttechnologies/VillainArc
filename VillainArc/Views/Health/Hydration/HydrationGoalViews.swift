@@ -129,7 +129,7 @@ struct HydrationGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                RestoringEmptyState(state: VASync.shared.restoreSurface) {
                     ContentUnavailableView("No Hydration Goals", systemImage: "target", description: Text("Your saved and previous hydration goals will appear here."))
                 }
             }

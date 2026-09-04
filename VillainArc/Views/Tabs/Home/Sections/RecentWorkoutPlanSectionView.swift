@@ -14,7 +14,7 @@ struct RecentWorkoutPlanSectionView: View {
             }
 
             if recentWorkoutPlan.isEmpty {
-                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                RestoringEmptyState(state: VASync.shared.restoreSurface) {
                     ContentUnavailableView("No Workout Plans Created", systemImage: "list.clipboard", description: Text("Tap the \(Image(systemName: "plus")) button to create a workout plan."))
                         .frame(maxWidth: .infinity)
                         .appCardStyle()

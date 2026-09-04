@@ -87,11 +87,16 @@ struct VASyncRestoreTests {
 
     /// The honest-failure half. An unreachable server must come back as a refusal, never as a
     /// completed restore over an empty store — those look identical and mean opposite things.
+    ///
+    /// The fault is injected **before** enrollment, which is what makes this the shape it claims
+    /// to be: a device that has never read the account. Enrolling first would pull the account
+    /// down and only then cut the wire, and a device holding the account's rows has restored them
+    /// however the network is behaving a moment later.
     @Test @MainActor
     func anUnreachableAccountRefusesRatherThanReportingAnEmptyOne() async throws {
         let harness = try VASyncFaultHarness()
-        await harness.enroll()
         await harness.injector.set(.unreachable)
+        await harness.enroll()
 
         #expect(await harness.sync.restoreAccountData() == false)
     }

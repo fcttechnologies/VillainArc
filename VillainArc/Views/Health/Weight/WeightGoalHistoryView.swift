@@ -60,7 +60,7 @@ struct WeightGoalHistoryView: View {
         }
         .overlay {
             if goals.isEmpty {
-                RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                RestoringEmptyState(state: VASync.shared.restoreSurface) {
                     ContentUnavailableView("No Weight Goals", systemImage: "target", description: Text("Your saved and previous weight goals will appear here."))
                 }
             }

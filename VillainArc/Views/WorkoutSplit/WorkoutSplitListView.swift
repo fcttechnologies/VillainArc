@@ -94,7 +94,7 @@ struct WorkoutSplitListView: View {
             .sheetBackground()
             .overlay {
                 if visibleSplits.isEmpty {
-                    RestoringEmptyState(hasRestored: VASync.shared.hasRestoredAccountData) {
+                    RestoringEmptyState(state: VASync.shared.restoreSurface) {
                         ContentUnavailableView("No Splits", systemImage: "calendar.badge.plus", description: Text("Create a workout split to plan your training routine.")
                         )
                         .accessibilityIdentifier(AccessibilityIdentifiers.workoutSplitEmptyState)

@@ -68,7 +68,7 @@ struct AccountBlobWiringTests {
         await harness.sync.syncNow(.full)
 
         #expect(harness.sync.unsyncedWork?.isDrained == false, "the queued upload is outstanding work")
-        #expect(harness.sync.blobPendingCount > 0, "and it is what the status surface counts")
+        #expect(harness.sync.blobCounted.total > 0, "and it is what the status surface counts")
     }
 
     /// Sign-out clears the account's cache: nothing is left holding bytes on a device that is no
