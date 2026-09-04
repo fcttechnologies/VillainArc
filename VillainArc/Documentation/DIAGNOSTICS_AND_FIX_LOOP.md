@@ -131,3 +131,10 @@ products under `test-without-building` would report a clean pass that measured n
 doubles the gate, which is why it is a flag: run it before a release and after anything that
 touches concurrency, the sync engine, or a HealthKit callback. AddressSanitizer is not run at all —
 it answers for C/C++/ObjC memory, and every target here is pure Swift with strict memory safety on.
+
+The leg separates three verdicts, because two of them look identical from an exit code: a race it
+reported, a test that failed under it, and **the sanitizer's own runtime aborting**
+(`ThreadSanitizer:DEADLYSIGNAL`, "nested bug in the same thread"), after which xcodebuild relaunches
+the host and the run ends having executed a fraction of the suite. The third is red like the others
+— a check that did not run proves nothing — but it is named as the sanitizer rather than as the
+app, because hunting a race that was never reported is how a leg stops being believed.

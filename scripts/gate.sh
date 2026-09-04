@@ -373,19 +373,29 @@ mark "cold launch"
 if [ "${FULL}" -eq 1 ]; then
   echo "==> Whole suite under ThreadSanitizer"
   TSAN_LOG="${LOGS}/tsan-suite.log"
-  if ! xcodebuild -project VillainArc.xcodeproj -scheme VillainArc \
-      -configuration Debug -destination "${IOS_DEST}" \
-      -derivedDataPath "${DD}/tsan" -parallel-testing-enabled NO \
-      -enableThreadSanitizer YES \
-      -allowProvisioningUpdates test >"${TSAN_LOG}" 2>&1; then
-    grep -E "ThreadSanitizer|data race|✘|error:" "${TSAN_LOG}" | head -40
-    fail "the suite failed under ThreadSanitizer (log: ${TSAN_LOG})"
-  fi
-  # A race TSan reports without failing a test still has to be red: it prints its report to the
-  # runner's stderr, which xcodebuild carries into this log whether or not the test itself failed.
-  if grep -q "ThreadSanitizer: data race" "${TSAN_LOG}"; then
+  xcodebuild -project VillainArc.xcodeproj -scheme VillainArc \
+    -configuration Debug -destination "${IOS_DEST}" \
+    -derivedDataPath "${DD}/tsan" -parallel-testing-enabled NO \
+    -enableThreadSanitizer YES \
+    -allowProvisioningUpdates test >"${TSAN_LOG}" 2>&1
+  tsan_rc=$?
+  # The sanitizer RUNTIME dying is not the app failing, and the two look identical from the exit
+  # code: `ThreadSanitizer:DEADLYSIGNAL` / "nested bug in the same thread" is TSan aborting inside
+  # its own interceptors, after which xcodebuild relaunches the host and the run ends having
+  # measured a fraction of the suite. Still red — a check that did not run proves nothing — but
+  # named as the sanitizer, because sending someone to hunt a race that was never reported is how
+  # a leg stops being believed.
+  if grep -qE "ThreadSanitizer:DEADLYSIGNAL|nested bug in the same thread" "${TSAN_LOG}"; then
+    grep -c "ThreadSanitizer:DEADLYSIGNAL" "${TSAN_LOG}" | sed 's/^/    TSan aborted this many times: /'
+    fail "ThreadSanitizer's own runtime aborted, so most of the suite never ran and no race was measured (log: ${TSAN_LOG})"
+  elif grep -q "ThreadSanitizer: data race" "${TSAN_LOG}"; then
+    # A race TSan reports without failing a test still has to be red: it prints its report to the
+    # runner's stderr, which xcodebuild carries into this log either way.
     grep -A 12 "ThreadSanitizer: data race" "${TSAN_LOG}" | head -40
     fail "ThreadSanitizer reported a data race (log: ${TSAN_LOG})"
+  elif [ "${tsan_rc}" -ne 0 ]; then
+    grep -E "✘|error:" "${TSAN_LOG}" | head -40
+    fail "the suite failed under ThreadSanitizer (log: ${TSAN_LOG})"
   fi
   mark "suite under ThreadSanitizer"
 fi
