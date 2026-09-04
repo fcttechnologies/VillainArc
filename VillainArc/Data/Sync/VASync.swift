@@ -233,13 +233,22 @@ final class VASync {
         guard let nudges else { return }
         nudgeTask = Task { [weak self] in
             do {
-                for try await _ in nudges.nudges() {
-                    await self?.syncNow(.full)
+                for try await nudge in nudges.nudges() {
+                    await self?.syncOnNudge(nudge)
                 }
             } catch {
                 AppLog.info("Sync nudge rung absent for this foreground: \(error)")
             }
         }
+    }
+
+    /// A nudge is a broadcast to every device on the account, this one included, so the engine is
+    /// asked whether it carries anything this device has not already read. Without that, a nudge
+    /// below the high-water mark spends a whole cycle on nothing — and the avatar blob pass inside
+    /// `syncNow` with it.
+    private func syncOnNudge(_ nudge: SyncNudge) async {
+        guard let engine, engine.shouldSync(for: nudge) else { return }
+        await syncNow(.full)
     }
 
     /// Bring the account's rows down before Villain Arc's own setup asks for anything the account
@@ -270,7 +279,10 @@ final class VASync {
         // Retry that cannot succeed. Only the states that mean "this device did not read the
         // account" are a failed restore.
         switch status {
-        case .idle, .failed: return true
+        // A spent storage ceiling is a push-side fact like a refusal: the pull that answers this
+        // question already ran, and holding setup for it would wait on something a person clears
+        // in another app.
+        case .idle, .failed, .capped: return true
         case .off, .syncing, .offline, .needsReauthentication, .resyncRequired, .merged: return false
         }
     }

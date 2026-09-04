@@ -24,7 +24,8 @@ nonisolated enum VAMetrics {
     static func start() {
         service.register(enabledDomains: Array(VAMetricsDomain.allCases))
         Diag.start(DiagConfiguration(
-            endpoint: AccountEnvironment.fct.baseURL.appendingPathComponent("functions/v1/diag-ingest"),
+            projectURL: AccountEnvironment.fct.baseURL,
+            publishableKey: AccountEnvironment.fct.publishableKey,
             appGroupID: SharedModelContainer.appGroupID
         ))
     }

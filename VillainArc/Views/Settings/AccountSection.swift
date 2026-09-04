@@ -73,35 +73,28 @@ private struct VASyncStatusRow: View {
     var body: some View {
         LabeledContent {
             Text(statusText)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(SyncStatusCopy.needsAttention(sync.status) ? .orange : .secondary)
         } label: {
-            Label("Sync", systemImage: "arrow.triangle.2.circlepath")
+            Label("Sync", systemImage: SyncStatusCopy.symbol(for: sync.status) ?? "arrow.triangle.2.circlepath")
         }
         .accessibilityIdentifier(AccessibilityIdentifiers.settingsSyncStatusRow)
     }
 
+    /// The engine's own states are read from `SyncStatusCopy` — written and translated once for
+    /// every FCT app, which is also how a state this row never enumerated (a spent storage cap)
+    /// arrives already worded. What stays here is what only this app knows: its outbox census,
+    /// which outranks the last cycle's outcome because `status` is transient and the census is the
+    /// standing truth a status row exists to show, and when it last synced.
     private var statusText: String {
-        // Outstanding work outranks the last cycle's outcome: `status` is transient and the
-        // outbox census is the standing truth a status row exists to show.
         if sync.counted.stuck > 0 {
             return String(localized: "\(sync.counted.stuck) changes need attention")
         }
         if sync.counted.retrying > 0 || sync.blobPendingCount > 0 {
             return String(localized: "\(sync.counted.retrying + sync.blobPendingCount) waiting to sync")
         }
-        switch sync.status {
-        case .off: return String(localized: "Off")
-        case .syncing: return String(localized: "Syncing…")
-        case .needsReauthentication: return String(localized: "Sign in again to sync")
-        case .offline: return String(localized: "Waiting for network")
-        case .failed: return String(localized: "Needs attention")
-        case .resyncRequired: return String(localized: "Refresh needed")
-        case .merged: return String(localized: "Your account moved — sign in again")
-        case .idle:
-            if let last = sync.lastSyncedAt {
-                return String(localized: "Synced \(last.formatted(.relative(presentation: .named)))")
-            }
-            return String(localized: "Synced")
+        if case .idle = sync.status, let last = sync.lastSyncedAt {
+            return String(localized: "Synced \(last.formatted(.relative(presentation: .named)))")
         }
+        return SyncStatusCopy.headline(for: sync.status)
     }
 }
