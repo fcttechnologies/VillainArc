@@ -76,9 +76,19 @@ struct VAProConfigurationTests {
 /// scenarios at once clear each other's transactions mid-purchase — which reads as a purchase that
 /// returned nothing rather than as a race.
 ///
-/// **A simulator that has never served a StoreKit purchase answers `.userCancelled` for its whole
-/// first run**, so on a brand-new device every scenario here fails once and passes on the next run.
-/// The failure names itself; it is the device warming up, not the store.
+/// **On a device the app has never run a test process on, the session's configuration does not
+/// take for purchases**, and the run answers accordingly: products load from the `.storekit` file
+/// (the product-shape scenario passes), while `Product.purchase()` goes to the App Store — the log
+/// says so, `environment: Sandbox` — where a simulator has no account. On a device nobody is
+/// watching it answers `.userCancelled` immediately; on one booted in Simulator.app it raises the
+/// App Store's own "Sign in to Apple Account" sheet, which is SpringBoard's rather than the
+/// session's, so `disableDialogs` does not reach it and the run blocks until someone dismisses it.
+///
+/// A second run on that same device is green, and nothing inside one process moves it — a
+/// session-driven `SKTestSession.buyProduct` first, an app launch before the run, and the scheme's
+/// own test-action StoreKit configuration were each measured and each left the first run failing.
+/// The scenarios would have to stop going through `Product.purchase()` to be believable on a device
+/// that has never run them, which is `SubscriptionScenarioHarness`'s call to make, not this app's.
 @MainActor
 @Suite(.serialized)
 struct VAProStoreScenarioTests {
