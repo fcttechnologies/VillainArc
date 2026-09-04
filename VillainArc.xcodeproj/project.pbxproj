@@ -16,6 +16,7 @@
 		D4BC24D8C1D1EFBDBE4C8357 /* FCTAccount in Frameworks */ = {isa = PBXBuildFile; productRef = D8FA06B6B7B5CF17A2DD9909 /* FCTAccount */; };
 		340B1AD4210BC5758E00EA38 /* FCTAccount in Frameworks */ = {isa = PBXBuildFile; productRef = EF85D33CF5A4BA9547AE5489 /* FCTAccount */; };
 		45585E5A258EBE227EEDE0AF /* FCTServerSync in Frameworks */ = {isa = PBXBuildFile; productRef = F9462B24032FEF4C537E2AA3 /* FCTServerSync */; };
+		45585E5A258EBE227EEDE0B0 /* FCTServerSyncUI in Frameworks */ = {isa = PBXBuildFile; productRef = F9462B24032FEF4C537E2AA4 /* FCTServerSyncUI */; };
 		DFDF33BB6D9E4855B7D487D2 /* FCTServerSync in Frameworks */ = {isa = PBXBuildFile; productRef = 4501DEBEAC5182DF503EC78A /* FCTServerSync */; };
 		89568A4EEC63978F7CEF1F28 /* FCTBlobSync in Frameworks */ = {isa = PBXBuildFile; productRef = 43BB4D57414397C10B87CD9A /* FCTBlobSync */; };
 		B33E569A214B3C6F6ECC535D /* FCTBlobSync in Frameworks */ = {isa = PBXBuildFile; productRef = CC25C248A441F993B2DBA2C8 /* FCTBlobSync */; };
@@ -399,6 +400,7 @@
 				A1C0FF11E0A57A5701000011 /* FCTFeedback in Frameworks */,
 				D4BC24D8C1D1EFBDBE4C8357 /* FCTAccount in Frameworks */,
 				45585E5A258EBE227EEDE0AF /* FCTServerSync in Frameworks */,
+				45585E5A258EBE227EEDE0B0 /* FCTServerSyncUI in Frameworks */,
 				89568A4EEC63978F7CEF1F28 /* FCTBlobSync in Frameworks */,
 				F1E922FA2695334BF91C753A /* FCTMetrics in Frameworks */,
 				FDAB6AF12FC769540085E0F0 /* MuscleMap in Frameworks */,
@@ -1395,6 +1397,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
 			productName = FCTServerSync;
+		};
+		F9462B24032FEF4C537E2AA4 /* FCTServerSyncUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8E2C9513D6521CF43FEBAD14 /* XCLocalSwiftPackageReference "FCTFoundation" */;
+			productName = FCTServerSyncUI;
 		};
 		4501DEBEAC5182DF503EC78A /* FCTServerSync */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -3,6 +3,7 @@ import FCTAccountProfile
 import FCTBlobSync
 import FCTComponentsUI
 import FCTServerSync
+import FCTServerSyncUI
 import FCTSync
 import Foundation
 import Network
@@ -126,15 +127,9 @@ final class VASync {
     }
 
     /// ``restore`` as the empty-state surface reads it, carrying the one thing the answer cannot:
-    /// what "try again" does here. A full cycle, awaited, so the button's spinner is the real
-    /// attempt — `SyncEngine.sync(_:)` consults no backoff, so this reaches the server in every
-    /// state that produced an `.unreachable`.
+    /// what "try again" does in this app.
     var restoreSurface: RestoreState {
-        switch restore {
-        case .restoring: .restoring
-        case .unreachable: .unreachable(retry: { [weak self] in await self?.syncNow(.full) })
-        case .settled: .settled
-        }
+        RestoreState(restore, retry: { [weak self] in await self?.syncNow(.full) })
     }
 
     /// Whether a pull has ever walked the account's feed to its end on this device. Read off the
