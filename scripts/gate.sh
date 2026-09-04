@@ -176,6 +176,21 @@ mark "Debug build"
 # graph it just built. The count is asserted, not just the exit status — a target that stops
 # compiling its test sources reports success having executed nothing. Only a floor is pinned:
 # adding tests must never fail the gate, losing them always must.
+# The first test process on a device installs the `.storekit` configuration and cannot use it:
+# in that process every purchase path reaches nothing, and the store scenarios fail naming exactly
+# that. So a device this gate has not run the StoreKit suite on gets one install pass first, its
+# result unread; every process after it is attached. The stamp is per device, under TMPDIR, so a
+# reboot costs one install pass per device and a device is never stamped for another.
+STOREKIT_STAMP="${TMPDIR:-/tmp}/villainarc-storekit-installed/${SIM_UDID}"
+if [ ! -e "${STOREKIT_STAMP}" ]; then
+  echo "==> StoreKit configuration install pass (first test process on ${SIM_UDID})"
+  xcodebuild -project VillainArc.xcodeproj -scheme VillainArc \
+    -destination "${IOS_DEST}" -derivedDataPath "${DD}/ios" -parallel-testing-enabled NO \
+    -only-testing:VillainArcTests/VAProStoreScenarioTests \
+    -allowProvisioningUpdates test-without-building > "${LOGS}/storekit-install.log" 2>&1 || true
+  mkdir -p "$(dirname "${STOREKIT_STAMP}")" && touch "${STOREKIT_STAMP}"
+fi
+
 if [ "${FAST}" -eq 1 ]; then
   echo "==> Unit suite (fast)"
 else
