@@ -31,18 +31,19 @@
 # `--only <spec>` narrows the suite to one target/suite/test (xcodebuild's `-only-testing:` form),
 # which is what makes a single failing test a seconds-long loop rather than a minutes-long one.
 #
-# `--full` is the gate PLUS a second run of the whole suite under ThreadSanitizer. Every leg here
-# builds one product for one platform — VA ships iOS only, so there is no second host to fan the
-# cross-platform suite out to and the default run already executes all of it. What the default run
-# cannot see is a data race: this app's SwiftData writes, its HealthKit callbacks and its sync
-# engine all cross actors, and a race there reads as a flake or as nothing at all until a user's
-# store is corrupt. TSan needs its OWN build (instrumentation is a compile-time decision, so
-# `test-without-building` against the plain products would report a clean run that measured
-# nothing), which is why it is a flag rather than always on: it roughly doubles the gate.
-# AddressSanitizer is not run — it answers for C/C++/ObjC memory, and every target here is pure
+# There is no sanitizer leg. ThreadSanitizer cannot run this suite: the instrumented host dies on
+# a fatal signal inside SwiftData's batch delete (`ModelContext.delete(model:)`) with no race
+# report, no crash report and no faulting frames, and it dies the same way with a single suite
+# alone in its own process, so no amount of splitting the run avoids it. What answers for data
+# races instead is the language: this project builds Swift 6 with warnings as errors, where a
+# cross-actor race is a compile error rather than something a runtime sample might catch. What
+# that leaves uncovered is the code that opts OUT of it — the `nonisolated(unsafe)` HealthKit
+# completion handlers in `HealthStoreUpdateCoordinator` and the shared `UserDefaults` behind
+# `SharedModelContainer.sharedDefaults` — and those are read by eye, because nothing here checks
+# them at runtime. AddressSanitizer answers for C/C++/ObjC memory, and every target here is pure
 # Swift with strict memory safety on.
 #
-# Usage:  scripts/gate.sh [--fast | --full] [--only VillainArcTests/SomeSuite]
+# Usage:  scripts/gate.sh [--fast] [--only VillainArcTests/SomeSuite]
 # Env:    SIM_NAME  simulator device name (default "iPhone 17 Pro") outside a lane; inside one the
 #                   leased device is the destination (gate-lib's lane_sim_destination).
 
@@ -51,12 +52,10 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 FAST=0
-FULL=0
 ONLY_TESTING=()
 while [ $# -gt 0 ]; do
   case "$1" in
     --fast) FAST=1; shift ;;
-    --full) FULL=1; shift ;;
     --only)
       [ $# -ge 2 ] || { echo "==> FAIL: --only needs a test spec (e.g. --only VillainArcTests/SuggestionSystemTests)"; exit 1; }
       ONLY_TESTING+=("-only-testing:$2"); shift 2 ;;
@@ -67,11 +66,6 @@ done
 # A narrowed run is a narrowed run whichever flag asked for it: `--only` on its own would otherwise
 # build the archive and the Release slice to run four tests.
 [ ${#ONLY_TESTING[@]} -gt 0 ] && FAST=1
-# --fast and --full are opposite ends of the same axis, and a run that claimed both would silently
-# take the cheaper one.
-if [ "${FAST}" -eq 1 ] && [ "${FULL}" -eq 1 ]; then
-  echo "==> FAIL: --fast and --full are mutually exclusive"; exit 1
-fi
 
 source "../FCTFoundation/scripts/gate-lib.sh"
 phase_init
@@ -181,13 +175,18 @@ mark "Debug build"
 # that. So a device this gate has not run the StoreKit suite on gets one install pass first, its
 # result unread; every process after it is attached. The stamp is per device, under TMPDIR, so a
 # reboot costs one install pass per device and a device is never stamped for another.
+#
+# `-collect-test-diagnostics never` on every test leg. The default is on-failure, and what it
+# collects is `simctl diagnose --timeout=600` — a whole-simulator log archive, per failed run, that
+# nothing here reads. A run whose host died spends ten silent minutes on it after the last test
+# reports, which reads as a hung gate rather than as a failing one.
 STOREKIT_STAMP="${TMPDIR:-/tmp}/villainarc-storekit-installed/${SIM_UDID}"
 if [ ! -e "${STOREKIT_STAMP}" ]; then
   echo "==> StoreKit configuration install pass (first test process on ${SIM_UDID})"
   xcodebuild -project VillainArc.xcodeproj -scheme VillainArc \
     -destination "${IOS_DEST}" -derivedDataPath "${DD}/ios" -parallel-testing-enabled NO \
     -only-testing:VillainArcTests/VAProStoreScenarioTests \
-    -allowProvisioningUpdates test-without-building > "${LOGS}/storekit-install.log" 2>&1 || true
+    -allowProvisioningUpdates -collect-test-diagnostics never test-without-building > "${LOGS}/storekit-install.log" 2>&1 || true
   mkdir -p "$(dirname "${STOREKIT_STAMP}")" && touch "${STOREKIT_STAMP}"
 fi
 
@@ -202,7 +201,7 @@ leg_start unit-suite "${TEST_LOG}" \
     -destination "${IOS_DEST}" \
     -derivedDataPath "${DD}/ios" -parallel-testing-enabled NO \
     "${ONLY_TESTING[@]+"${ONLY_TESTING[@]}"}" \
-    -allowProvisioningUpdates test-without-building
+    -allowProvisioningUpdates -collect-test-diagnostics never test-without-building
 if [ "${FAST}" -eq 0 ]; then
   start_build ios-release build   Release "${IOS_DEST}" \
     ONLY_ACTIVE_ARCH=YES ARCHS=arm64
@@ -378,49 +377,6 @@ else
 fi
 mark "cold launch"
 
-# THE RACE LEG — `--full` only. Its own build, because sanitizer instrumentation is decided at
-# compile time: `test-without-building` against the products above would run clean and prove
-# nothing. Serial after the cold launch rather than beside it, since a TSan-instrumented suite is
-# both slower and heavier than the run it repeats and overlapping the two just starves both.
-#
-# `-parallel-testing-enabled NO` for the same reason as the plain run, and the exit status is the
-# verdict: TSan reports a race by failing the test that raced.
-if [ "${FULL}" -eq 1 ]; then
-  echo "==> Whole suite under ThreadSanitizer"
-  TSAN_LOG="${LOGS}/tsan-suite.log"
-  xcodebuild -project VillainArc.xcodeproj -scheme VillainArc \
-    -configuration Debug -destination "${IOS_DEST}" \
-    -derivedDataPath "${DD}/tsan" -parallel-testing-enabled NO \
-    -enableThreadSanitizer YES \
-    -allowProvisioningUpdates test >"${TSAN_LOG}" 2>&1
-  tsan_rc=$?
-  # `ThreadSanitizer:DEADLYSIGNAL` is TSan's signal handler reporting that the process took a fatal
-  # signal — SIGSEGV, SIGBUS, or the SIGTRAP a Swift `precondition`/`_assertionFailure` raises —
-  # and "nested bug in the same thread" is a second one arriving while it printed the first. It
-  # says the run died, not what killed it: the sanitizer's own runtime and the app's own trap look
-  # identical from here, and the process is gone before any test can be blamed. So this names the
-  # crash report instead of guessing, because the report's faulting frames are the only thing that
-  # tells the two apart, and a verdict that guesses the sanitizer sends the reader away from a
-  # real crash.
-  if grep -qE "ThreadSanitizer:DEADLYSIGNAL|nested bug in the same thread" "${TSAN_LOG}"; then
-    grep -c "ThreadSanitizer:DEADLYSIGNAL" "${TSAN_LOG}" | sed 's/^/    fatal signals under TSan: /'
-    echo "    last test started before each abort:"
-    grep -nE "◇ (Test|Suite) .* started|ThreadSanitizer:DEADLYSIGNAL" "${TSAN_LOG}" \
-      | awk -F: '/DEADLYSIGNAL/ { if (last != "") print "      " last; last = "" ; next } { $1=""; last=$0 }'
-    ls -t "${HOME}/Library/Logs/DiagnosticReports/VillainArc"*.ips 2>/dev/null | head -3 \
-      | sed 's/^/    crash report: /'
-    fail "the suite died on a fatal signal under ThreadSanitizer, so most of it never ran — read the crash report above for the faulting frames before assuming the sanitizer (log: ${TSAN_LOG})"
-  elif grep -q "ThreadSanitizer: data race" "${TSAN_LOG}"; then
-    # A race TSan reports without failing a test still has to be red: it prints its report to the
-    # runner's stderr, which xcodebuild carries into this log either way.
-    grep -A 12 "ThreadSanitizer: data race" "${TSAN_LOG}" | head -40
-    fail "ThreadSanitizer reported a data race (log: ${TSAN_LOG})"
-  elif [ "${tsan_rc}" -ne 0 ]; then
-    grep -E "✘|error:" "${TSAN_LOG}" | head -40
-    fail "the suite failed under ThreadSanitizer (log: ${TSAN_LOG})"
-  fi
-  mark "suite under ThreadSanitizer"
-fi
 
 phase_table
 if [ "${STATUS}" -eq 0 ]; then

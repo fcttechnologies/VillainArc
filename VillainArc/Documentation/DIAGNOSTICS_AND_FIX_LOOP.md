@@ -115,26 +115,45 @@ first step is always a test that fails the way the field failed.
 Measured on this repo: a warm `--fast --only` run of one suite is ~14s and the whole suite is
 ~77s, against ~354s for the full gate.
 
-## The three gates
+## The two gates
 
-| | `scripts/gate.sh --fast` | `scripts/gate.sh` | `scripts/gate.sh --full` |
-|---|---|---|---|
-| DerivedData | kept between runs, per simulator | thrown away every run | thrown away every run |
-| builds | Debug only | Debug, Release, and an archive dry-run | those, plus a ThreadSanitizer build |
-| suite | all of it, or `--only <spec>` | all of it, against a pinned floor | all of it twice, the second run instrumented |
-| reads the built artifacts | no | shortcuts, icons, privacy manifests, in Debug and Release | same |
-| localization drift, the listing, cold launch | no | yes | yes |
-| what a green means | the fix compiles and the suite agrees | this is shippable | this is shippable and nothing raced |
+| | `scripts/gate.sh --fast` | `scripts/gate.sh` |
+|---|---|---|
+| DerivedData | kept between runs, per simulator | thrown away every run |
+| builds | Debug only | Debug, Release, and an archive dry-run |
+| suite | all of it, or `--only <spec>` | all of it, against a pinned floor |
+| reads the built artifacts | no | shortcuts, icons, privacy manifests, in Debug and Release |
+| localization drift, the listing, cold launch | no | yes |
+| what a green means | the fix compiles and the suite agrees | this is shippable |
 
-TSan gets its own build because instrumentation is a compile-time decision — running the existing
-products under `test-without-building` would report a clean pass that measured nothing. It roughly
-doubles the gate, which is why it is a flag: run it before a release and after anything that
-touches concurrency, the sync engine, or a HealthKit callback. AddressSanitizer is not run at all —
-it answers for C/C++/ObjC memory, and every target here is pure Swift with strict memory safety on.
+## Why there is no sanitizer gate
 
-The leg separates three verdicts, because two of them look identical from an exit code: a race it
-reported, a test that failed under it, and **the sanitizer's own runtime aborting**
-(`ThreadSanitizer:DEADLYSIGNAL`, "nested bug in the same thread"), after which xcodebuild relaunches
-the host and the run ends having executed a fraction of the suite. The third is red like the others
-— a check that did not run proves nothing — but it is named as the sanitizer rather than as the
-app, because hunting a race that was never reported is how a leg stops being believed.
+ThreadSanitizer cannot run this suite. The instrumented host takes a fatal signal
+(`ThreadSanitizer:DEADLYSIGNAL`, then "nested bug in the same thread, aborting") with **no race
+report, no crash report and no faulting frames** — the sanitizer's own runtime dies inside its
+signal handler, so the process is gone before anything can be blamed.
+
+What the measurement found, so nobody re-runs it:
+
+- It is not one test. Across the whole suite in one process it kills the host 12 times at 12
+  different tests, and each of those tests passes alone.
+- It is not scheduling. Running the suite in 22 chunks of four test classes leaves 20 chunks clean
+  and two dying — and `VASyncContractTests` dies **alone in its own process**, so no split avoids
+  it. The tests it dies in are the ones that run `ModelContext.delete(model:)` across the schema.
+- It is not memory, though it looks like it. Every dying host peaks at 725–940 MB, which reads as a
+  ceiling until a single suite peaks at 918 MB and passes; the plain host reaches 736 MB and runs
+  all 630 tests green. `TSAN_OPTIONS=flush_memory_ms=1000` changes nothing.
+- It never reported a race. Not once, in any run, before dying.
+
+One real defect did come out of the hunt and is fixed: `SyncContractDevice.tearDown()` and this
+repo's own `DetachedDebugStoreTests` unlinked SQLite store files while their `ModelContainer` still
+held them open (`BUG IN CLIENT OF libsqlite3.dylib: vnode unlinked while in use`). Both now sweep
+at process start instead. It was not the cause of the deaths.
+
+**What answers for data races instead is the compiler.** This project builds Swift 6 with warnings
+as errors, where a cross-actor race is a build failure rather than something a runtime sample might
+happen to catch. That leaves exactly the code that opts out: the `nonisolated(unsafe)` HealthKit
+completion handlers in `HealthStoreUpdateCoordinator` and the shared `UserDefaults` behind
+`SharedModelContainer.sharedDefaults`. Nothing checks those at runtime; they are read by eye when
+they change. AddressSanitizer is not run either — it answers for C/C++/ObjC memory, and every
+target here is pure Swift with strict memory safety on.
