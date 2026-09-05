@@ -2,33 +2,37 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>aps-environment</key>
+	<string>development</string>
 	<key>com.apple.developer.applesignin</key>
 	<array>
 		<string>Default</string>
 	</array>
-	<!--
-	  Password AutoFill for the account's own email-and-password surface: the claim here is one
-	  half, and the site serving this app's team-prefixed id under `webcredentials` in
-	  /.well-known/apple-app-site-association is the other. Without both, iOS neither offers to
-	  save the password nor suggests it on return, and the failure is silent.
-	-->
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>webcredentials:fct-technologies.com</string>
 	</array>
-	<key>aps-environment</key>
-	<string>development</string>
 	<key>com.apple.developer.healthkit</key>
 	<true/>
 	<key>com.apple.developer.healthkit.background-delivery</key>
 	<true/>
-	<key>keychain-access-groups</key>
-	<array>
-		<string>$(AppIdentifierPrefix)com.fcttechnologies.shared</string>
-	</array>
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.com.fcttechnologies.VillainArc1</string>
+	</array>
+	<key>com.apple.security.hardened-process</key>
+	<true/>
+	<key>com.apple.security.hardened-process.dyld-ro</key>
+	<true/>
+	<key>com.apple.security.hardened-process.enhanced-security-version-string</key>
+	<string>2</string>
+	<key>com.apple.security.hardened-process.hardened-heap</key>
+	<true/>
+	<key>com.apple.security.hardened-process.platform-restrictions-string</key>
+	<string>2</string>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.fcttechnologies.shared</string>
 	</array>
 </dict>
 </plist>
