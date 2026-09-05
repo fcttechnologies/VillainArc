@@ -33,36 +33,51 @@ struct MorphingQuickActionsBar: View {
     @Binding var activeTab: AppTab
     @Binding var isExpanded: Bool
     let actions: [ExpandedAction]
+    /// Read here rather than inside the grid: this is above the cap below, so it is the person's
+    /// real setting and not the clamped one the grid would see.
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 12) {
             MorphingTabBar(activeTab: $activeTab, isExpanded: $isExpanded) {
-                MorphingQuickActionsGrid(actions: actions)
+                // Three columns at an accessibility size, where four leaves each title too narrow
+                // to fit on one line and every label truncates.
+                MorphingQuickActionsGrid(actions: actions, columnCount: dynamicTypeSize.isAccessibilitySize ? 3 : 4)
             }
 
             MorphingQuickActionsToggleButton(isExpanded: $isExpanded)
         }
         .padding(.horizontal, 15)
+        // The floating bar is fixed-height chrome over the content it floats above, so its type
+        // scales with the person's setting up to the largest non-accessibility size and then
+        // holds — the same trade the system tab bar makes. Everything inside is sized relative to
+        // a text style, so the cap is what keeps a glyph inside its 52-point row and the grid's
+        // labels legible instead of either frozen at a caption size or overflowing the bar.
+        .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
     }
 }
 
 private struct MorphingQuickActionsGrid: View {
     let actions: [ExpandedAction]
+    let columnCount: Int
     private let cardioFavoriteTip = CardioFavoriteTip()
+    /// Two lines of the label at whatever size it currently is, so a wrapped title keeps its
+    /// second line instead of being clipped by a frame measured at the default size.
+    @ScaledMetric(relativeTo: .caption2) private var labelMinHeight: CGFloat = 22
 
     var body: some View {
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .topLeading), count: 4), alignment: .leading, spacing: 10) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10, alignment: .topLeading), count: columnCount), alignment: .leading, spacing: 10) {
             ForEach(actions) { action in
                 VStack(alignment: .leading, spacing: 6) {
                     actionButton(for: action)
 
                     Text(action.title)
-                        .font(.system(size: 9))
+                        .font(.caption2)
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
                         .fontWeight(.semibold)
-                        .frame(maxWidth: .infinity, minHeight: 22, alignment: .top)
+                        .frame(maxWidth: .infinity, minHeight: labelMinHeight, alignment: .top)
                         .accessibilityHidden(true)
                 }
                 .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -106,6 +121,7 @@ private struct MorphingQuickActionsGrid: View {
 
 private struct MorphingQuickActionsToggleButton: View {
     @Binding var isExpanded: Bool
+    @ScaledMetric(relativeTo: .title3) private var glyphSize: CGFloat = 19
 
     var body: some View {
         Button {
@@ -115,7 +131,7 @@ private struct MorphingQuickActionsToggleButton: View {
             }
         } label: {
             Image(systemName: "plus")
-                .font(.system(size: 19, weight: .medium))
+                .font(.system(size: glyphSize, weight: .medium))
                 .rotationEffect(.degrees(isExpanded ? 45 : 0))
                 .frame(width: 52, height: 52)
                 .foregroundStyle(Color.primary)

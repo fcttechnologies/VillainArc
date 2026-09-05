@@ -36,6 +36,9 @@ private struct MorphingTabButtons: View {
     @Binding var activeTab: AppTab
     let isExpanded: Bool
     @Namespace private var selectionNamespace
+    /// The tab glyph tracks the person's type setting inside the bar's own capped range, so it
+    /// grows with the rest of the app rather than staying a fixed 19 points at every size.
+    @ScaledMetric(relativeTo: .title3) private var glyphSize: CGFloat = 19
 
     var body: some View {
         HStack(spacing: 6) {
@@ -57,7 +60,7 @@ private struct MorphingTabButtons: View {
                         }
 
                         Image(systemName: tab.symbolImage)
-                            .font(.system(size: 19, weight: .medium))
+                            .font(.system(size: glyphSize, weight: .medium))
                             .frame(maxWidth: .infinity)
                             .frame(height: 40)
                             .contentShape(.rect)

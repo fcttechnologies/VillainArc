@@ -140,13 +140,8 @@ struct CardioActiveSessionView: View {
                 await startWithCountdown()
             }
             .onAppear {
-                // `%.1f` against a `Double`: the pairing C varargs cannot check. It stays
-                // `String(format:)` rather than a `FormatStyle` because these two strings are the
-                // contents of editable fields that `Double(_:)` parses back, and `Double(_:)`
-                // reads only a period separator — a locale-aware render would produce "5,5" in
-                // German and the commit path would drop the entry.
-                speedText = unsafe String(format: "%.1f", speedUnit.fromKPH(speedKPH))
-                inclineText = unsafe String(format: "%.1f", inclinePercent)
+                speedText = fixedOneDecimal(speedUnit.fromKPH(speedKPH))
+                inclineText = fixedOneDecimal(inclinePercent)
             }
             .onChange(of: speedFocused) { _, focused in
                 if !focused { commitSpeedText() }
@@ -376,8 +371,7 @@ struct CardioActiveSessionView: View {
             let rounded = speedUnit.clampedTreadmillInput(val)
             speedKPH = speedUnit.toKPH(rounded)
         }
-        // `%.1f` against a `Double`, and a period separator `Double(_:)` can read back.
-        speedText = unsafe String(format: "%.1f", speedUnit.fromKPH(speedKPH))
+        speedText = fixedOneDecimal(speedUnit.fromKPH(speedKPH))
     }
 
     private func commitInclineText() {
@@ -385,8 +379,7 @@ struct CardioActiveSessionView: View {
             let rounded = (min(15.0, max(0, val)) * 2).rounded() / 2
             inclinePercent = rounded
         }
-        // `%.1f` against a `Double`, and a period separator `Double(_:)` can read back.
-        inclineText = unsafe String(format: "%.1f", inclinePercent)
+        inclineText = fixedOneDecimal(inclinePercent)
     }
 
     private func addTreadmillInterval() {
@@ -649,6 +642,9 @@ private struct CardioCountdownOverlay: View {
                     .font(.title3.weight(.semibold))
                     .foregroundStyle(.secondary)
 
+                // Deliberately fixed: 120 points is already larger than any accessibility size
+                // asks for, and scaling a single digit from there runs it past the width of the
+                // narrowest phone the app ships to.
                 Text("\(value)")
                     .font(.system(size: 120, weight: .black, design: .rounded))
                     .foregroundStyle(.white)

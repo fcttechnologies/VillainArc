@@ -7,6 +7,10 @@ import SwiftUI
 struct WhatsNewSheet: View {
     let presentation: WhatsNewPresentation
     let onDismiss: () -> Void
+    /// The icon column tracks the title beside it, so at an accessibility size the row still reads
+    /// as an icon and a heading rather than a stamp-sized tile next to very large text.
+    @ScaledMetric(relativeTo: .title3) private var iconTileSize: CGFloat = 60
+    @ScaledMetric(relativeTo: .title3) private var iconGlyphSize: CGFloat = 30
 
     var body: some View {
         NavigationStack {
@@ -51,9 +55,9 @@ struct WhatsNewSheet: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 15, style: .continuous)
                     .fill(feature.iconColor.opacity(0.15))
-                    .frame(width: 60, height: 60)
+                    .frame(width: iconTileSize, height: iconTileSize)
                 Image(systemName: feature.icon)
-                    .font(.system(size: 30))
+                    .font(.system(size: iconGlyphSize))
                     .foregroundStyle(feature.iconColor)
             }
             .accessibilityHidden(true)

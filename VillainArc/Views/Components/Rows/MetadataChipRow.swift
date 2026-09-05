@@ -16,24 +16,35 @@ struct MetadataChipItem: Identifiable, Hashable {
     }
 }
 
+/// A row's numbers as capsules — a duration, a distance, a pace — side by side while they fit and
+/// stacked when they do not. Three of them across a narrow phone at an accessibility size is more
+/// than any one line holds, and a truncated duration is a number that says nothing.
 struct MetadataChipRow: View {
     let items: [MetadataChipItem]
 
     var body: some View {
-        HStack(spacing: 3) {
-            if items.count > 1 {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 3) {
+                if items.count > 1 {
+                    Spacer(minLength: 0)
+                }
+
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    MetadataChip(item: item)
+
+                    if index < items.count - 1 {
+                        Spacer(minLength: 0)
+                    }
+                }
+
                 Spacer(minLength: 0)
             }
 
-            ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                MetadataChip(item: item)
-
-                if index < items.count - 1 {
-                    Spacer(minLength: 0)
+            VStack(spacing: 6) {
+                ForEach(items) { item in
+                    MetadataChip(item: item)
                 }
             }
-
-            Spacer(minLength: 0)
         }
     }
 }
