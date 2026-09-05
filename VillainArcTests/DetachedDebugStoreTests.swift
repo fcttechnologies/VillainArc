@@ -26,11 +26,22 @@ struct DetachedDebugStoreTests {
         let directory: URL
     }
 
+    /// Where every store this suite makes lives, swept of the previous process's leftovers once
+    /// per process — the same shape `TestStoreFactory` uses, and for the same reason it cannot be
+    /// a teardown instead. Unlinking a SQLite file while its `ModelContainer` still holds it open
+    /// is an API violation SQLite reports as `vnode unlinked while in use`, and the next access to
+    /// the invalidated vnode faults. A sweep at the front never touches a file anything has open.
+    private static let storesDirectory: URL = {
+        let directory = FileManager.default.temporaryDirectory
+            .appending(path: "VADebugStoreTests", directoryHint: .isDirectory)
+        try? FileManager.default.removeItem(at: directory)
+        return directory
+    }()
+
     /// An app store and the detached store beside it, wired exactly as the app root wires them —
     /// same schema, `DebugStore`'s own URL derivation, no CloudKit on either.
     private func makeStores() throws -> Stores {
-        let directory = FileManager.default.temporaryDirectory
-            .appending(path: "VADebugStoreTests-\(UUID().uuidString)")
+        let directory = Self.storesDirectory.appending(path: UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
         let realURL = directory.appending(path: "VillainArc.store")
@@ -47,15 +58,10 @@ struct DetachedDebugStoreTests {
         return Stores(real: real, debug: debug, directory: directory)
     }
 
-    private func removeStores(_ stores: Stores) {
-        try? FileManager.default.removeItem(at: stores.directory)
-    }
-
     // MARK: - The seed
 
     @Test func aStudioSeedWritesNothingIntoTheAppsOwnHistory() throws {
         let stores = try makeStores()
-        defer { removeStores(stores) }
 
         // `.any` is the whole feed: filtering here could hide a write rather than prove there
         // wasn't one.
@@ -82,7 +88,6 @@ struct DetachedDebugStoreTests {
 
     @Test func everyDebugSeedWritesNothingIntoTheAppsOwnHistory() throws {
         let stores = try makeStores()
-        defer { removeStores(stores) }
 
         let reader = StoreHistoryReader(container: stores.real, authorFilter: .any)
         try reader.establishBaseline()
@@ -108,7 +113,6 @@ struct DetachedDebugStoreTests {
     /// half that says the seed ran at all rather than silently doing nothing.
     @Test func theSeedLandsInTheDetachedStore() throws {
         let stores = try makeStores()
-        defer { removeStores(stores) }
 
         let debugContext = try stores.debug.detachedContainer().mainContext
         try ScreenshotStudioSeeder.seedAll(in: debugContext)
@@ -122,7 +126,6 @@ struct DetachedDebugStoreTests {
 
     @Test func aResetRefusesWhileAnAccountIsSignedIn() throws {
         let stores = try makeStores()
-        defer { removeStores(stores) }
 
         let debugContext = try stores.debug.detachedContainer().mainContext
         try ScreenshotStudioSeeder.seedAll(in: debugContext)
@@ -141,7 +144,6 @@ struct DetachedDebugStoreTests {
 
     @Test func aResetSignedOutErasesTheDebugStoreAndNothingElse() throws {
         let stores = try makeStores()
-        defer { removeStores(stores) }
 
         let realContext = stores.real.mainContext
         realContext.insert(WorkoutPlan(title: "The user's own plan"))
