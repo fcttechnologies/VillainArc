@@ -208,6 +208,15 @@ enum IntentDonations {
         _ = try? await OpenActiveCardioSessionIntent().donate()
     }
 
+    /// Takes the entity rather than the model: the caller builds it before the row is deleted, so
+    /// the donation never reads a session that is already gone.
+    static func donateDeleteCardioSession(cardioSession: CardioSessionEntity) async {
+        guard donationsEnabled else { return }
+        let intent = DeleteCardioSessionIntent()
+        intent.cardioSession = cardioSession
+        _ = try? await intent.donate()
+    }
+
     static func donateShowCardioHistory() async {
         guard donationsEnabled else { return }
         _ = try? await ShowCardioHistoryIntent().donate()

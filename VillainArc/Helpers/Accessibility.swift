@@ -141,6 +141,9 @@ enum AccessibilityIdentifiers {
     static let cardioSessionDetailCloseButton = "cardioSessionDetailCloseButton"
     static let cardioSessionDetailBackButton = "cardioSessionDetailBackButton"
     static let cardioSessionDetailShareButton = "cardioSessionDetailShareButton"
+    static let cardioSessionDetailOptionsMenu = "cardioSessionDetailOptionsMenu"
+    static let cardioSessionDetailDeleteButton = "cardioSessionDetailDeleteButton"
+    static let cardioSessionDetailConfirmDeleteButton = "cardioSessionDetailConfirmDeleteButton"
     static let cardioRouteViewFullyButton = "cardioRouteViewFullyButton"
     static let cardioViewAllHistoryButton = "cardioViewAllHistoryButton"
 
@@ -1152,6 +1155,7 @@ enum AccessibilityText {
     static let workoutDetailSaveWorkoutPlanHint = localized("Saves this workout as a workout plan.")
     static let workoutDetailDeleteHint = localized("Deletes this workout.")
     static let workoutDetailOptionsMenuHint = localized("Workout actions.")
+    static let cardioSessionDetailDeleteHint = localized("Deletes this cardio session.")
     static let workoutDetailPreWorkoutContextLabel = localized("Pre workout context")
     static let workoutDetailPreWorkoutContextHint = localized("Shows pre workout details.")
     static let workoutDetailEffortLabel = localized("Post workout effort")

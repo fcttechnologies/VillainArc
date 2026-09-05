@@ -149,6 +149,7 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
     case cardioStarted = "cardio_started"
     case cardioFinished = "cardio_finished"
     case cardioDiscarded = "cardio_discarded"
+    case cardioDeleted = "cardio_deleted"
     case cardioIntervalAdded = "cardio_interval_added"
 
     // MARK: Actions — plans and splits

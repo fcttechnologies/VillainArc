@@ -565,6 +565,17 @@ enum AppSettingsDestination: String, Hashable, Identifiable {
         AppLog.info("Cardio session canceled: \(cardioSession.id).")
     }
 
+    /// The one entry point both delete paths run through: the detail screens' affordance and
+    /// `DeleteCardioSessionIntent`. The store half is `CardioDeletionCoordinator`; what belongs
+    /// here is releasing the session the summary cover is still holding, which would otherwise be
+    /// a deleted model the next render reads.
+    func deleteCompletedCardioSession(_ cardioSession: CardioSession) {
+        guard cardioSession.statusValue == .done else { return }
+        let sessionID = cardioSession.id
+        CardioDeletionCoordinator.deleteCompletedSession(cardioSession, context: context)
+        if activeCardioSession?.id == sessionID { activeCardioSession = nil }
+    }
+
     /// Finishes and saves a cardio session. Shared by the in-session UI (`CardioSessionContainer`)
     /// and `FinishCardioSessionIntent` so both run the identical stop-recording → distance-recalc →
     /// finish → Health-save flow.

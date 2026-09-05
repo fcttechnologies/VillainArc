@@ -127,7 +127,7 @@ Legend: ✅ existing · ⬜ intentionally omitted or deferred (reason inline).
 | Show cardio history + routes | ✅ `ShowCardioHistoryIntent` |
 | Finish / cancel cardio session | ✅ `FinishCardioSessionIntent`, `CancelCardioSessionIntent` (`.background`; call `AppRouter.finishCardioSession` / `cancelCardioSession`) |
 | Open a specific past cardio session | ✅ `OpenCardioSessionIntent` |
-| Delete a completed cardio session | ✅ `DeleteCardioSessionIntent` — and it is the app's ONLY delete path for one: the workouts list disables the swipe on cardio rows (`deleteDisabled(item.session == nil)`), so a session recorded by mistake is removable by Shortcuts/Siri and nowhere else. A screen affordance is the open product gap, not an intent one. |
+| Delete a completed cardio session | ✅ `DeleteCardioSessionIntent`, beside the options menu on whichever screen shows the session — `CardioSessionDetailView` for a route session, `HealthWorkoutDetailView` for a mirrored indoor one. Both run `AppRouter.deleteCompletedCardioSession` behind a confirmation, so Siri and the screen destroy the same thing the same way. The workouts list keeps its swipe disabled on cardio rows (`deleteDisabled(item.session == nil)`), where a swipe would offer to remove a row whose Health mirror it cannot touch. |
 | Reference a cardio session by name | ✅ `CardioSessionEntity` (+ query, Spotlight-indexed on finish) |
 
 ### Rest timer

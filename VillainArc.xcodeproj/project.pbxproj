@@ -264,6 +264,7 @@
 				Data/Services/App/NotificationCoordinator.swift,
 				Data/Services/App/SetupGuard.swift,
 				Data/Services/App/SpotlightIndexer.swift,
+				Data/Services/Cardio/CardioDeletionCoordinator.swift,
 				Data/Services/Cardio/CardioHealthWorkoutCoordinator.swift,
 				Data/Services/Cardio/CardioRouteRecorder.swift,
 				Data/Services/HealthKit/Authorization/HealthAuthorizationManager.swift,

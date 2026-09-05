@@ -13,6 +13,8 @@ struct HealthWorkoutDetailView: View {
 
     @Query(AppSettings.single) private var appSettings: [AppSettings]
     @State private var loader: HealthWorkoutDetailLoader
+    @State private var router = AppRouter.shared
+    @State private var showsDeleteConfirmation = false
 
     init(workout: HealthWorkout, showsCloseButton: Bool = false, cardioSession: CardioSession? = nil) {
         self.workout = workout
@@ -52,6 +54,24 @@ struct HealthWorkoutDetailView: View {
                         .accessibilityIdentifier(AccessibilityIdentifiers.healthWorkoutDetailCloseButton)
                 }
             }
+            if let linkedCardioSession {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu("Options", systemImage: "ellipsis") {
+                        Button("Delete Cardio Session", systemImage: "trash", role: .destructive) {
+                            showsDeleteConfirmation = true
+                        }
+                        .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailDeleteButton)
+                        .accessibilityHint(AccessibilityText.cardioSessionDetailDeleteHint)
+                    }
+                    .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailOptionsMenu)
+                    .cardioSessionDeleteConfirmation(isPresented: $showsDeleteConfirmation) {
+                        let entity = CardioSessionEntity(cardioSession: linkedCardioSession)
+                        router.deleteCompletedCardioSession(linkedCardioSession)
+                        Task { await IntentDonations.donateDeleteCardioSession(cardioSession: entity) }
+                        dismiss()
+                    }
+                }
+            }
         }
         .diagScreen(VACrumb.healthWorkoutDetail)
         .task(id: workout.healthWorkoutUUID) {
@@ -59,11 +79,17 @@ struct HealthWorkoutDetailView: View {
         }
     }
 
+    /// The app's own session behind this Health workout, however the screen was reached. The
+    /// in-session container hands it in; every other route (the history list, the cardio tab)
+    /// pushes the workout alone and the relationship is what finds it. One answer, so the source
+    /// rows and the delete affordance cannot disagree about whether this workout is the app's.
+    private var linkedCardioSession: CardioSession? { cardioSession ?? workout.cardioSession }
+
     private var cardioSummaryItems: [SummaryStatItem] {
-        guard let cardioSession else { return [] }
-        var items = [SummaryStatItem(title: "Source", value: cardioSession.typeTitle)]
-        if cardioSession.postEffort > 0 {
-            items.append(SummaryStatItem(title: "Effort", value: "\(cardioSession.postEffort)/10"))
+        guard let session = linkedCardioSession else { return [] }
+        var items = [SummaryStatItem(title: "Source", value: session.typeTitle)]
+        if session.postEffort > 0 {
+            items.append(SummaryStatItem(title: "Effort", value: "\(session.postEffort)/10"))
         }
         return items
     }

@@ -16,6 +16,7 @@ struct CardioSessionDetailView: View {
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var shareImage: Image?
     @State private var localHealthWorkout: HealthWorkout?
+    @State private var showsDeleteConfirmation = false
 
     private var distanceUnit: DistanceUnit { appSettings.first?.distanceUnit ?? .systemDefault }
     private var energyUnit: EnergyUnit { appSettings.first?.energyUnit ?? .systemDefault }
@@ -42,7 +43,27 @@ struct CardioSessionDetailView: View {
             let entity = CardioSessionEntity(cardioSession: session)
             activity.appEntityIdentifier = .init(for: entity)
         }
+        .cardioSessionDeleteConfirmation(isPresented: $showsDeleteConfirmation) {
+            let entity = CardioSessionEntity(cardioSession: session)
+            router.deleteCompletedCardioSession(session)
+            Task { await IntentDonations.donateDeleteCardioSession(cardioSession: entity) }
+            dismiss()
+        }
         .diagScreen(VACrumb.cardioDetail)
+    }
+
+    /// The only way to remove a logged cardio session from a screen. It sits beside Share on both
+    /// layouts rather than in the history list, where a swipe would put a destructive action on a
+    /// row whose Health mirror it cannot remove.
+    private var optionsMenu: some View {
+        Menu("Options", systemImage: "ellipsis") {
+            Button("Delete Cardio Session", systemImage: "trash", role: .destructive) {
+                showsDeleteConfirmation = true
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailDeleteButton)
+            .accessibilityHint(AccessibilityText.cardioSessionDetailDeleteHint)
+        }
+        .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailOptionsMenu)
     }
 
     // Outdoor (GPS) sessions keep the immersive route map, with the metrics in a bottom
@@ -108,11 +129,13 @@ struct CardioSessionDetailView: View {
                         .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailCloseButton)
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .topBarTrailing) {
                 shareControl {
                     Image(systemName: "square.and.arrow.up")
                 }
                 .accessibilityLabel(Text("Share session"))
+
+                optionsMenu
             }
         }
         .task(id: session.id) { renderShareCard() }
@@ -147,6 +170,13 @@ struct CardioSessionDetailView: View {
             .buttonStyle(.glass)
             .buttonBorderShape(.circle)
             .accessibilityLabel(Text("Share session"))
+
+            optionsMenu
+                .labelStyle(.iconOnly)
+                .font(.headline.weight(.semibold))
+                .frame(width: 36, height: 36)
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
         }
     }
 
@@ -418,6 +448,24 @@ struct CardioRouteMarker: View {
             Image(systemName: systemImage)
                 .font(.caption2.weight(.bold))
                 .foregroundStyle(.white)
+        }
+    }
+}
+
+extension View {
+    /// The one confirmation a logged cardio session is destroyed behind, stated once for both
+    /// screens that show one: the app's own detail, and the Health mirror an indoor session opens
+    /// in. What it says is what actually happens — the session and its recorded detail go, the
+    /// Apple Health workout stays.
+    func cardioSessionDeleteConfirmation(isPresented: Binding<Bool>, onDelete: @escaping () -> Void) -> some View {
+        confirmationDialog("Delete Cardio Session", isPresented: isPresented, titleVisibility: .visible) {
+            Button("Delete", role: .destructive) {
+                Haptics.selection()
+                onDelete()
+            }
+            .accessibilityIdentifier(AccessibilityIdentifiers.cardioSessionDetailConfirmDeleteButton)
+        } message: {
+            Text("This permanently removes the session and its recorded route or intervals. A workout saved to Apple Health stays there.")
         }
     }
 }

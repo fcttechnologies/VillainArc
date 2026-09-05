@@ -31073,6 +31073,70 @@
         }
       }
     },
+    "Deletes this cardio session." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Löscht diese Cardio-Session."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deletes this cardio session."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elimina esta sesión de cardio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprime cette séance de cardio."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elimina questa sessione cardio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この有酸素セッションを削除します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 유산소 세션을 삭제합니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exclui esta sessão de cardio."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Удаляет эту кардиосессию."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除这次有氧训练。"
+          }
+        }
+      }
+    },
     "Deletes this day." : {
       "localizations" : {
         "de" : {
@@ -106406,6 +106470,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "该目标已不存在。"
+          }
+        }
+      }
+    },
+    "This permanently removes the session and its recorded route or intervals. A workout saved to Apple Health stays there." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dies entfernt die Session und ihre aufgezeichnete Route oder Intervalle dauerhaft. Ein in Apple Health gesichertes Workout bleibt dort erhalten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This permanently removes the session and its recorded route or intervals. A workout saved to Apple Health stays there."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esto elimina de forma permanente la sesión y su ruta o intervalos registrados. Un entrenamiento guardado en Apple Salud se conserva allí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cela supprime définitivement la séance ainsi que son parcours ou ses intervalles enregistrés. Une séance enregistrée dans Apple Santé y reste."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questa azione rimuove definitivamente la sessione e il percorso o gli intervalli registrati. Un allenamento salvato in Apple Health resta lì."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セッションと記録されたルートまたはインターバルを完全に削除します。Apple Health に保存されたワークアウトはそのまま残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "세션과 기록된 경로 또는 인터벌을 영구적으로 삭제합니다. Apple Health에 저장된 운동은 그대로 남습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Isso remove permanentemente a sessão e sua rota ou intervalos registrados. Um treino salvo no Apple Saúde permanece lá."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сессия и записанный маршрут или интервалы будут удалены безвозвратно. Тренировка, сохранённая в Apple Health, останется там."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这将永久删除该训练及其记录的路线或间歇。已保存到 Apple Health 的训练会保留。"
           }
         }
       }

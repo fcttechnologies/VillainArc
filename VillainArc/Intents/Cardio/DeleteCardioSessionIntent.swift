@@ -30,9 +30,7 @@ struct DeleteCardioSessionIntent: AppIntent {
             )
             guard choice.style == .destructive else { throw DeleteCardioSessionIntentError.cancelled }
 
-            SpotlightIndexer.deleteCardioSession(id: sessionID)
-            context.delete(storedSession)
-            saveContext(context: context)
+            AppRouter.shared.deleteCompletedCardioSession(storedSession)
             return .result(dialog: "Cardio session deleted.")
         }
         return try await Diag.intent(Self.diagCrumb, run)
