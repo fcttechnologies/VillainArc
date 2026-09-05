@@ -54,7 +54,25 @@ enum OnboardingState: Equatable {
 
 @Observable class OnboardingManager {
     var state: OnboardingState = .launching
-    var profile: UserProfile?
+    private var storedProfile: UserProfile?
+    /// The profile row the setup steps read and write, dropped the moment its row is gone.
+    ///
+    /// A `@Model` reference outlives the row behind it, and reading any property off a deleted one
+    /// traps inside SwiftData rather than returning nil — so a manager that keeps holding one turns
+    /// the next render of the step on screen into a crash. The store IS cleared under this view:
+    /// a sign-out, an account switch and a deletion each wipe the device's copy while the front
+    /// door is up, and `onLocalDataCleared` sends the app straight back to onboarding.
+    /// Detached is the state that matters, and it is spelled `modelContext == nil`: a row deleted
+    /// and saved reports `isDeleted == false` and loses its context, which is measured rather than
+    /// assumed (`OnboardingProfileLifetimeTests`). `isDeleted` covers the window before the save,
+    /// where the row is still attached and already gone.
+    var profile: UserProfile? {
+        get {
+            guard let stored = storedProfile, stored.modelContext != nil, !stored.isDeleted else { return nil }
+            return stored
+        }
+        set { storedProfile = newValue }
+    }
     /// Measured natural height of the onboarding step currently on screen. The sheet's
     /// presentation detent follows this so each step is sized from its real content
     /// (Dynamic Type + localization aware) instead of a hardcoded fraction.
