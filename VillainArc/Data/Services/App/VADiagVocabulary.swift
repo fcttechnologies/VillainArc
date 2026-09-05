@@ -133,6 +133,7 @@ nonisolated enum VACrumb: String, DiagBreadcrumb, CaseIterable {
     case workoutFinished = "workout_finished"
     case workoutDiscarded = "workout_discarded"
     case workoutResumed = "workout_resumed"
+    case workoutDeleted = "workout_deleted"
     case setLogged = "set_logged"
     case setAdded = "set_added"
     case setDeleted = "set_deleted"

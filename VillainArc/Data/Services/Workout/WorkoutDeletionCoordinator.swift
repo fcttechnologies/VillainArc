@@ -1,3 +1,4 @@
+import FCTMetrics
 import Foundation
 import SwiftData
 
@@ -20,6 +21,11 @@ enum WorkoutDeletionCoordinator {
         }
 
         ExerciseHistoryUpdater.updateHistoriesForDeletedCatalogIDs(affectedCatalogIDs, context: context, save: save)
+        // One crumb per call rather than per workout: a history sweep of fifty rows would
+        // otherwise spend the whole trail on itself. It covers both shapes — the row removed and
+        // the row hidden for learning — because from the person's side the workout left history
+        // either way, and that is the step a later crash has to be read against.
+        Diag.breadcrumb(VACrumb.workoutDeleted)
     }
 
     static func applyRetentionSetting(context: ModelContext, settings: AppSettings? = nil) {
