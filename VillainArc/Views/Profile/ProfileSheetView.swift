@@ -1,4 +1,5 @@
 import FCTAccountProfile
+import FCTComponentsUI
 import FCTMetrics
 import SwiftUI
 import SwiftData
@@ -205,9 +206,9 @@ struct ProfileSheetView: View {
                 presentInitialSettingsDestinationIfNeeded()
             }
         }
-        // Soft scroll-edge fade in the sheet presentation context (the root TabView modifier only
-        // covers this view when it's the Profile tab). Inert on the iOS 26 SDK (see ContentView).
-        .scrollEdgeEffectStyle(.soft, for: .all)
+        // The sheet is its own presentation context: the root modifier covers this view only
+        // when it is the Profile tab.
+        .softScrollEdges()
     }
 
     private func presentInitialSettingsDestinationIfNeeded() {

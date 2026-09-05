@@ -32,13 +32,10 @@ struct ContentView: View {
                 .toolbar(.hidden, for: .tabBar)
 
         }
-        // Preserve the iOS 26 soft scroll-edge fade where tab content scrolls under the bottom bar.
-        // iOS 27 changes the system default away from soft, so set it explicitly to keep today's look
-        // when VA is recompiled on the iOS 27 SDK. Inert on the iOS 26 SDK we currently ship (soft is
-        // already the default there); propagates to the tab content scroll views. Sheets and the
-        // full-screen workout/cardio/plan covers are separate presentation contexts — verify those on
-        // iOS 27 and apply per-screen if their fade regresses.
-        .scrollEdgeEffectStyle(.soft, for: .all)
+        // The soft edge under the floating bar, stated rather than inherited: the system default
+        // on this SDK is not soft. It propagates to the tab content scroll views; sheets and the
+        // full-screen covers are separate presentation contexts and carry their own.
+        .softScrollEdges()
         .safeAreaBar(edge: .bottom) {
             if !router.isQuickActionsBarHidden {
                 VStack(spacing: 12) {

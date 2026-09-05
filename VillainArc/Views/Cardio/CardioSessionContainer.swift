@@ -1,6 +1,7 @@
 import FCTMetrics
 import Combine
 import CoreLocation
+import FCTComponentsUI
 import MapKit
 import SwiftData
 import SwiftUI
@@ -178,9 +179,9 @@ struct CardioActiveSessionView: View {
                 CardioCountdownOverlay(value: count, type: CardioSessionType(activity: session.activity, environment: session.environment))
             }
         }
-        // Soft scroll-edge fade for this separate presentation context — ContentView's root
-        // modifier doesn't reach full-screen covers. Inert on the iOS 26 SDK (see ContentView).
-        .scrollEdgeEffectStyle(.soft, for: .all)
+        // Its own presentation context: ContentView's root modifier does not reach a
+        // full-screen cover.
+        .softScrollEdges()
         .diagScreen(VACrumb.cardioSession)
     }
 

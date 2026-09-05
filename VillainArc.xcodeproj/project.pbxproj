@@ -357,15 +357,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				0A3051DD2D114A44A2CEEE31 /* FCTAccountProfile in Frameworks */,
-				340B1AD4210BC5758E00EA38 /* FCTAccount in Frameworks */,
-				DFDF33BB6D9E4855B7D487D2 /* FCTServerSync in Frameworks */,
-				B33E569A214B3C6F6ECC535D /* FCTBlobSync in Frameworks */,
 				196E9675A290A7AC27404DC8 /* FCTServerSyncTesting in Frameworks */,
 				DB9514D7555E43B23B1723BC /* FCTBlobSyncTesting in Frameworks */,
 				A1C0FF11E0A57A5701000023 /* FCTStoreKitTesting in Frameworks */,
-				DB5153E291329ED28DE3BE58 /* FCTEntities in Frameworks */,
-				0EFD2294144CA53AFC24080B /* FCTSync in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -493,8 +487,6 @@
 			);
 			name = VillainArcTests;
 			packageProductDependencies = (
-				C382025D55A14347E9C351BD /* FCTEntities */,
-				57CA85F33D542E5A71727A42 /* FCTSync */,
 				A1C0FF11E0A57A5701000022 /* FCTStoreKitTesting */,
 			);
 			productName = VillainArcTests;

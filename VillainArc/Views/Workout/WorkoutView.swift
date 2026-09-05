@@ -2,6 +2,7 @@ import FCTMetrics
 import SwiftUI
 import SwiftData
 import AppIntents
+import FCTComponentsUI
 import TipKit
 
 struct WorkoutView: View {
@@ -240,9 +241,9 @@ struct WorkoutView: View {
                 }
             }
         }
-        // Soft scroll-edge fade for this separate presentation context — ContentView's root
-        // modifier doesn't reach full-screen covers. Inert on the iOS 26 SDK (see ContentView).
-        .scrollEdgeEffectStyle(.soft, for: .all)
+        // Its own presentation context: ContentView's root modifier does not reach a
+        // full-screen cover.
+        .softScrollEdges()
         .diagScreen(VACrumb.workoutSession)
     }
 

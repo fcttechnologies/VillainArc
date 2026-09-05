@@ -1,6 +1,7 @@
 import FCTAccount
 import FCTAccountProfile
 import FCTBlobSync
+import FCTComponentsUI
 import FCTFeedback
 import FCTMetrics
 import FCTOnboarding
@@ -86,9 +87,9 @@ struct AppSettingsView: View {
                 }
             }
         }
-        // Soft scroll-edge fade for this sheet context + its pushed setting Forms — ContentView's
-        // root modifier doesn't reach sheets. Inert on the iOS 26 SDK (see ContentView).
-        .scrollEdgeEffectStyle(.soft, for: .all)
+        // This sheet and its pushed setting Forms are their own presentation context, which
+        // ContentView's root modifier does not reach.
+        .softScrollEdges()
         .sheet(item: $presentedLegalDestination) { destination in
             SettingsLegalWebSheet(destination: destination)
                 .presentationBackground(Color.sheetBg)
