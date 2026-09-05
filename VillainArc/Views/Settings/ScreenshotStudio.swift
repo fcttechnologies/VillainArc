@@ -51,9 +51,10 @@ enum ScreenshotStudioCatalog {
 
 // MARK: - Fetch-backed scenes
 //
-// Each scene fetches the seeder's own demo row by its fixed id. The seed converges into the
-// signed-in account's store rather than clearing it, so "any active session" or "the most recent
-// cardio" would photograph whatever the account happens to hold.
+// Each scene fetches the seeder's own demo row by its fixed id. The seed is idempotent rather
+// than clear-first — it re-anchors the rows it wrote last time — so "any active session" or "the
+// most recent cardio" would photograph whichever of several seeded rows sorted first, and the
+// curated one is the point.
 
 /// Fetches one seeded `WorkoutSession` and hands it to the real view.
 private struct StudioSessionScene<Content: View>: View {
