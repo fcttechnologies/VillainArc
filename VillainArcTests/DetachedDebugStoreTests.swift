@@ -22,7 +22,7 @@ import Testing
 struct DetachedDebugStoreTests {
     private struct Stores {
         let real: ModelContainer
-        let debug: DebugStoreSwitch
+        let debug: DebugDemoStore
         let directory: URL
     }
 
@@ -41,7 +41,7 @@ struct DetachedDebugStoreTests {
         let detachedURL = DebugStore.detachedURL(besideStoreAt: realURL)
         #expect(detachedURL != realURL, "the detached store is the app's own store: nothing below can mean anything")
 
-        let debug = DebugStoreSwitch {
+        let debug = DebugDemoStore {
             try DebugStore.detached(schema: SharedModelContainer.schema, url: detachedURL)
         }
         return Stores(real: real, debug: debug, directory: directory)

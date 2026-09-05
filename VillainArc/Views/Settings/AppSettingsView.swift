@@ -127,9 +127,6 @@ private struct AppSettingsFormView: View {
     let includeQuickActionInset: Bool
     @Binding var presentedLegalDestination: SettingsLegalDestination?
     @State private var latestDiagnostic: DiagnosticDescriptor?
-    @State private var subscriptionStore = VAPro.store
-    @State private var isRestoringSubscription = false
-    @State private var restoreMessage: String?
     @State private var isShowingFeedbackBoard = false
     /// The account's avatar store lives on the sync bootstrap — the app's only blob store.
     @State private var sync = VASync.shared
@@ -221,7 +218,13 @@ private struct AppSettingsFormView: View {
                 Text("Choose whether the app follows your device appearance or always uses light or dark mode.")
             }
 
-            subscriptionSection
+            // The fleet's one subscription section. It reads the MERGED entitlement, which is
+            // what fixes the arms that branched on `status.isPro` alone and reported a
+            // subscription bought on another device as nothing.
+            SubscriptionSettingsSection(store: VAPro.store, productName: "Villain Arc Pro") {
+                Haptics.selection()
+                VAPro.presenter.present(for: .aiPlanGeneration)
+            }
 
             SupportSettingsSection(appName: "Villain Arc")
 
@@ -278,160 +281,6 @@ private struct AppSettingsFormView: View {
         .onChange(of: settings.appearanceMode) {
             settingChanged(context)
             dismissAllPresentedSheets()
-        }
-    }
-
-    @ViewBuilder
-    private var subscriptionSection: some View {
-        Section {
-            if subscriptionStore.status.isPro {
-                proStatusRow
-                    .appGroupedListRow(position: .top)
-                Button {
-                    Haptics.selection()
-                    UIApplication.shared.open(PaywallBranding.manageSubscriptionsURL)
-                } label: {
-                    Label("Manage Subscription", systemImage: "creditcard")
-                }
-                .foregroundStyle(.primary)
-                .accessibilityIdentifier(AccessibilityIdentifiers.settingsSubscriptionManageButton)
-                .appGroupedListRow(position: .bottom)
-            } else {
-                Button {
-                    Haptics.selection()
-                    VAPro.presenter.present(for: .aiPlanGeneration)
-                } label: {
-                    HStack(spacing: 12) {
-                        Image(systemName: "sparkles")
-                            .foregroundStyle(.purple.gradient)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text("Get Villain Arc Pro")
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.primary)
-                            Text("Unlock AI plan generation, Health Trends, and more.")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.tertiary)
-                    }
-                }
-                .foregroundStyle(.primary)
-                .accessibilityIdentifier(AccessibilityIdentifiers.settingsSubscriptionGetProButton)
-                .appGroupedListRow(position: .top)
-
-                Button {
-                    Task { await handleRestore() }
-                } label: {
-                    HStack {
-                        Label("Restore Purchases", systemImage: "arrow.clockwise")
-                        Spacer()
-                        if isRestoringSubscription {
-                            ProgressView()
-                                .controlSize(.small)
-                        }
-                    }
-                }
-                .foregroundStyle(.primary)
-                .disabled(isRestoringSubscription)
-                .accessibilityIdentifier(AccessibilityIdentifiers.settingsSubscriptionRestoreButton)
-                .appGroupedListRow(position: .bottom)
-            }
-        } header: {
-            Text("Subscription")
-        } footer: {
-            if let restoreMessage {
-                Text(restoreMessage)
-            } else if subscriptionStore.status.isPro {
-                Text(proFooterText)
-            } else {
-                Text("Villain Arc Pro unlocks AI features and advanced health insights. Cancel anytime in Settings.")
-            }
-        }
-        .accessibilityIdentifier(AccessibilityIdentifiers.settingsSubscriptionRow)
-    }
-
-    @ViewBuilder
-    private var proStatusRow: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "checkmark.seal.fill")
-                .foregroundStyle(.purple.gradient)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Villain Arc Pro")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Text(subscriptionPlanLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
-        }
-    }
-
-    private var subscriptionPlanLabel: String {
-        switch subscriptionStore.status {
-        case let .subscribed(productID, _, _):
-            return planName(for: productID)
-        case let .inFreeTrial(productID, _):
-            return String(localized: "Free trial — \(planName(for: productID))")
-        case let .inGracePeriod(productID, _):
-            return String(localized: "Grace period — \(planName(for: productID))")
-        default:
-            return String(localized: "Active")
-        }
-    }
-
-    private var proFooterText: String {
-        switch subscriptionStore.status {
-        case let .subscribed(_, expirationDate, willAutoRenew):
-            if let date = expirationDate {
-                let label = willAutoRenew
-                    ? String(localized: "Renews \(formattedDate(date)).")
-                    : String(localized: "Ends \(formattedDate(date)).")
-                return label
-            }
-            return String(localized: "Manage your subscription in the App Store.")
-        case let .inFreeTrial(_, trialEnd):
-            return String(localized: "Trial ends \(formattedDate(trialEnd)).")
-        case let .inGracePeriod(_, expirationDate):
-            return String(localized: "Renewal failed — billing retry until \(formattedDate(expirationDate)).")
-        default:
-            return String(localized: "Manage your subscription in the App Store.")
-        }
-    }
-
-    private func planName(for productID: String) -> String {
-        switch VAPro.catalog.tier(of: productID) {
-        case .monthly: return String(localized: "Monthly")
-        case .yearly: return String(localized: "Yearly")
-        case .lifetime, nil: return String(localized: "Pro")
-        }
-    }
-
-    private func formattedDate(_ date: Date) -> String {
-        date.formatted(date: .abbreviated, time: .omitted)
-    }
-
-    private func handleRestore() async {
-        restoreMessage = nil
-        isRestoringSubscription = true
-        defer { isRestoringSubscription = false }
-        do {
-            try await subscriptionStore.restore()
-            if subscriptionStore.status.isPro {
-                Haptics.success()
-                restoreMessage = String(localized: "Subscription restored.")
-            } else {
-                Haptics.warning()
-                restoreMessage = String(localized: "No active subscription was found on this Apple ID.")
-            }
-        } catch {
-            Haptics.error()
-            restoreMessage = String(localized: "Restore failed. Try again later.")
-            AppLog.error("Settings restore failed", error: error)
         }
     }
 
@@ -1058,7 +907,7 @@ private struct NotificationSettingsView: View {
 /// `Exercise` rows, whose synced half is `ExercisePreference`), the Health resync (the
 /// device-sourced Health mirror, which never syncs up), and the Spotlight reindex (a read).
 private struct DebugSettingsView: View {
-    @Environment(\.debugStoreSwitch) private var debugStore
+    @Environment(\.debugDemoStore) private var debugStore
     @State private var isWorking = false
     @State private var statusMessage = "Ready"
     @State private var showsResetConfirmation = false
@@ -1077,17 +926,17 @@ private struct DebugSettingsView: View {
     var body: some View {
         Form {
             Section {
-                ScreenshotStudioLink(scenes: ScreenshotStudioCatalog.scenes) { context in
+                // `storeKit:` because the catalog carries a paywall scene: the studio reports
+                // whether the products loaded, which is whether that shot is the real one.
+                ScreenshotStudioLink(
+                    scenes: ScreenshotStudioCatalog.scenes,
+                    storeKit: DebugStoreKitProducts(productIDs: VAPro.catalog.productIDs)
+                ) { context in
                     try ScreenshotStudioSeeder.seedAll(in: context)
                 }
-                .appGroupedListRow(position: .top)
-
-                Toggle("Render Debug Store", systemImage: "shippingbox", isOn: debugStoreBinding)
-                    .disabled(debugStore == nil)
-                    .accessibilityIdentifier(AccessibilityIdentifiers.debugRenderDebugStoreToggle)
-                    .appGroupedListRow(position: .bottom)
+                .appGroupedListRow(position: .single)
             } footer: {
-                Text("Every seed below writes into the detached debug store. Turn this on to point the app itself at that store and see them; the Screenshot Studio turns it on for as long as it is open.")
+                Text("Every seed below writes into the detached debug store, and each Screenshot Studio scene renders from it. The app's own screens keep showing the app's own store.")
             }
 
             Section {
@@ -1246,30 +1095,6 @@ private struct DebugSettingsView: View {
         }
     }
 
-    /// Whether the app is rendering the detached debug store rather than its own.
-    private var debugStoreBinding: Binding<Bool> {
-        Binding(
-            get: { debugStore?.isEngaged ?? false },
-            set: { shouldEngage in
-                guard let debugStore else {
-                    statusMessage = DebugStoreSwitch.missingSwitchMessage
-                    return
-                }
-                guard shouldEngage else {
-                    debugStore.disengage()
-                    statusMessage = "Rendering the app's own store."
-                    return
-                }
-                do {
-                    try debugStore.engage()
-                    statusMessage = "Rendering the detached debug store."
-                } catch {
-                    statusMessage = "Debug store unavailable: \(error.localizedDescription)"
-                }
-            }
-        )
-    }
-
     private var refusalBinding: Binding<Bool> {
         Binding(get: { resetRefusal != nil }, set: { if !$0 { resetRefusal = nil } })
     }
@@ -1278,7 +1103,7 @@ private struct DebugSettingsView: View {
     /// ever handed here, so there is no path from this screen to the account's own data.
     private func runSeed(_ successMessage: String, operation: @escaping (ModelContext) throws -> Void) {
         guard let debugStore else {
-            statusMessage = DebugStoreSwitch.missingSwitchMessage
+            statusMessage = DebugDemoStore.missingStoreMessage
             return
         }
         do {
@@ -1291,7 +1116,7 @@ private struct DebugSettingsView: View {
 
     private func performReset() {
         guard let debugStore else {
-            statusMessage = DebugStoreSwitch.missingSwitchMessage
+            statusMessage = DebugDemoStore.missingStoreMessage
             return
         }
         let configuration = VASyncConfiguration.live

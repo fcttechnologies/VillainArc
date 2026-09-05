@@ -39,9 +39,10 @@ struct VillainArcApp: App {
     #if DEBUG
     /// The debug surface's own store. Every seed, sample and reset the Debug menu offers writes
     /// through the app's `@Model` types, and those are the types that sync — so they write into a
-    /// second, local-only file instead, and this points the whole app at it while the demo data is
-    /// what the screens are meant to show.
-    @State private var debugStore = DebugStoreSwitch(store: SharedModelContainer.configuration)
+    /// second, local-only file instead. The app's root keeps its own container: each Screenshot
+    /// Studio scene carries the demo store itself, so nothing behind the studio changes what it
+    /// is rendering.
+    @State private var debugStore = DebugDemoStore(store: SharedModelContainer.configuration)
     #endif
 
     init() {
@@ -61,14 +62,11 @@ struct VillainArcApp: App {
 
     var body: some Scene {
         WindowGroup {
-            #if DEBUG
-            rootSurface
-                .environment(\.debugStoreSwitch, debugStore)
-                .modelContainer(debugStore.container(or: SharedModelContainer.container))
-            #else
             rootSurface
                 .modelContainer(SharedModelContainer.container)
-            #endif
+                #if DEBUG
+                .environment(\.debugDemoStore, debugStore)
+                #endif
         }
         .backgroundTask(.appRefresh(WeeklyHealthCoachingCoordinator.taskIdentifier)) {
             await WeeklyHealthCoachingCoordinator.shared.performBackgroundRefresh()
