@@ -41,7 +41,7 @@ struct DetachedDebugStoreTests {
         let detachedURL = DebugStore.detachedURL(besideStoreAt: realURL)
         #expect(detachedURL != realURL, "the detached store is the app's own store: nothing below can mean anything")
 
-        let debug = DebugDemoStore {
+        let debug = DebugDemoStore(versionedSchema: VillainArcSchemaV1.self) {
             try DebugStore.detached(schema: SharedModelContainer.schema, url: detachedURL)
         }
         return Stores(real: real, debug: debug, directory: directory)
