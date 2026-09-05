@@ -1,16 +1,31 @@
 import Foundation
 
-// A clock face is zero-padded fixed-width digits, which no `FormatStyle` produces, so these reach
-// for `String(format:)`. Every one is safe for the same reason: the format string is a literal
-// holding only `%d`/`%02d`, and every argument beside it is an `Int` — the pairing C varargs
-// cannot check is checked here by reading the two together.
+/// A non-negative integer as two digits, zero-padded — the digit pair a clock face is built from.
+///
+/// Built by interpolation rather than by a `FormatStyle` or `String(format:)`: a clock face is
+/// fixed-width ASCII rather than a formatted number, so it must not pick up a locale's digits or
+/// grouping, and `String(_:)` gives that by construction with nothing unsafe to mark.
+nonisolated func zeroPaddedTwoDigits(_ value: Int) -> String {
+    let clamped = max(0, value)
+    return clamped < 10 ? "0\(clamped)" : "\(clamped)"
+}
+
+/// A `Double` rendered to exactly one decimal place with a period separator, for a string that is
+/// parsed back by `Double(_:)` — a text field's own contents rather than a label. A locale-aware
+/// render would produce "5,5" in German and the value would fail to read back.
+nonisolated func fixedOneDecimal(_ value: Double) -> String {
+    let tenths = (value * 10).rounded()
+    let sign = tenths < 0 ? "-" : ""
+    let magnitude = Int(abs(tenths))
+    return "\(sign)\(magnitude / 10).\(magnitude % 10)"
+}
 
 nonisolated func secondsToTime(_ seconds: Int) -> String {
     let clampedSeconds = max(0, seconds)
     let minutes = clampedSeconds / 60
     let remainingSeconds = clampedSeconds % 60
-    if minutes < 10 { return unsafe String(format: "%d:%02d", minutes, remainingSeconds) }
-    return unsafe String(format: "%02d:%02d", minutes, remainingSeconds)
+    if minutes < 10 { return "\(minutes):\(zeroPaddedTwoDigits(remainingSeconds))" }
+    return "\(zeroPaddedTwoDigits(minutes)):\(zeroPaddedTwoDigits(remainingSeconds))"
 }
 
 nonisolated func secondsToTimeWithHours(_ seconds: Int) -> String {
@@ -18,9 +33,7 @@ nonisolated func secondsToTimeWithHours(_ seconds: Int) -> String {
     let hours = clampedSeconds / 3_600
     let remainingMinutes = (clampedSeconds % 3_600) / 60
     let remainingSeconds = clampedSeconds % 60
-    let paddedMinutes = unsafe String(format: "%02d", remainingMinutes)
-    let paddedSeconds = unsafe String(format: "%02d", remainingSeconds)
-    return "\(hours):\(paddedMinutes):\(paddedSeconds)"
+    return "\(hours):\(zeroPaddedTwoDigits(remainingMinutes)):\(zeroPaddedTwoDigits(remainingSeconds))"
 }
 
 func formattedDateRange(start: Date, end: Date? = nil, includeTime: Bool = false) -> String {

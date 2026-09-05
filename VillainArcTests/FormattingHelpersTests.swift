@@ -18,6 +18,34 @@ struct FormattingHelpersTests {
         #expect(secondsToTimeWithHours(-5) == "0:00:00")
     }
 
+    /// The clock-face digit pair, across every second of an hour plus the widths past it, against
+    /// the C form it replaces — the one comparison that proves an interpolated pad is the same
+    /// string a `%02d` produced.
+    @Test func zeroPaddedTwoDigitsMatchesFixedWidthPadding() {
+        for value in (-5...125) {
+            let expected = unsafe String(format: "%02d", max(0, value))
+            #expect(zeroPaddedTwoDigits(value) == expected, "\(value)")
+        }
+    }
+
+    /// One decimal place with a period separator, whatever the process locale is, because these
+    /// strings are read back by `Double(_:)` rather than by a person.
+    @Test func fixedOneDecimalIsLocaleIndependentAndRoundTrips() {
+        #expect(fixedOneDecimal(0) == "0.0")
+        #expect(fixedOneDecimal(5.5) == "5.5")
+        #expect(fixedOneDecimal(8) == "8.0")
+        #expect(fixedOneDecimal(12.34) == "12.3")
+        #expect(fixedOneDecimal(12.36) == "12.4")
+        #expect(fixedOneDecimal(15) == "15.0")
+        #expect(fixedOneDecimal(100) == "100.0")
+        // Every value the treadmill fields hold reads back as itself, which is what the commit
+        // path does with them.
+        for tenths in 0...300 {
+            let value = Double(tenths) / 10
+            #expect(Double(fixedOneDecimal(value)) == value, "\(value)")
+        }
+    }
+
     @Test func localizedCountTextUsesSingularAndPlural() {
         #expect(localizedCountText(1, singular: "set", plural: "sets") == "1 set")
         #expect(localizedCountText(0, singular: "set", plural: "sets") == "0 sets")
