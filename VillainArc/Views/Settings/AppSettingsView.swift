@@ -218,9 +218,9 @@ private struct AppSettingsFormView: View {
                 Text("Choose whether the app follows your device appearance or always uses light or dark mode.")
             }
 
-            // The fleet's one subscription section. It reads the MERGED entitlement, which is
-            // what fixes the arms that branched on `status.isPro` alone and reported a
-            // subscription bought on another device as nothing.
+            // The fleet's one subscription section. It reads the merged entitlement, so a
+            // subscription bought on another device shows here as the subscription it is, and it
+            // decides on its own what a lifetime unlock or a shared entitlement can manage.
             SubscriptionSettingsSection(store: VAPro.store, productName: "Villain Arc Pro") {
                 Haptics.selection()
                 VAPro.presenter.present(for: .aiPlanGeneration)
