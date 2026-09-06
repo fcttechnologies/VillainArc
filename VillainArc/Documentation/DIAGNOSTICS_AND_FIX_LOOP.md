@@ -152,8 +152,10 @@ at process start instead. It was not the cause of the deaths.
 
 **What answers for data races instead is the compiler.** This project builds Swift 6 with warnings
 as errors, where a cross-actor race is a build failure rather than something a runtime sample might
-happen to catch. That leaves exactly the code that opts out: the `nonisolated(unsafe)` HealthKit
-completion handlers in `HealthStoreUpdateCoordinator` and the shared `UserDefaults` behind
-`SharedModelContainer.sharedDefaults`. Nothing checks those at runtime; they are read by eye when
-they change. AddressSanitizer is not run either — it answers for C/C++/ObjC memory, and every
+happen to catch. That leaves exactly the code that opts out, which is one place: the shared
+`UserDefaults` behind `SharedModelContainer.sharedDefaults`. Nothing checks it at runtime; it is
+read by eye when it changes. HealthKit's non-`Sendable` completion handlers are not in that set —
+they are confined to `HealthObserverCompletion`, whose own suite holds the exactly-once guarantee,
+which matters because real observers never fire on a simulator and so the installers themselves can
+only ever be read. AddressSanitizer is not run either — it answers for C/C++/ObjC memory, and every
 target here is pure Swift with strict memory safety on.

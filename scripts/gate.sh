@@ -37,10 +37,12 @@
 # alone in its own process, so no amount of splitting the run avoids it. What answers for data
 # races instead is the language: this project builds Swift 6 with warnings as errors, where a
 # cross-actor race is a compile error rather than something a runtime sample might catch. What
-# that leaves uncovered is the code that opts OUT of it — the `nonisolated(unsafe)` HealthKit
-# completion handlers in `HealthStoreUpdateCoordinator` and the shared `UserDefaults` behind
-# `SharedModelContainer.sharedDefaults` — and those are read by eye, because nothing here checks
-# them at runtime. AddressSanitizer answers for C/C++/ObjC memory, and every target here is pure
+# that leaves uncovered is the code that opts OUT of it — the shared `UserDefaults` behind
+# `SharedModelContainer.sharedDefaults` — and that is read by eye, because nothing here checks it
+# at runtime. HealthKit's non-`Sendable` completion handlers are not in that set: they are confined
+# to `HealthObserverCompletion` and its suite, which is the only place the exactly-once guarantee
+# can be checked at all, since real observers never fire on a simulator.
+# AddressSanitizer answers for C/C++/ObjC memory, and every target here is pure
 # Swift with strict memory safety on.
 #
 # Usage:  scripts/gate.sh [--fast] [--only VillainArcTests/SomeSuite]

@@ -4,13 +4,10 @@ import HealthKit
 
 /// Owns one `HKObserverQuery` per sample type and turns each notification into a sync.
 ///
-/// **Every observer here re-binds its `completionHandler` as `nonisolated(unsafe)` and calls it
-/// through an `unsafe` expression**, because HealthKit hands back a bare `@convention(block)`
-/// closure that carries no `Sendable` conformance while the work it gates has to run in a `Task`.
-/// What makes each of those calls safe is the shape they all share: the re-bound handler is a
-/// local read by exactly one `Task`, that `Task` calls it exactly once from a `defer`, and nothing
-/// else in the process can reach it — which is also HealthKit's own requirement, since an observer
-/// that never calls its handler stops receiving notifications.
+/// Every observer wraps HealthKit's completion handler in a `HealthObserverCompletion` and calls
+/// `finish()` from the `defer` of whichever `Task` does the work. That type holds the whole of why
+/// handing a non-`Sendable` block to a `Task` is safe here, which is what leaves the installers
+/// below as ordinary Swift.
 final class HealthStoreUpdateCoordinator {
     private enum ObserverKind: Sendable {
         case workout
@@ -115,10 +112,10 @@ final class HealthStoreUpdateCoordinator {
     private func startWorkoutObserverIfNeeded() -> Bool {
         guard workoutObserverQuery == nil else { return false }
         let query = HKObserverQuery(sampleType: HealthKitCatalog.workoutType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.workout) {
                         await HealthSyncCoordinator.shared.syncWorkouts()
                     }
@@ -128,11 +125,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health workout observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.workout, failedQueryID: failedQueryID)
                 }
@@ -149,10 +145,10 @@ final class HealthStoreUpdateCoordinator {
         guard weightObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.bodyMassType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.weight) {
                         await HealthSyncCoordinator.shared.syncWeightEntries()
                     }
@@ -162,11 +158,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health weight observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.weight, failedQueryID: failedQueryID)
                 }
@@ -183,10 +178,10 @@ final class HealthStoreUpdateCoordinator {
         guard stepObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.stepCountType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.step) {
                         await HealthDailyMetricsSync.shared.syncSteps()
                     }
@@ -196,11 +191,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health step observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.step, failedQueryID: failedQueryID)
                 }
@@ -217,10 +211,10 @@ final class HealthStoreUpdateCoordinator {
         guard walkingRunningDistanceObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.walkingRunningDistanceType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.walkingRunningDistance) {
                         await HealthDailyMetricsSync.shared.syncWalkingRunningDistance()
                     }
@@ -230,11 +224,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health walking/running distance observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.walkingRunningDistance, failedQueryID: failedQueryID)
                 }
@@ -251,10 +244,10 @@ final class HealthStoreUpdateCoordinator {
         guard activeEnergyObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.activeEnergyBurnedType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.activeEnergy) {
                         await HealthDailyMetricsSync.shared.syncActiveEnergyBurned()
                     }
@@ -264,11 +257,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health active energy observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.activeEnergy, failedQueryID: failedQueryID)
                 }
@@ -285,10 +277,10 @@ final class HealthStoreUpdateCoordinator {
         guard restingEnergyObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.restingEnergyBurnedType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.restingEnergy) {
                         await HealthDailyMetricsSync.shared.syncRestingEnergyBurned()
                     }
@@ -298,11 +290,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health resting energy observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.restingEnergy, failedQueryID: failedQueryID)
                 }
@@ -319,10 +310,10 @@ final class HealthStoreUpdateCoordinator {
         guard sleepObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.sleepAnalysisType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.sleep) {
                         await HealthSleepSync.shared.syncSleepNights()
                     }
@@ -332,11 +323,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health sleep observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.sleep, failedQueryID: failedQueryID)
                 }
@@ -353,10 +343,10 @@ final class HealthStoreUpdateCoordinator {
         guard heartRateObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.heartRateType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.heartRate) {
                         await HealthDailyMetricsSync.shared.syncHeartRate()
                     }
@@ -366,11 +356,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health heart rate observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.heartRate, failedQueryID: failedQueryID)
                 }
@@ -387,10 +376,10 @@ final class HealthStoreUpdateCoordinator {
         guard restingHeartRateObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.restingHeartRateType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.restingHeartRate) {
                         await HealthDailyMetricsSync.shared.syncRestingHeartRate()
                     }
@@ -400,11 +389,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health resting heart rate observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.restingHeartRate, failedQueryID: failedQueryID)
                 }
@@ -421,10 +409,10 @@ final class HealthStoreUpdateCoordinator {
         guard walkingHeartRateObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.walkingHeartRateAverageType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.walkingHeartRate) {
                         await HealthDailyMetricsSync.shared.syncWalkingHeartRate()
                     }
@@ -434,11 +422,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health walking heart rate observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.walkingHeartRate, failedQueryID: failedQueryID)
                 }
@@ -455,10 +442,10 @@ final class HealthStoreUpdateCoordinator {
         guard heartRateVariabilityObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.heartRateVariabilitySDNNType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.heartRateVariability) {
                         await HealthDailyMetricsSync.shared.syncHeartRateVariability()
                     }
@@ -468,11 +455,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health heart rate variability observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.heartRateVariability, failedQueryID: failedQueryID)
                 }
@@ -489,10 +475,10 @@ final class HealthStoreUpdateCoordinator {
         guard respiratoryRateObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.respiratoryRateType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.respiratoryRate) {
                         await HealthDailyMetricsSync.shared.syncRespiratoryRate()
                     }
@@ -502,11 +488,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health respiratory rate observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.respiratoryRate, failedQueryID: failedQueryID)
                 }
@@ -523,10 +508,10 @@ final class HealthStoreUpdateCoordinator {
         guard wristTemperatureObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.appleSleepingWristTemperatureType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.wristTemperature) {
                         await HealthDailyMetricsSync.shared.syncWristTemperature()
                     }
@@ -536,11 +521,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health wrist temperature observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.wristTemperature, failedQueryID: failedQueryID)
                 }
@@ -557,10 +541,10 @@ final class HealthStoreUpdateCoordinator {
         guard dietaryWaterObserverQuery == nil else { return false }
 
         let query = HKObserverQuery(sampleType: HealthKitCatalog.dietaryWaterType, predicate: nil) { query, completionHandler, error in
+            let completion = HealthObserverCompletion(completionHandler)
             guard let error else {
-                nonisolated(unsafe) let completionHandler = completionHandler
                 Task {
-                    defer { unsafe completionHandler() }
+                    defer { completion.finish() }
                     await Self.trackObserverSync(.dietaryWater) {
                         await HealthSyncCoordinator.shared.syncHydrationEntries()
                     }
@@ -570,11 +554,10 @@ final class HealthStoreUpdateCoordinator {
 
             AppLog.error("Health dietary water observer failed: \(error.localizedDescription)")
 
-            nonisolated(unsafe) let completionHandler = completionHandler
             let shouldReinstallObserver = Self.shouldReinstallObserver(after: error)
             let failedQueryID = ObjectIdentifier(query)
             Task { @MainActor in
-                defer { unsafe completionHandler() }
+                defer { completion.finish() }
                 if shouldReinstallObserver {
                     HealthStoreUpdateCoordinator.shared.clearObserverIfMatching(.dietaryWater, failedQueryID: failedQueryID)
                 }
