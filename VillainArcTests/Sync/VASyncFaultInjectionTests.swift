@@ -144,7 +144,6 @@ final class VASyncFaultHarness {
     }
 
     deinit {
-        TestStoreFactory.removeStore(at: storeURL)
         try? FileManager.default.removeItem(at: directory)
     }
 
